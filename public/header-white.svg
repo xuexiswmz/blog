@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="200" viewBox="0 0 220 200" role="img" aria-label="W mark with crossed center black white gradient">
+  <defs>
+    <linearGradient id="black-white" x1="30" y1="16" x2="188" y2="184" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#000000"/>
+      <stop offset="52%" stop-color="#737373"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    </linearGradient>
+    <filter id="soft-edge" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity=".16"/>
+    </filter>
+  </defs>
+
+  <g
+    fill="none"
+    stroke="url(#black-white)"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    filter="url(#soft-edge)"
+  >
+    <!-- Top terminals -->
+    <path d="M41 24C48 23 56 23 63 23" stroke-width="24"/>
+    <path d="M169 24C181 23 195 23 205 23" stroke-width="25"/>
+
+    <!-- Outer W stems -->
+    <path d="M43 31C44 64 51 105 59 143C62 158 66 172 70 181" stroke-width="25"/>
+    <path d="M139 181C160 145 177 82 195 30" stroke-width="26"/>
+
+    <!-- Enlarged center X with no horizontal top bar -->
+    <path d="M70 181C84 153 98 121 112 89C123 64 134 41 143 24" stroke-width="23"/>
+    <path d="M96 24C104 61 115 101 126 139C131 157 135 171 139 181" stroke-width="24"/>
+  </g>
+</svg>
