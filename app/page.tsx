@@ -1,5 +1,5 @@
 import Contents from "@/components/Content";
-import Headers from "@/components/Headers";
+import Headers from "@/components/Headers/index";
 
 export default function Home() {
   return (
