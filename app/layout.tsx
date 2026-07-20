@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import I18nGate from "@/components/providers/I18nGate";
 
 
 export const metadata: Metadata = {
@@ -14,11 +15,15 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="zh-CN"
       className="h-full antialiased"
       data-theme="dark"
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <I18nGate>
+          {children}
+        </I18nGate>
+      </body>
     </html>
   );
 }

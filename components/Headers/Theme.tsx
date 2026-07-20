@@ -36,7 +36,7 @@ const Theme = () => {
         aria-label={
           theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'
         }
-        className="rounded-full text-black dark:text-white"
+        className=" text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md p-2"
       >
         {
           theme === "light" ? (
