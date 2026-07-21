@@ -30,7 +30,7 @@ export default async function PostPage({
       prose-h2:text-2xl
       sm:prose-h2:text-3xl
 
-      [overflow-wrap:anywhere]
+      wrap-anywhere
 
       [&_pre]:max-w-full
       [&_pre]:overflow-x-auto
