@@ -22,7 +22,7 @@ const themeScript = `
     }catch {
       document.documentElement.dataset.theme = "light"
     }
-  })
+  })()
 `
 
 export default function RootLayout({
