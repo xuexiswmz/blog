@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 const Profile = () => {
   const { t } = useTranslation()
   return (
-    <aside className='hidden md:flex flex-none w-75  justify-center min-h-[90vh] bg-blue-50 dark:bg-gray-900 sticky top-0 left-0'>
+    <aside className='hidden md:flex flex-none w-75  justify-center bg-blue-50 dark:bg-gray-900 h-fit min-h-[90vh] shrink-0 self-start '>
         <div className='flex flex-col w-full max-w-60 items-center justify-center gap-5'>
           <Image src="/avatar.jpeg" width={80} height={80} alt='Header Icon' className="rounded-full" />
           <div className='flex flex-col items-center justify-center gap-1'>

@@ -1,34 +1,13 @@
+import { getPostArchives } from '@/lib/posts';
 import Image from 'next/image';
 import Link from 'next/link';
-import React, { Fragment } from 'react'
+import { Fragment } from 'react'
 
-const archives = [
-  {
-    year: "2026",
-    posts: [
-      {
-        date: "01-06",
-        title: "前端性能革命：200 行 JavaScript 代码实现 Streaming JSON",
-        href: "/posts/streaming-json",
-        image: "/avatar.jpeg",
-        imageAlt: "Streaming JSON 文章封面",
-        description:"前端性能革命"
-      },
-      {
-        date: "01-02",
-        title: "我的博客项目正式启动",
-        href: "/posts/blog-start",
-        image: "/avatar.jpeg",
-        imageAlt: "Streaming JSON 文章封面",
-        description:"我的博客项目"
-      },
-    ],
-  },
-];
+const TimeLine = async () => {
 
-const TimeLine = () => {
+  const archives = await getPostArchives() 
   return (
-    <main className='flex flex-1 min-w-0 p-5'>
+    <main className='flex flex-1 min-w-0 p-5 h-full min-h-0 overflow-y-auto overscroll-contain scrollbar-hide'>
         <div className="w-full">
       {archives.map((group) => (
         <section
@@ -57,10 +36,10 @@ const TimeLine = () => {
           </p>
 
           {group.posts.map((post) => (
-            <Fragment key={post.href}>
+            <Fragment key={`/posts/${post.slug}`}>
               {/* 日期 */}
               <time className=" w-full py-5 text-right pr-2 text-xs text-gray-500 dark:text-gray-500">
-                {post.date}
+                {post.date.slice(5)}
               </time>
 
               {/* 普通节点 */}
@@ -79,7 +58,7 @@ const TimeLine = () => {
 
               {/* 文章标题 */}
               <Link
-                href={post.href}
+                href={`/posts/${post.slug}`}
                 className="
                   group flex justify-center
                   items-center gap-4 py-5
@@ -100,13 +79,18 @@ const TimeLine = () => {
                         {post.description}
                     </p>
                 </div>
-                <Image
-                    src={post.image}
-                    alt={post.imageAlt}
-                    width={96}
-                    height={64}
-                    className=' hidden h-16 w-24 shrink-0 rounded-md object-cover transition-transform group-hover:scale-105 sm:block '
-                />
+                {
+                  post.image && (
+                    <Image
+                      src={post.image}
+                      alt={post.imageAlt ?? `${post.title}文章封面`}
+                      width={96}
+                      height={64}
+                      className=' hidden h-16 w-24 shrink-0 rounded-md object-cover transition-transform group-hover:scale-105 sm:block '
+                    />
+                  )
+                }
+                
               </Link>
             </Fragment>
           ))}

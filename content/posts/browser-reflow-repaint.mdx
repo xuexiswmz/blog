@@ -1,0 +1,244 @@
+---
+title: 浏览器回流与重绘
+source: yuque-export
+date: "2025-08-07"
+description: "从浏览器渲染流程出发，聊聊回流、重绘与合成分别在什么时候发生，以及怎样用 DevTools 找到真正拖慢页面的操作。"
+tags:
+  - css
+  - 回流
+  - 重绘
+  - 性能
+---
+
+# 浏览器回流与重绘：页面为什么会变卡
+
+你打开 Chrome DevTools，给页面录了个 Performance。
+
+滚动或播放动画后，时间线上出现了密集的 Layout、Paint 记录。
+
+记录越密集、单次耗时越长，越可能出现动画掉帧、输入延迟或滚动卡顿。
+
+DevTools 会用不同类别和颜色区分 Layout（布局）、Paint（绘制）与 Composite（合成）；具体配色可能随工具版本变化。真正需要关注的是它们的触发频率和耗时。
+
+把这几个阶段拆开后，很多“为什么这一行代码会卡”的问题就有了更具体的解释。
+
+---
+
+## 浏览器是怎么把 HTML 变成像素的？
+
+从输入 URL 到看到页面，浏览器内部走了这么几步：
+
+```
+HTML → DOM树 → CSSOM树 → 渲染树 → 布局(Layout) → 绘制(Paint) → 合成(Composite)
+                                                                  ↑        ↑
+                                                                回流      重绘
+```
+
+- **DOM 树**：解析 HTML 标签结构
+- **CSSOM 树**：解析 CSS 规则
+- **渲染树**：DOM + CSSOM 的交集，只包含可见节点
+- **布局（Layout）**：计算每个元素的位置和大小 — **回流，代价最高**
+- **绘制（Paint）**：把每个元素画出来 — **重绘，代价中等**
+- **合成（Composite）**：把各层合在一起输出屏幕 — **代价最低**
+
+---
+
+## 什么是回流（Reflow / Layout）？
+
+**回流 = 浏览器发现元素的位置或大小变了，重新计算整个页面布局。**
+
+一个元素变了，它的子元素、兄弟元素、祖先元素都可能受影响——浏览器要全部重新算一遍。
+
+### 会触发回流的操作
+
+```javascript
+// 改宽高
+element.style.width = '200px';
+element.style.height = '300px';
+
+// 改内边距、外边距
+element.style.padding = '20px';
+element.style.margin = '10px';
+
+// 改定位
+element.style.left = '50px';
+
+// 改 display
+element.style.display = 'none';   // 消失，影响周围所有元素
+element.style.display = 'block';  // 出现，同上
+
+// 添加/删除 DOM 节点
+parent.appendChild(child);
+parent.removeChild(child);
+
+// 获取布局信息（强制同步回流，见下文）
+element.offsetWidth;
+element.getBoundingClientRect();
+window.getComputedStyle(element).width;
+```
+
+> **回流是连锁反应。** 改一个元素的位置，周围一圈元素的位置可能都要重新算。改根节点？整棵树重算。
+
+---
+
+## 什么是重绘（Repaint）？
+
+**重绘 = 元素外观变了，但位置和大小没变，浏览器只需要重新"画"它。**
+
+### 会触发重绘的操作
+
+```javascript
+// 改颜色
+element.style.color = 'red';
+element.style.backgroundColor = 'blue';
+
+// 改边框颜色（粗细变了会回流）
+element.style.borderColor = 'green';
+
+// 改阴影
+element.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+
+// 改透明度
+element.style.opacity = 0.5;
+```
+
+> **重要关系：回流通常会带来后续绘制，重绘则不一定需要重新布局。**
+>
+> ```
+> 回流 → 重绘（两件事）
+> 重绘 → 回流（不一定）
+> ```
+
+---
+
+## 强制同步回流：为什么一次读取也可能很贵
+
+这类问题很隐蔽：代码看起来只是在读取尺寸，却可能迫使浏览器提前完成尚未处理的布局计算。
+
+浏览器有一个**渲染队列**，会把多次样式变化合并成一次回流，节省性能。但当你**读取布局信息**时，浏览器必须立刻计算，返回准确的值——队列被清空，强制同步回流发生。
+
+```javascript
+// ❌ 每次读取都触发强制回流
+const elements = document.querySelectorAll('.item');
+for (let i = 0; i < elements.length; i++) {
+  elements[i].style.width = '100px';
+  console.log(elements[i].offsetWidth); // 读取 → 强制回流！
+}
+// 100次循环 = 100次强制回流，页面卡死
+```
+
+### 正确做法：先批量读，再批量写
+
+```javascript
+const elements = document.querySelectorAll('.item');
+
+// ✅ 第一步：全部读取（只触发一次回流）
+const widths = [];
+for (let i = 0; i < elements.length; i++) {
+  widths.push(elements[i].offsetWidth);
+}
+
+// ✅ 第二步：全部写入（触发一次回流）
+for (let i = 0; i < elements.length; i++) {
+  elements[i].style.width = widths[i] + 10 + 'px';
+}
+```
+
+这就是著名的**读写分离**原则。React 的 Fiber 架构、Vue 的响应式批量更新，底层都是为了解决这个问题。
+
+---
+
+## 批量操作：减少回流次数
+
+### 错误示范
+
+```javascript
+// 循环创建100个div，每次 appendChild 都触发一次回流
+for (let i = 0; i < 100; i++) {
+  const div = document.createElement('div');
+  div.style.width = '100px';
+  div.style.height = '100px';
+  document.body.appendChild(div); // 100次回流
+}
+```
+
+### 正确示范
+
+```javascript
+// ✅ 用 DocumentFragment 一次性插入，只触发一次回流
+const fragment = document.createDocumentFragment();
+for (let i = 0; i < 100; i++) {
+  const div = document.createElement('div');
+  div.style.width = '100px';
+  div.style.height = '100px';
+  fragment.appendChild(div);
+}
+document.body.appendChild(fragment);
+
+// ✅ 先隐藏，改完再显示，两次回流顶天了
+element.style.display = 'none';
+// ... 一堆修改 ...
+element.style.display = 'block';
+
+// ✅ 直接切换 class，最干净的做法
+element.classList.add('new-style');
+```
+
+---
+
+## 优先使用更适合合成的动画属性
+
+如果动画用 `left / top / width / height`，每次动画帧都触发回流。
+
+使用 `transform` 和 `opacity` 时，浏览器通常更容易把变化交给合成阶段处理，从而避开反复布局。是否创建独立合成层由浏览器决定，仍应以性能工具的实际记录为准。
+
+```css
+/* ❌ 差：触发回流 */
+@keyframes slide {
+  from { left: 0; }
+  to   { left: 300px; }
+}
+
+/* ✅ 好：只触发合成层 */
+@keyframes slide {
+  from { transform: translateX(0); }
+  to   { transform: translateX(300px); }
+}
+```
+
+配合 `will-change` 提示浏览器提前优化：
+
+```css
+.card {
+  will-change: transform; /* 提前建立合成层 */
+}
+```
+
+合成层也会占用 GPU 内存，因此 `will-change` 更适合在确实需要时短暂使用，而不是铺满整个页面。
+
+---
+
+## 在 DevTools 里怎么看
+
+**Chrome DevTools Performance 面板：**
+1. 录制操作（滚动、点击、输入）
+2. 找紫色（Layout）和红色（Paint）方块
+3. 越少越小越好
+
+**Rendering 面板 → Paint Flashing：**
+打开后，每次重绘的区域会闪烁绿色，直观看出哪里在频繁重绘。
+
+**Layers 面板：**
+看哪些元素被提升为独立的合成层。
+
+---
+
+## 小结
+
+| 层级 | 触发条件 | 性能成本 | 优化方向 |
+|---|---|---|---|
+| 回流（Layout） | 位置、大小、布局变化 | 🔴 高 | 批量操作、读写分离 |
+| 重绘（Paint） | 外观变化、颜色、阴影 | 🟡 中 | 减少触发频率 |
+| 合成（Composite） | transform、opacity | 🟢 低 | 优先用这两个属性做动画 |
+
+从一般成本看，布局、绘制、合成大致是由重到轻的关系。不过页面结构和设备差异很大，最终还是以 Performance 记录为准。

@@ -24,7 +24,7 @@ const Language = () => {
     <button type="button" 
       onClick={toggleLanguage} 
       aria-label={isChinese ? '切换到英文' : 'Switch to Chinese'}
-      className="hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md p-2"
+      className="hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md p-2 md:flex hidden"
       >
       <Languages className='text-black dark:text-white w-5 h-5' />
     </button>
