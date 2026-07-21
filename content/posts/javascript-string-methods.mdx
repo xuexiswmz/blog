@@ -1,0 +1,176 @@
+---
+title: JavaScript 字符串常用方法
+source: yuque-export
+date: "2025-07-19"
+description: "按包含判断、截取、替换、拆分、补齐和正则匹配等场景，整理常用字符串方法与容易忽略的细节。"
+tags:
+  - javascript
+  - 字符串
+  - 方法
+---
+
+# JavaScript 字符串常用方法：按使用场景整理
+
+写 JavaScript 时，经常会遇到这种短暂停顿：截取字符串该用 `slice` 还是 `substring`？`trim` 去掉的是普通空格，还是所有首尾空白？
+
+这些方法单独看都不难，麻烦的是名字相近、使用场景分散。下面不按 API 字母表罗列，而是按实际问题整理，方便需要时快速定位。
+
+## 先看一个前提：字符串不可变
+
+JavaScript 字符串是不可变的。看起来像“修改字符串”的方法，实际都会返回一个新字符串，原值不会被原地改写。
+
+```javascript
+let str = 'hello';
+str[0] = 'H';         // 不报错，但 str 仍然是 'hello'
+str = str + ' world'; // str 指向新的字符串 'hello world'
+```
+
+所以调用 `trim()`、`replace()` 或 `toUpperCase()` 后，别忘了接住返回值。
+
+## 判断是否包含某段内容
+
+```javascript
+const url = 'https://api.example.com/users';
+
+url.includes('api');         // true
+url.startsWith('https');     // true
+url.endsWith('/users');      // true
+url.indexOf('users') !== -1; // true
+```
+
+只关心“有没有”时，`includes()` 的语义最直接。`indexOf()` 并没有废弃；当你还需要匹配位置时，它依然有用。
+
+## 截取子字符串
+
+`slice`、`substring` 和 `substr` 最容易混淆，区别主要在第二个参数和负数处理：
+
+| 方法 | 第二个参数 | 是否支持负数 | 建议 |
+|---|---|---:|---|
+| `slice(start, end)` | 结束位置，不包含 `end` | 是 | 优先使用 |
+| `substring(start, end)` | 结束位置，不包含 `end` | 否，负数按 `0` 处理 | 了解 |
+| `substr(start, length)` | 截取长度 | 是 | 已废弃，不用于新代码 |
+
+```javascript
+const str = 'hello world';
+
+str.slice(0, 5);      // 'hello'
+str.slice(6);         // 'world'
+str.slice(-5);        // 'world'
+
+str.substring(6, 11); // 'world'
+str.substring(-5, 5); // 等同于 substring(0, 5)，结果为 'hello'
+
+str.substr(6, 5);     // 'world'，但 substr 已废弃
+```
+
+在大多数截取场景里，`slice()` 都很顺手：参数含义清楚，负数也方便从末尾开始计算。
+
+## 拼接字符串
+
+```javascript
+const name = 'Alice';
+const score = 98;
+
+`你好，${name}！你得了${score}分。`;
+'你好，' + name + '！你得了' + score + '分。';
+'hello '.concat(name);
+```
+
+模板字符串尤其适合变量较多或需要换行的文本。`+` 和 `concat()` 仍然可用，但表达复杂句子时通常不如模板字符串好读。
+
+## 清理首尾空白
+
+```javascript
+'  hello world  '.trim(); // 'hello world'
+'  hello'.trimStart();    // 'hello'
+'hello  '.trimEnd();      // 'hello'
+```
+
+这里的“空白”不只包括普通空格，也包括制表符、换行符等首尾空白字符。字符串中间的空白不会被删除。
+
+## 转换大小写
+
+```javascript
+'hello'.toUpperCase(); // 'HELLO'
+'HELLO'.toLowerCase(); // 'hello'
+```
+
+做搜索或去重时，经常会先统一大小写再比较。需要处理特定语言规则时，可以进一步了解 `toLocaleUpperCase()` 和 `toLocaleLowerCase()`。
+
+## 替换内容
+
+```javascript
+const text = 'hello world';
+
+text.replace('world', 'JS');      // 'hello JS'
+text.replaceAll('l', 'L');        // 'heLLo worLd'
+'1, 2, 3'.replaceAll(/\d/g, n => n * 2); // '2, 4, 6'
+```
+
+字符串参数下，`replace()` 只替换第一个匹配项；`replaceAll()` 会替换全部。传给 `replaceAll()` 的正则表达式必须带全局标志 `g`。
+
+## 补齐固定长度
+
+```javascript
+String(1).padStart(4, '0'); // '0001'
+String(5).padStart(6, ' '); // '     5'
+'hi'.padEnd(6, '-');        // 'hi----'
+```
+
+订单号、日期和表格文本对齐都可能用到 `padStart()` 或 `padEnd()`。它们只负责补齐字符串，不会自动处理数字精度；金额格式化更适合使用 `Intl.NumberFormat` 或 `toFixed()`。
+
+## 拆分与合并
+
+```javascript
+'1,2,3'.split(',');         // ['1', '2', '3']
+'hello'.split('');          // ['h', 'e', 'l', 'l', 'o']
+'a|b|c'.split('|');         // ['a', 'b', 'c']
+
+['a', 'b', 'c'].join('-'); // 'a-b-c'
+['a', 'b', 'c'].join('');  // 'abc'
+```
+
+`split()` 把字符串变成数组，`join()` 再把数组连接成字符串。它们经常成对出现，例如调整路径、标签或简单的分隔数据。
+
+## 使用正则表达式匹配
+
+```javascript
+const text = 'cat, bat, sat, fat';
+
+text.match(/.at/g);         // ['cat', 'bat', 'sat', 'fat']
+text.search(/sat/);         // 10
+text.replace(/at/g, 'ond'); // 'cond, bond, sond, fond'
+```
+
+- `match()` 返回匹配结果。
+- `search()` 返回第一次匹配的位置，找不到时返回 `-1`。
+- `replace()` 可以配合正则批量替换。
+
+正则适合处理模式匹配；如果只是判断固定文本、按固定分隔符拆分，普通字符串方法通常更直观。
+
+## 常用场景速查
+
+| 场景 | 常见方法 |
+|---|---|
+| 判断是否包含 | `includes()` |
+| 判断开头或结尾 | `startsWith()` / `endsWith()` |
+| 去除首尾空白 | `trim()` |
+| 截取子字符串 | `slice(start, end)` |
+| 固定长度补零 | `padStart(length, '0')` |
+| 批量替换 | `replaceAll()` 或带 `g` 的正则 |
+| 拼接 URL 参数值 | 模板字符串配合 `encodeURIComponent()` |
+| 取文件扩展名 | `filename.split('.').pop()` |
+| 首字母大写 | `str[0].toUpperCase() + str.slice(1)` |
+| 按分隔符拆成数组 | `split()` |
+
+## 几个容易忽略的细节
+
+1. `indexOf()` 适合获取位置；只判断存在性时，`includes()` 更清楚。
+2. `substr()` 已废弃，新代码使用 `slice()` 或 `substring()`。
+3. 多变量文本优先考虑模板字符串，重点是可读性，而不是猜测哪种拼接一定更快。
+4. `str[100]` 越界时返回 `undefined`，不会抛出异常。
+5. 正则不是默认答案；固定文本操作用普通字符串方法往往更容易维护。
+
+## 小结
+
+字符串 API 不必一次背完。可以从三个线索开始：字符串不可变、`slice()` 很适合常规截取、具体问题优先选语义最直接的方法。写到某个场景时再查表，通常比硬记一长串名字轻松。

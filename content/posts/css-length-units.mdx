@@ -1,0 +1,343 @@
+---
+title: CSS 长度单位：px、em、rem、vw 与 vh
+source: yuque-export
+date: "2025-06-26"
+description: "把 px、em、rem、百分比和视口单位放进真实布局场景，比较它们的参照物、联动方式与使用边界。"
+tags:
+  - css
+  - 单位
+  - rem
+
+---
+
+# CSS 长度单位：px、em、rem、vw 与 vh 怎么选
+
+你写 CSS 时是不是这样：
+
+```css
+.title {
+  font-size: 32px;
+  margin-bottom: 16px;
+  padding: 8px 16px;
+}
+```
+
+全是 `px`。看起来没问题，但：
+
+- 用户放大浏览器字体，你的布局乱了
+- 移动端屏幕小，字体还是那么大，阅读困难
+- 设计师说"要做响应式"，你不知道从哪改起
+
+问题不在于 `px` 本身，而在于全部尺寸都写成固定的 CSS 像素后，组件很难跟随字体设置和容器尺寸一起调整。
+
+布局希望跟随字体、容器或视口一起变化时，`em`、`rem`、`vw`、`vh` 就会派上用场。
+
+---
+
+## 1. px：绝对单位
+
+`px`（CSS 像素）是最常用的长度单位。它不会像 `em`、`rem` 那样随父元素或根元素的字体大小联动，但浏览器缩放仍然会影响最终显示大小。
+
+```css
+.text {
+  font-size: 16px; /* 计算值固定为 16 个 CSS 像素 */
+}
+```
+
+**px 比较适合：**
+
+- 边框：`border: 1px solid #ccc`
+- 小图标尺寸
+- 不需要响应式的固定元素
+
+**如果尺寸需要跟随环境变化，可以再看看：**
+
+- 需要跟随根字号缩放的字体
+- 需要跟随容器变化的宽度
+- 需要与组件字号保持比例的间距
+
+---
+
+## 2. em：相对于父元素字体大小
+
+`em` 的参照物取决于属性：用在 `font-size` 上时，相对于父元素字号；用在 `padding`、`margin` 等其他属性上时，相对于当前元素计算后的字号。
+
+```css
+.parent {
+  font-size: 20px;
+}
+
+.child {
+  font-size: 1.5em;  /* 20px × 1.5 = 30px */
+  padding: 1em;      /* 30px × 1 = 30px（注意：用自己的 font-size！） */
+}
+```
+
+**使用 em 时要注意逐层放大**
+
+```html
+<style>
+.outer { font-size: 20px; }
+.middle { font-size: 1.5em; } /* 30px */
+.inner { font-size: 1.5em; }  /* 45px！不是 30px */
+</style>
+
+<div class="outer">
+  <div class="middle">
+    <div class="inner">
+      我会越来越大！
+    </div>
+  </div>
+</div>
+```
+
+`em` 会继承父元素的字体大小，层层放大。
+
+**em 比较适合：**
+
+- 图标和文字对齐：`padding: 0.5em` 让间距随字体缩放
+- 按钮内间距
+- 需要跟随父元素字体变化的场景
+
+---
+
+## 3. rem：相对于根元素字体大小
+
+`rem` = root em，**只相对于 `<html>` 的 `font-size`**，不会级联。
+
+```css
+html {
+  font-size: 16px; /* 根元素字体大小 */
+}
+
+.title {
+  font-size: 2rem;  /* 16px × 2 = 32px */
+  margin: 1rem;     /* 16px × 1 = 16px */
+}
+```
+
+**rem 的优势：**
+
+- 统一基准：所有 rem 都相对于 html
+- 方便计算：改 html 的 font-size，全局缩放
+- 响应式友好：根据屏幕大小调整根字体
+
+**一种常见的换算技巧：**
+
+浏览器默认字号通常是 `16px`，因此常见情况下 `32px = 2rem`、`24px = 1.5rem`。
+
+设置 `html { font-size: 62.5% }`：
+
+```css
+html {
+  font-size: 62.5%; /* 默认字号为 16px 时，计算结果是 10px */
+}
+
+/* 在默认字号为 16px 的环境中，1rem = 10px */
+.title { font-size: 3.2rem; } /* 32px */
+.text { font-size: 1.4rem; }  /* 14px */
+```
+
+这种写法便于心算，但不要假定所有用户的默认字号都是 `16px`。如果项目更重视可访问性，保留根字号默认值、直接使用 `1rem`、`1.5rem` 等比例通常更稳妥。
+
+**响应式设置：**
+
+```css
+html {
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 14px; /* 移动端字体小一点 */
+  }
+}
+
+@media (max-width: 480px) {
+  html {
+    font-size: 12px;
+  }
+}
+```
+
+**rem 比较适合：**
+
+- 字体大小（推荐）
+- 间距（margin、padding）
+- 需要响应式缩放的尺寸
+
+---
+
+## 4. vw / vh：相对于视口
+
+`vw` = viewport width，`vh` = viewport height。
+
+- `100vw` = 视口宽度
+- `100vh` = 视口高度
+- `50vw` = 视口宽度的一半
+
+```css
+.hero {
+  width: 100vw;   /* 占满视口宽度 */
+  height: 100vh;  /* 占满视口高度 */
+}
+
+.sidebar {
+  width: 20vw;    /* 视口宽度的 20% */
+}
+```
+
+**vw/vh vs %：**
+
+```css
+/* % 相对于父元素 */
+.parent {
+  width: 500px;
+}
+.child {
+  width: 50%;    /* 250px，相对于父元素 */
+}
+
+/* vw 相对于视口 */
+.full {
+  width: 50vw;   /* 视口宽度的一半，不管父元素多大 */
+}
+```
+
+**使用 vh 时要注意移动端地址栏**
+
+在移动端，`100vh` 包含地址栏高度。当地址栏收起时，内容会被截断。
+
+**解决：**
+
+```css
+.hero {
+  height: 100vh;
+  height: 100dvh; /* 动态视口高度，排除地址栏 */
+}
+```
+
+`dvh`（dynamic viewport height）会随地址栏收起自动调整。
+
+**vw / vh 比较适合：**
+
+- 全屏布局：`height: 100vh`
+- 响应式宽度：`width: 80vw`
+- 相对于视口的尺寸，不依赖父元素
+
+---
+
+## 5. %：相对于父元素
+
+`%` 是最常用的相对单位，但行为复杂：
+
+| 属性 | 相对于 |
+|------|--------|
+| width/height | 父元素的 width/height |
+| margin/padding | 父元素的 **width**（不管方向！） |
+| position: absolute | 已定位的祖先元素 |
+| position: fixed | 视口 |
+| transform | 元素自身 |
+
+```css
+.parent {
+  width: 400px;
+  height: 200px;
+}
+
+.child {
+  width: 50%;       /* 200px */
+  padding-top: 10%; /* 40px！相对于父元素 width，不是 height */
+}
+```
+
+**padding-top 百分比技巧：保持宽高比**
+
+```css
+/* 16:9 视频容器 */
+.video-wrapper {
+  width: 100%;
+  padding-top: 56.25%; /* 9/16 = 0.5625 */
+  position: relative;
+}
+
+.video-wrapper iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+```
+
+---
+
+## 6. 其他单位
+
+| 单位 | 说明 | 使用场景 |
+|------|------|---------|
+| `ch` | 字符"0"的宽度 | 等宽字体排版 |
+| `ex` | 字符"x"的高度 | 很少用 |
+| `lh` | 行高 | 与行高相关的间距 |
+| `vmin` | vw 和 vh 中较小的 | 移极响应式 |
+| `vmax` | vw 和 vh 中较大的 | 积极响应式 |
+
+```css
+/* 始终可见的正方形 */
+.square {
+  width: 50vmin;
+  height: 50vmin;
+}
+```
+
+---
+
+## 7. 放到常见场景里
+
+| 场景 | 常见选择 | 原因 |
+|------|---------|------|
+| 字体大小 | `rem` | 响应式，统一缩放 |
+| 边框 | `px` | 固定细线 |
+| 内间距 | `rem` 或 `em` | 跟随字体缩放 |
+| 容器宽度 | `%` 或 `vw` | 响应式布局 |
+| 全屏高度 | `vh` 或 `dvh` | 占满视口 |
+| 图标大小 | `em` | 跟随文字大小 |
+| 固定元素 | `px` | 不需要响应式 |
+
+**组合示例：**
+
+```css
+.card {
+  padding: 1rem;
+  border: 1px solid #ccc; /* 固定边框 */
+  font-size: 0.875rem;
+  width: 80%;             /* 响应式宽度 */
+}
+
+.card__icon {
+  width: 1.2em;  /* 跟随字体大小 */
+  height: 1.2em;
+}
+```
+
+---
+
+## 8. 把单位放回场景里
+
+| 单位 | 相对于 | 特点 |
+|------|--------|------|
+| `px` | 无 | 固定，不响应式 |
+| `em` | 当前元素 font-size | 会级联，适合局部相对 |
+| `rem` | 根元素 font-size | 统一基准，响应式友好 |
+| `%` | 父元素 | 依赖父元素，行为复杂 |
+| `vw/vh` | 视口 | 不依赖父元素，全屏布局 |
+
+**简单收一下：**
+
+字体希望跟随全局字号时，`rem` 比较省心；细边框和少量固定尺寸常用 `px`。容器尺寸更常跟 `%`、视口单位或现代布局系统一起出现，而 `em` 很适合让局部间距跟着组件字号变化。
+
+它们不是互斥的选项，同一个组件里混合使用反而很常见。
+
+---
+
+**相关文档**：[响应式](/posts/responsive-web-design) | [flexbox](/posts/css-flexbox) | [盒模型](/posts/css-box-model)

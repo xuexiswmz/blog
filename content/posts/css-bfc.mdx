@@ -1,0 +1,251 @@
+---
+title: BFC：理解块级格式化上下文
+source: yuque-export
+date: "2025-06-24"
+description: "借 margin 折叠、浮动塌陷和两栏布局几个现象，聊聊 BFC 的形成条件、实际作用与常见副作用。"
+tags:
+  - css
+  - bfc
+  - 原理
+
+---
+
+# BFC：理解块级格式化上下文
+
+有些 CSS 问题看起来像是 margin 或 float 在“越界”：
+
+```html
+<style>
+.container {
+  background: lightblue;
+}
+.inner {
+  margin: 20px;
+  height: 50px;
+  background: coral;
+}
+</style>
+
+<div class="container">
+  <div class="inner"></div>
+</div>
+```
+
+你期望：内层 `div` 的 margin 在容器内部留出距离。
+
+实际：子元素的垂直外边距可能与父元素发生折叠，容器背景并不会覆盖这段预期中的内部间距。
+
+或者这个：
+
+```html
+<style>
+.left {
+  float: left;
+  width: 100px;
+  height: 100px;
+  background: red;
+}
+.right {
+  height: 200px;
+  background: blue;
+}
+</style>
+
+<div class="left"></div>
+<div class="right"></div>
+```
+
+你期望：红色方块在左，蓝色方块在右，互不干扰。
+
+实际：**蓝色方块被红色覆盖了**，文字会绕开，但背景不会。
+
+怎么办？
+
+加一行 `overflow: hidden`，问题消失了。
+
+为什么？因为你触发了 **BFC**。
+
+---
+
+## 1. BFC 是什么？
+
+BFC = Block Formatting Context = 块级格式化上下文
+
+名字听起来很学术，可以先把它看作一块拥有独立块级布局规则的区域。
+
+在 BFC 中，块级盒子按正常流排列；它还会包含内部浮动，并避免与外部浮动重叠。相邻 BFC 之间不会发生垂直 margin 折叠。可以把它理解为一块拥有独立块级布局规则的区域，但它并不是完全隔绝所有样式影响的“隔离舱”。
+
+---
+
+## 2. 怎么触发 BFC？
+
+只要满足以下任一条件，元素就会创建 BFC：
+
+| 属性 | 值 |
+|------|-----|
+| `float` | left / right |
+| `position` | absolute / fixed |
+| `display` | flow-root / inline-block / table-cell / table-caption |
+| `overflow` | hidden / auto / scroll（**不是 visible**） |
+
+如果目的只是创建 BFC，`display: flow-root` 的意图最清楚。`overflow: hidden` 也常见，但它会裁剪溢出内容，不能当成没有副作用的通用开关。
+
+---
+
+## 3. BFC 解决什么问题？
+
+### 问题 1：margin 穿透
+
+```html
+<div class="container">
+  <div class="inner"></div>
+</div>
+```
+
+当父元素没有 border、padding、BFC 时，子元素的 margin-top 会"穿透"到父元素外面。
+
+**解决：** 让父元素触发 BFC：
+
+```css
+.container {
+  overflow: hidden; /* 触发 BFC */
+}
+```
+
+**原理：** BFC 内部的 margin 不会影响外部，所以 margin 被关在容器里了。
+
+---
+
+### 问题 2：浮动导致父元素高度塌陷
+
+```html
+<style>
+.parent {
+  border: 2px solid red;
+}
+.child {
+  float: left;
+  height: 100px;
+  background: blue;
+}
+</style>
+
+<div class="parent">
+  <div class="child"></div>
+</div>
+```
+
+你期望：父元素包裹住浮动的子元素。
+
+实际：**父元素高度为 0**，因为浮动元素脱离了文档流。
+
+**解决：**
+
+```css
+.parent {
+  overflow: hidden; /* 触发 BFC */
+}
+```
+
+**原理：** BFC 在计算高度时，会包含浮动子元素的高度。
+
+这也是"清除浮动"的原理之一。
+
+---
+
+### 问题 3：浮动元素覆盖相邻元素
+
+```html
+<style>
+.float {
+  float: left;
+  width: 100px;
+  height: 100px;
+  background: red;
+}
+.content {
+  height: 200px;
+  background: blue;
+}
+</style>
+
+<div class="float"></div>
+<div class="content"></div>
+```
+
+红色浮动元素会覆盖蓝色元素。
+
+**解决：**
+
+```css
+.content {
+  overflow: hidden; /* 触发 BFC */
+}
+```
+
+**原理：** BFC 区域不会与浮动盒子重叠。BFC 会自动避开浮动元素。
+
+---
+
+### 问题 4：两栏自适应布局
+
+```html
+<style>
+.left {
+  float: left;
+  width: 200px;
+  height: 100px;
+  background: red;
+}
+.right {
+  overflow: hidden; /* 触发 BFC */
+  height: 100px;
+  background: blue;
+}
+</style>
+
+<div class="left"></div>
+<div class="right"></div>
+```
+
+效果：左侧固定宽度，右侧自动占满剩余空间。
+
+这就是经典的"左浮动 + 右 BFC"两栏布局。
+
+---
+
+## 4. BFC 的限制
+
+BFC 不是万能的：
+
+1. **overflow: hidden 会裁剪内容** — 如果子元素超出边界，会被切掉
+2. **可能触发滚动条** — overflow: auto 在内容超出时会出现滚动条
+3. **不要混淆其他格式化上下文** — `display: flex` 和 `display: grid` 会分别建立 Flex、Grid 格式化上下文，并改变子元素排列；它们不是 BFC 的同义词
+
+所以选择触发方式时要考虑副作用。
+
+---
+
+## 5. 回到开头：BFC 实际帮了什么
+
+> 什么是 BFC？怎么触发？有什么应用？
+
+如果把前面的现象收成一段话，可以这样描述：
+
+BFC 是块级格式化上下文，可以理解为一块使用独立块级布局规则的区域。它能包含浮动、避免与外部浮动重叠，并阻止跨边界的垂直 margin 折叠。
+
+触发方式：
+- float 不为 none
+- position 为 absolute 或 fixed
+- display 为 flow-root、inline-block、table-cell 等
+- overflow 为 hidden、auto 或 scroll
+
+应用场景：
+1. 解决 margin 穿透问题
+2. 清除浮动（父元素高度塌陷）
+3. 防止浮动元素覆盖相邻元素
+4. 实现两栏自适应布局
+
+---
+
+**相关文档**：[盒模型](/posts/css-box-model) | [回流重绘](/posts/browser-reflow-repaint) | [flexbox](/posts/css-flexbox)

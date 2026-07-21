@@ -1,0 +1,418 @@
+---
+title: CSS 动画：transition、transform 与 animation
+source: yuque-export
+date: "2025-07-12"
+description: "把 transition、transform 和 animation 放在一起比较，看看它们各自适合的动画场景、常用参数和性能边界。"
+tags:
+  - css
+  - animation
+  - transition
+
+---
+
+# CSS 动画：理解 transition、transform 与 animation
+
+你想要一个按钮 hover 时平滑放大：
+
+```css
+.button:hover {
+  width: 200px;
+}
+```
+
+效果：宽度瞬间跳变，没有过渡。
+
+加一行：
+
+```css
+.button {
+  transition: width 0.3s ease;
+}
+```
+
+效果：宽度不再突然跳变，状态变化会平滑很多。
+
+CSS 动画的三种方式：
+
+1. **transition**：状态变化时的过渡动画
+2. **transform**：位移、缩放、旋转、倾斜
+3. **animation**：自定义关键帧动画
+
+---
+
+## 1. transition：状态过渡
+
+**更常见于：** 元素从状态 A 变到状态 B，希望变化不要突然发生。
+
+```css
+.box {
+  width: 100px;
+  background: blue;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+.box:hover {
+  width: 200px;
+  background: red;
+}
+```
+
+### 1.1 语法
+
+```css
+transition: property duration timing-function delay;
+```
+
+| 属性 | 说明 | 示例 |
+|------|------|------|
+| property | 要过渡的属性 | `width`、`all`、`transform` |
+| duration | 过渡时间 | `0.3s`、`300ms` |
+| timing-function | 速度曲线 | `ease`、`linear`、`ease-in-out` |
+| delay | 延迟时间 | `0.1s` |
+
+### 1.2 timing-function 速度曲线
+
+| 值 | 效果 | 使用场景 |
+|------|------|------|
+| `linear` | 匀速 | 很少用 |
+| `ease` | 慢→快→慢（默认） | 通用 |
+| `ease-in` | 慢→快 | 元素离开 |
+| `ease-out` | 快→慢 | 元素进入 |
+| `ease-in-out` | 慢→快→慢 | 渐显渐隐 |
+| `cubic-bezier(x1, y1, x2, y2)` | 自定义曲线 | 精细控制 |
+
+### 1.3 不能过渡的属性
+
+- `display: none` ↔ `block`
+- `visibility: hidden` ↔ `visible`（可以过渡但效果是瞬间）
+- `height: auto`（不知道具体值）
+
+**解决方案：**
+
+```css
+/* 用 max-height 模拟 */
+.box {
+  max-height: 0;
+  transition: max-height 0.3s ease;
+}
+
+.box.expanded {
+  max-height: 500px; /* 足够大 */
+}
+```
+
+---
+
+## 2. transform：变换
+
+**更常见于：** 位移、缩放、旋转和倾斜。它通常比修改布局尺寸更适合做连续动画。
+
+### 2.1 四种变换
+
+```css
+/* 位移 */
+transform: translate(50px, 100px);  /* x, y */
+transform: translateX(50px);
+transform: translateY(100px);
+
+/* 缩放 */
+transform: scale(1.5);       /* 双向缩放 */
+transform: scale(1.5, 2);    /* x, y 分别缩放 */
+
+/* 旋转 */
+transform: rotate(45deg);    /* 顺时针 45° */
+
+/* 倾斜 */
+transform: skew(10deg, 20deg);  /* x, y 倾斜 */
+```
+
+### 2.2 组合变换
+
+```css
+.box {
+  transform: translate(50px, 50px) rotate(45deg) scale(1.2);
+}
+```
+
+**注意顺序：** 变换顺序不同，结果不同。
+
+```css
+/* 先旋转再位移 */
+transform: rotate(45deg) translate(100px, 0);
+
+/* 先位移再旋转（结果不同！） */
+transform: translate(100px, 0) rotate(45deg);
+```
+
+### 2.3 transform-origin：变换原点
+
+```css
+.box {
+  transform-origin: center center;  /* 默认：中心 */
+  transform-origin: top left;       /* 左上角 */
+  transform-origin: 50px 50px;      /* 具体坐标 */
+}
+
+/* 以左上角为中心旋转 */
+.box {
+  transform-origin: top left;
+  transform: rotate(45deg);
+}
+```
+
+### 2.4 注意事项
+
+- **transform 不支持 inline 元素**：要先改成 `block` 或 `inline-block`
+- **transform 不触发重排**：只触发重绘，性能好
+- **transform 在 GPU 层执行**：比改变 left/top 性能更好
+
+---
+
+## 3. animation：关键帧动画
+
+**更常见于：** 循环动画、多阶段动画，或者不依赖用户触发的自主动画。
+
+### 3.1 定义关键帧
+
+```css
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 或用百分比 */
+@keyframes bounce {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-100px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+```
+
+### 3.2 使用动画
+
+```css
+.box {
+  animation: spin 2s linear infinite;
+}
+```
+
+### 3.3 animation 属性
+
+| 属性 | 说明 | 默认值 |
+|------|------|--------|
+| `animation-name` | 关键帧名称 | none |
+| `animation-duration` | 动画时长 | 0s |
+| `animation-timing-function` | 速度曲线 | ease |
+| `animation-delay` | 延迟时间 | 0s |
+| `animation-iteration-count` | 播放次数 | 1（`infinite` 无限） |
+| `animation-direction` | 播放方向 | normal |
+| `animation-fill-mode` | 填充模式 | none |
+| `animation-play-state` | 播放状态 | running |
+
+### 3.4 animation-direction
+
+| 值 | 效果 |
+|------|------|
+| `normal` | 正向播放 |
+| `reverse` | 反向播放 |
+| `alternate` | 正向→反向→正向... |
+| `alternate-reverse` | 反向→正向→反向... |
+
+```css
+/* 来回弹跳 */
+.box {
+  animation: bounce 1s ease-in-out infinite alternate;
+}
+```
+
+### 3.5 animation-fill-mode
+
+| 值 | 效果 |
+|------|------|
+| `none` | 动画结束后回到初始状态 |
+| `forwards` | 动画结束后保持最后一帧 |
+| `backwards` | 动画开始前应用第一帧 |
+| `both` | forwards + backwards |
+
+```css
+/* 动画结束后保持最后一帧 */
+.box {
+  animation: fadeIn 0.3s forwards;
+}
+```
+
+---
+
+## 4. transition vs animation
+
+| 对比项 | transition | animation |
+|--------|-----------|-----------|
+| **触发方式** | 状态变化（hover、class 切换） | 自动播放 |
+| **循环** | 不支持 | 支持 `infinite` |
+| **关键帧** | 只有起点和终点 | 可定义多个关键帧 |
+| **控制** | 只能控制时长、曲线 | 可控制次数、方向、暂停 |
+| **适用场景** | 简单过渡、交互反馈 | 复杂动画、循环动画 |
+
+**放在一起看：**
+
+- 简单的 A→B 过渡 → `transition`
+- 复杂多阶段动画 → `animation`
+- 需要循环播放 → `animation`
+- 交互触发（hover、click）→ `transition`
+
+---
+
+## 5. 性能优化
+
+### 5.1 只动画 transform 和 opacity
+
+```css
+/* ✅ 好：只触发合成，不重排重绘 */
+.box {
+  transition: transform 0.3s, opacity 0.3s;
+}
+
+/* ❌ 差：触发重排 */
+.box {
+  transition: left 0.3s, width 0.3s;
+}
+```
+
+### 5.2 will-change 提前告知浏览器
+
+```css
+.box {
+  will-change: transform, opacity;
+}
+
+/* 动画结束后移除 */
+.box.animation-done {
+  will-change: auto;
+}
+```
+
+### 5.3 用 transform 替代 left/top
+
+```css
+/* ❌ 触发重排 */
+.box {
+  position: absolute;
+  left: 100px;
+  transition: left 0.3s;
+}
+
+/* ✅ 不触发重排 */
+.box {
+  transform: translateX(0);
+  transition: transform 0.3s;
+}
+```
+
+---
+
+## 6. 实际示例
+
+### 6.1 按钮点击反馈
+
+```css
+.button {
+  transition: transform 0.1s ease;
+}
+
+.button:active {
+  transform: scale(0.95);
+}
+```
+
+### 6.2 卡片悬浮效果
+
+```css
+.card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+```
+
+### 6.3 加载动画
+
+```css
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+```
+
+### 6.4 渐入动画
+
+```css
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal {
+  animation: fadeInUp 0.3s ease-out;
+}
+```
+
+---
+
+## 7. 最后看一下三者的关系
+
+**transition：**
+
+- 状态 A→B 的平滑过渡
+- 需要触发条件（hover、class 切换）
+- 语法简单，适合简单动画
+
+**transform：**
+
+- 位移、缩放、旋转、倾斜
+- 不触发重排，性能好
+- 配合 transition 或 animation 使用
+
+**animation：**
+
+- 自定义关键帧动画
+- 支持循环、多阶段、暂停控制
+- 适合复杂动画
+
+**性能原则：**
+
+- 只动画 `transform` 和 `opacity`
+- 用 `transform` 替代 `left/top`
+- 必要时用 `will-change`
+
+---
+
+**相关文档**：[回流重绘](/posts/browser-reflow-repaint) | [隐藏页面元素](/posts/css-hide-elements) | [flexbox](/posts/css-flexbox)

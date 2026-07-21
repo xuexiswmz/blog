@@ -1,0 +1,511 @@
+---
+title: CSS3 常用新特性
+source: yuque-export
+date: "2025-06-30"
+description: "按选择器、边框、背景、文字、渐变、动画和布局分类，回顾现代 CSS 中常见的一组增强能力。"
+tags:
+  - css
+  - css3
+  - 新特性
+
+---
+
+# CSS3 常用新特性：从圆角到现代布局
+
+CSS2 时代，想做个圆角：
+
+```html
+<!-- 用图片拼凑 -->
+<div class="box">
+  <div class="top-left"></div>
+  <div class="top-right"></div>
+  <div class="content">内容</div>
+  <div class="bottom-left"></div>
+  <div class="bottom-right"></div>
+</div>
+```
+
+现在：
+
+```css
+.box {
+  border-radius: 10px;
+}
+```
+
+一行搞定。
+
+CSS3 带来的不只是圆角，还有动画、渐变、弹性布局……让 CSS 从"能用"变成"好用"。
+
+---
+
+## 1. 新选择器
+
+### 属性选择器
+
+```css
+/* 以某值开头 */
+a[href^="https"] { color: green; }
+
+/* 以某值结尾 */
+a[href$=".pdf"] { icon: url(pdf.png); }
+
+/* 包含某值 */
+a[href*="example"] { color: blue; }
+```
+
+### 结构伪类
+
+```css
+/* 第一个子元素 */
+li:first-child { }
+
+/* 最后一个子元素 */
+li:last-child { }
+
+/* 第 n 个子元素 */
+li:nth-child(2) { }      /* 第 2 个 */
+li:nth-child(2n) { }     /* 偶数 */
+li:nth-child(2n+1) { }   /* 奇数 */
+
+/* 倒数第 n 个 */
+li:nth-last-child(2) { }
+
+/* 第一个该类型子元素 */
+p:first-of-type { }
+
+/* 唯一子元素 */
+p:only-child { }
+
+/* 唯一该类型子元素 */
+p:only-of-type { }
+```
+
+### 兄弟选择器
+
+```css
+/* 相邻兄弟（紧跟在后面的） */
+h1 + p { }
+
+/* 通用兄弟（后面所有的） */
+h1 ~ p { }
+```
+
+---
+
+## 2. 边框增强
+
+### 圆角
+
+```css
+.box {
+  border-radius: 10px;           /* 四个角 */
+  border-radius: 10px 20px;      /* 左上右下 / 右上左下 */
+  border-radius: 10px 20px 30px; /* 左上 / 右上左下 / 右下 */
+  border-radius: 10px 20px 30px 40px; /* 左上 / 右上 / 右下 / 左下 */
+}
+
+.circle {
+  border-radius: 50%; /* 圆形 */
+}
+```
+
+### 阴影
+
+```css
+.box {
+  /* 水平偏移 垂直偏移 模糊 扩展 颜色 */
+  box-shadow: 0 2px 10px 0 rgba(0, 0, 0, 0.1);
+  
+  /* 内阴影 */
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+  
+  /* 多层阴影 */
+  box-shadow: 
+    0 1px 1px rgba(0, 0, 0, 0.1),
+    0 2px 2px rgba(0, 0, 0, 0.1);
+}
+```
+
+### 图片边框
+
+```css
+.box {
+  border: 10px solid transparent;
+  border-image: url(border.png) 30 round;
+}
+```
+
+---
+
+## 3. 背景增强
+
+### background-size
+
+```css
+.box {
+  background-image: url(bg.jpg);
+  
+  /* 包含（完整显示，可能留白） */
+  background-size: contain;
+  
+  /* 覆盖（填满，可能裁剪） */
+  background-size: cover;
+  
+  /* 指定尺寸 */
+  background-size: 100px 200px;
+  background-size: 50% 100%;
+}
+```
+
+### background-clip
+
+```css
+/* 背景绘制区域 */
+.box {
+  background-clip: border-box;  /* 到边框（默认） */
+  background-clip: padding-box; /* 到内边距 */
+  background-clip: content-box; /* 到内容区 */
+}
+```
+
+### background-origin
+
+```css
+/* 背景定位参考 */
+.box {
+  background-origin: border-box;  /* 从边框开始 */
+  background-origin: padding-box; /* 从内边距开始（默认） */
+  background-origin: content-box; /* 从内容区开始 */
+}
+```
+
+### 多重背景
+
+```css
+.box {
+  background: 
+    url(top.png) no-repeat top center,
+    url(bottom.png) no-repeat bottom center,
+    #f0f0f0;
+}
+```
+
+---
+
+## 4. 文字增强
+
+### 文字阴影
+
+```css
+.text {
+  /* 水平 垂直 模糊 颜色 */
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+```
+
+### 文字溢出
+
+```css
+.ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* 显示省略号 */
+}
+
+/* 多行省略（webkit） */
+.multi-ellipsis {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+```
+
+### 自动换行
+
+```css
+.text {
+  word-wrap: break-word; /* 允许在单词内换行 */
+  word-break: break-all; /* 强制换行 */
+}
+```
+
+---
+
+## 5. 颜色增强
+
+### rgba
+
+```css
+.box {
+  background: rgba(255, 0, 0, 0.5); /* 红色，50% 透明 */
+}
+```
+
+### hsla
+
+```css
+.box {
+  /* 色相 饱和度 亮度 透明度 */
+  background: hsla(120, 100%, 50%, 0.5); /* 绿色 */
+}
+```
+
+### opacity
+
+```css
+.box {
+  opacity: 0.5; /* 整体透明 */
+}
+```
+
+---
+
+## 6. 渐变
+
+### 线性渐变
+
+```css
+.box {
+  /* 方向（默认从上到下） */
+  background: linear-gradient(red, blue);
+  
+  /* 指定方向 */
+  background: linear-gradient(to right, red, blue);
+  background: linear-gradient(45deg, red, blue);
+  
+  /* 多个颜色 */
+  background: linear-gradient(red, yellow, blue);
+  
+  /* 指定位置 */
+  background: linear-gradient(red 0%, yellow 50%, blue 100%);
+}
+```
+
+### 径向渐变
+
+```css
+.box {
+  background: radial-gradient(red, blue);
+  background: radial-gradient(circle, red, blue);
+  background: radial-gradient(at center, red, blue);
+}
+```
+
+---
+
+## 7. 过渡（transition）
+
+```css
+.box {
+  width: 100px;
+  transition: width 0.3s ease;
+}
+
+.box:hover {
+  width: 200px; /* 0.3 秒平滑过渡 */
+}
+```
+
+**完整语法：**
+
+```css
+transition: 
+  property    /* 属性 */
+  duration    /* 持续时间 */
+  timing-function  /* 缓动函数 */
+  delay;      /* 延迟 */
+
+/* 多个属性 */
+transition: 
+  width 0.3s ease,
+  height 0.3s ease 0.1s;
+```
+
+**缓动函数：**
+
+| 值 | 效果 |
+|---|------|
+| `linear` | 匀速 |
+| `ease` | 慢→快→慢（默认） |
+| `ease-in` | 慢→快 |
+| `ease-out` | 快→慢 |
+| `ease-in-out` | 慢→快→慢 |
+| `cubic-bezier()` | 自定义贝塞尔曲线 |
+
+---
+
+## 8. 变换（transform）
+
+```css
+.box {
+  /* 平移 */
+  transform: translate(100px, 50px);
+  transform: translateX(100px);
+  transform: translateY(50px);
+  
+  /* 缩放 */
+  transform: scale(2);        /* 两倍 */
+  transform: scale(2, 0.5);   /* 宽两倍，高一半 */
+  
+  /* 旋转 */
+  transform: rotate(45deg);
+  transform: rotate(0.5turn); /* 半圈 */
+  
+  /* 倾斜 */
+  transform: skew(30deg, 20deg);
+  
+  /* 变换原点 */
+  transform-origin: center;      /* 默认 */
+  transform-origin: top left;
+  transform-origin: 50% 50%;
+}
+```
+
+**3D 变换：**
+
+```css
+.box {
+  transform: translate3d(100px, 50px, 20px);
+  transform: rotateX(45deg);
+  transform: rotateY(45deg);
+  transform: rotateZ(45deg);
+  transform: perspective(500px) rotateY(45deg);
+}
+```
+
+---
+
+## 9. 动画（animation）
+
+```css
+@keyframes slide {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(100px);
+  }
+  100% {
+    transform: translateX(200px);
+  }
+}
+
+.box {
+  animation: slide 2s ease-in-out infinite;
+}
+```
+
+**完整语法：**
+
+```css
+animation: 
+  name            /* 动画名 */
+  duration        /* 持续时间 */
+  timing-function /* 缓动函数 */
+  delay           /* 延迟 */
+  iteration-count /* 次数（infinite 无限） */
+  direction       /* 方向（normal/reverse/alternate） */
+  fill-mode       /* 填充模式 */
+  play-state;     /* 播放状态（running/paused） */
+```
+
+---
+
+## 10. 布局增强
+
+### flexbox
+
+```css
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+```
+
+### grid
+
+```css
+.container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+```
+
+### 多列布局
+
+```css
+.text {
+  column-count: 3;
+  column-gap: 20px;
+  column-rule: 1px solid #ccc;
+}
+```
+
+---
+
+## 11. 其他特性
+
+### 媒体查询
+
+```css
+@media (max-width: 768px) {
+  .box { width: 100%; }
+}
+```
+
+### 滤镜
+
+```css
+img {
+  filter: blur(5px);
+  filter: brightness(1.2);
+  filter: grayscale(100%);
+}
+```
+
+### 计算函数
+
+```css
+.box {
+  width: calc(100% - 20px);
+}
+```
+
+### 自定义属性（CSS 变量）
+
+```css
+:root {
+  --primary-color: #007bff;
+}
+
+.button {
+  background: var(--primary-color);
+}
+```
+
+---
+
+## 12. 把这些能力放在一起看
+
+**CSS3 核心新特性：**
+
+| 类别 | 特性 |
+|------|------|
+| 选择器 | 属性选择器、结构伪类、兄弟选择器 |
+| 边框 | `border-radius`、`box-shadow`、`border-image` |
+| 背景 | `background-size`、`background-clip`、多重背景 |
+| 文字 | `text-shadow`、`text-overflow`、`word-wrap` |
+| 颜色 | `rgba`、`hsla`、`opacity` |
+| 渐变 | `linear-gradient`、`radial-gradient` |
+| 动画 | `transition`、`transform`、`animation` |
+| 布局 | `flexbox`、`grid`、多列布局 |
+
+这些能力让许多过去依赖图片或脚本的视觉效果可以直接由 CSS 描述。实际使用时仍要关注可访问性、性能和项目的浏览器范围。
+
+---
+
+**相关文档**：[CSS动画](/posts/css-animation) | [flexbox](/posts/css-flexbox) | [响应式](/posts/responsive-web-design)

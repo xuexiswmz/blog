@@ -1,0 +1,355 @@
+---
+title: 异步分片与 Web Worker
+source: yuque-export
+date: "2025-07-10"
+description: "从主线程被长任务占用的问题出发，对比异步分片和 Web Worker 的工作方式、通信成本与适用场景。"
+tags:
+  - javascript
+  - 异步
+  - web-worker
+
+---
+
+# 异步分片与 Web Worker：缓解主线程阻塞的两种思路
+
+你有一个大数组要处理，10000 条数据：
+
+```javascript
+const data = Array.from({ length: 10000 }, (_, i) => i);
+
+// 同步处理
+data.forEach(item => {
+  // 复杂计算
+  for (let i = 0; i < 100000; i++) {
+    Math.sqrt(item) * Math.random();
+  }
+});
+```
+
+运行时，页面卡死了。按钮点不了，滚动不动，用户以为浏览器崩了。
+
+**原因：这段 JavaScript 正在主线程上连续执行。** 浏览器本身并不只有一个线程，但 DOM 更新、UI 渲染和大部分页面脚本共享主线程；循环长期不让出执行权，交互就只能等待。
+
+怎么解决？两种思路：
+
+1. **异步分片**：把大任务拆成小片，每片之间让出主线程
+2. **Web Worker**：把任务扔到另一个线程，主线程不管
+
+---
+
+## 1. 异步分片：化整为零
+
+**核心思路：** 把一个大任务拆成多个小任务，分批执行。每批执行完，让出主线程，让浏览器有机会处理 UI。
+
+### 1.1 用 setTimeout 分片
+
+```javascript
+function chunkProcess(items, processor, chunkSize = 10) {
+  return new Promise((resolve) => {
+    let index = 0;
+    const results = [];
+
+    function processChunk() {
+      const end = Math.min(index + chunkSize, items.length);
+
+      // 处理一批
+      for (let i = index; i < end; i++) {
+        results[i] = processor(items[i], i);
+      }
+
+      index = end;
+
+      if (index < items.length) {
+        // 还有剩余，让出主线程，下一帧继续
+        setTimeout(processChunk, 0);
+      } else {
+        resolve(results);
+      }
+    }
+
+    processChunk();
+  });
+}
+
+// 使用
+const data = Array.from({ length: 10000 }, (_, i) => i);
+
+chunkProcess(data, (item) => {
+  // 复杂计算
+  let sum = 0;
+  for (let i = 0; i < 10000; i++) {
+    sum += Math.sqrt(item) * Math.random();
+  }
+  return sum;
+}, 20).then(results => {
+  console.log('处理完成', results.length);
+});
+```
+
+**原理：** `setTimeout(fn, 0)` 把任务推到下一个事件循环，浏览器在两次循环之间可以处理 UI。
+
+### 1.2 用 requestIdleCallback 分片
+
+```javascript
+function idleProcess(items, processor, chunkSize = 10) {
+  return new Promise((resolve) => {
+    let index = 0;
+    const results = [];
+
+    function processChunk(deadline) {
+      // 在空闲时间内尽可能多处理
+      while (index < items.length && deadline.timeRemaining() > 0) {
+        const end = Math.min(index + chunkSize, items.length);
+
+        for (let i = index; i < end; i++) {
+          results[i] = processor(items[i], i);
+        }
+
+        index = end;
+      }
+
+      if (index < items.length) {
+        // 还有剩余，等下次空闲
+        requestIdleCallback(processChunk);
+      } else {
+        resolve(results);
+      }
+    }
+
+    requestIdleCallback(processChunk);
+  });
+}
+```
+
+**它的特点：** `requestIdleCallback` 会尽量利用浏览器空闲时间，减少与用户交互争抢主线程的机会。
+
+---
+
+## 2. Web Worker：转移战场
+
+**核心思路：** 把计算任务移到独立线程，主线程完全不管。
+
+### 2.1 创建 Worker
+
+```javascript
+// main.js
+const worker = new Worker('worker.js');
+
+// 发送数据
+worker.postMessage({
+  type: 'process',
+  data: [1, 2, 3, 4, 5]
+});
+
+// 接收结果
+worker.onmessage = (e) => {
+  console.log('结果:', e.data);
+};
+
+// 错误处理
+worker.onerror = (e) => {
+  console.error('Worker 错误:', e.message);
+};
+
+// 终止 Worker
+worker.terminate();
+```
+
+```javascript
+// worker.js
+self.onmessage = (e) => {
+  if (e.data.type === 'process') {
+    const result = e.data.data.map(item => {
+      // 复杂计算
+      let sum = 0;
+      for (let i = 0; i < 1000000; i++) {
+        sum += Math.sqrt(item) * Math.random();
+      }
+      return sum;
+    });
+
+    self.postMessage(result);
+  }
+};
+```
+
+### 2.2 内联 Worker（不用单独文件）
+
+```javascript
+const workerCode = `
+  self.onmessage = (e) => {
+    const result = e.data.map(item => item * 2);
+    self.postMessage(result);
+  };
+`;
+
+const blob = new Blob([workerCode], { type: 'application/javascript' });
+const workerUrl = URL.createObjectURL(blob);
+const worker = new Worker(workerUrl);
+
+worker.postMessage([1, 2, 3]);
+worker.onmessage = (e) => console.log(e.data); // [2, 4, 6]
+```
+
+### 2.3 Worker 通信模式
+
+| 模式 | 说明 |
+|------|------|
+| `postMessage` | 发送消息（深拷贝） |
+| `Transferable` | 转移所有权（零拷贝，适合大数组） |
+| `SharedArrayBuffer` | 共享内存（需特殊安全策略） |
+
+**Transferable 示例：**
+
+```javascript
+const buffer = new ArrayBuffer(1024 * 1024); // 1MB
+
+// 转移所有权，主线程不再持有
+worker.postMessage(buffer, [buffer]);
+
+// buffer 在主线程变成空的！
+console.log(buffer.byteLength); // 0
+```
+
+---
+
+## 3. 异步分片 vs Web Worker
+
+| 对比项 | 异步分片 | Web Worker |
+|--------|---------|------------|
+| **原理** | 拆分任务，分批执行 | 移到独立线程 |
+| **是否阻塞主线程** | 不阻塞（分批让出） | 完全不阻塞 |
+| **计算能力** | 受限于分片大小 | 完全并行 |
+| **通信成本** | 无 | postMessage 有序列化成本 |
+| **适用场景** | 中等任务、UI 更新频繁 | 重计算、长时间任务 |
+| **兼容性** | 好 | IE10+ |
+| **调试难度** | 低 | 较高（独立线程） |
+
+---
+
+## 4. 两种方案放在一起看
+
+| 场景 | 常见选择 |
+|------|------|
+| 100ms 以内的任务 | 直接同步执行 |
+| 100ms - 1s 的任务 | 异步分片 |
+| 1s 以上的重计算 | Web Worker |
+| 需要频繁 UI 更新 | 异步分片 |
+| 大数组/文件处理 | Web Worker + Transferable |
+| 需要访问 DOM | 异步分片（Worker 不能访问 DOM） |
+
+---
+
+## 5. 实际应用示例
+
+### 5.1 异步分片：渲染大列表
+
+```javascript
+function renderList(items, container, chunkSize = 50) {
+  let index = 0;
+
+  function renderChunk() {
+    const end = Math.min(index + chunkSize, items.length);
+    const fragment = document.createDocumentFragment();
+
+    for (let i = index; i < end; i++) {
+      const li = document.createElement('li');
+      li.textContent = items[i];
+      fragment.appendChild(li);
+    }
+
+    container.appendChild(fragment);
+    index = end;
+
+    if (index < items.length) {
+      requestAnimationFrame(renderChunk);
+    }
+  }
+
+  renderChunk();
+}
+```
+
+### 5.2 Web Worker：大文件解析
+
+```javascript
+// main.js
+const worker = new Worker('csv-parser.js');
+
+worker.postMessage({ type: 'parse', data: largeCsvText });
+worker.onmessage = (e) => {
+  if (e.data.type === 'progress') {
+    console.log(`进度: ${e.data.percent}%`);
+  } else if (e.data.type === 'done') {
+    console.log('解析完成', e.data.rows);
+  }
+};
+```
+
+```javascript
+// csv-parser.js
+self.onmessage = (e) => {
+  if (e.data.type === 'parse') {
+    const lines = e.data.data.split('\n');
+    const rows = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      rows.push(lines[i].split(','));
+
+      // 每 1000 行报告一次进度
+      if (i % 1000 === 0) {
+        self.postMessage({
+          type: 'progress',
+          percent: Math.round((i / lines.length) * 100)
+        });
+      }
+    }
+
+    self.postMessage({ type: 'done', rows });
+  }
+};
+```
+
+---
+
+## 6. 注意事项
+
+### 异步分片
+
+1. **分片大小要合适**：太小频繁调度，太大还是会卡
+2. **requestIdleCallback 可能不执行**：页面一直忙碌时，idle 回调会被延迟
+3. **任务可能被中断**：用户操作时，分片任务会暂停
+
+### Web Worker
+
+1. **不能访问 DOM**：Worker 里没有 document、window
+2. **通信有成本**：postMessage 会序列化数据，大对象有开销
+3. **需要手动终止**：不用时调用 `terminate()` 释放资源
+4. **错误处理**：Worker 内的错误不会冒泡到主线程
+
+---
+
+## 7. 回到主线程卡顿这个问题
+
+**异步分片：**
+
+- 把大任务拆成小片，分批执行
+- 适合中等任务、需要 UI 更新的场景
+- 实现简单，兼容性好
+
+**Web Worker：**
+
+- 把任务移到独立线程
+- 适合重计算、长时间任务
+- 不能访问 DOM，通信有成本
+
+**实际取舍时：**
+
+- 任务可以拆成短步骤，并且每一步都要更新 UI：考虑异步分片。
+- 任务以独立计算为主，不依赖 DOM，而且会长期占用主线程：考虑 Web Worker。
+- 数据量很大时，要把消息序列化和线程通信成本一起纳入测试。
+- 比起按固定秒数划线，用 Performance 工具观察单次任务耗时和页面响应情况会更可靠。
+
+---
+
+**相关主题**：事件循环、性能优化、[事件委托](/posts/javascript-event-delegation)

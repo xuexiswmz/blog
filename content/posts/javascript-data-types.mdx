@@ -1,0 +1,236 @@
+---
+title: JavaScript 数据类型
+source: yuque-export
+date: "2025-07-21"
+description: "梳理 JavaScript 的基本类型和对象类型，并通过赋值、比较与复制行为解释值和引用的差异。"
+tags:
+  - javascript
+  - 数据类型
+
+---
+
+# JavaScript 数据类型：从基本类型到引用类型
+
+看这段代码：
+
+```javascript
+let a = 10;
+let b = a;
+b = 20;
+console.log(a); // ？
+```
+
+这里输出 `10`：修改 `b` 不会影响 `a`。
+
+再看：
+
+```javascript
+let obj1 = { name: 'Alice' };
+let obj2 = obj1;
+obj2.name = 'Bob';
+console.log(obj1.name); // ？
+```
+
+如果你答 `'Bob'`，说明你已经注意到关键差异：基本值按值复制，对象则会共享引用。
+
+---
+
+## JavaScript 有哪些数据类型？
+
+两种大类，七种基本类型：
+
+**基本类型：**
+- Number
+- String
+- Boolean
+- Undefined
+- null
+- Symbol（ES6）
+- BigInt（ES2020）
+
+**对象类型：**
+- Object（包含 Array、Function、Date、RegExp、Map、Set 等）
+
+---
+
+## 逐个看看这些基本类型
+
+### Number
+
+```javascript
+// 整数
+let intNum = 55;
+
+// 八进制（以 0 开头，谨慎使用）
+let num1 = 070;           // 56，容易和十进制 70 混淆
+
+// 十六进制
+let hexNum1 = 0xA;        // 10
+
+// 浮点数
+let floatNum1 = 1.1;
+let floatNum2 = 3.125e7;  // 科学计数法 = 31250000
+
+// NaN：不是数值的运算结果（注意：NaN !== NaN）
+console.log(0 / 0);        // NaN
+console.log(-0 / +0);     // NaN
+```
+
+> **NaN 的判断：** `NaN == NaN` 返回 `false`，所以判断一个值是不是 NaN 要用 `Number.isNaN()`。
+
+### Undefined vs null
+
+这两个是最容易混淆的。
+
+```javascript
+let a;          // 声明了但没赋值 → undefined
+console.log(a); // undefined
+
+let b = null;   // 显式赋值为空 → null
+```
+
+**区别：** `undefined` 表示"还没赋值"，`null` 表示"故意空着"。
+
+```javascript
+null == undefined  // true（松散相等时，两者相等）
+null === undefined // false（严格相等时，不等）
+```
+
+**为什么 `typeof null === 'object'`？** 这是 JavaScript 早期的 Bug，一直没修（修了就breaking change）。
+
+### String
+
+```javascript
+// 三种写法都行
+const a = "hello";
+const b = 'world';
+const c = `hello ${name}`;   // 模板字符串，支持插值
+
+// 字符串不可变：不能直接修改某个字符
+let str = 'hello';
+str[0] = 'H';                // 不报错，但 str 不变
+str = str.toUpperCase();     // 这是创建了新字符串
+```
+
+### Boolean
+
+```javascript
+// 转为 true 的值：除了下面 6 个假值，其他都是 true
+// 假值：false、0、''、null、undefined、NaN
+Boolean(true)     // true
+Boolean(1)       // true
+Boolean('hello') // true
+Boolean([])      // true      ← 空数组是真值！
+Boolean({})      // true      ← 空对象也是！
+Boolean(Infinity) // true      ← 无穷大是真值
+```
+
+> **最容易记错的是空数组 `[]` 和空对象 `{}` 是 true。** `if ([])` 会进分支。
+
+### Symbol
+
+Symbol 用于创建**唯一**的值，防止属性名冲突：
+
+```javascript
+const s1 = Symbol('foo');
+const s2 = Symbol('foo');
+s1 === s2  // false — 即使描述相同，值也不等
+```
+
+常用于对象属性私有化，或者给第三方对象添加不重复的属性。
+
+---
+
+## 引用类型
+
+### Object
+
+```javascript
+// 字面量写法
+const person = {
+  name: 'Alice',
+  age: 29,
+  5: true              // 数值 key 会自动转成字符串
+};
+```
+
+### Array
+
+```javascript
+// JS 数组可以存任意类型
+const arr = ['a', 1, { name: 'Bob' }, [1, 2, 3]];
+
+// 数组是动态大小的
+arr.push(4);            // 可以随时添加
+```
+
+### Function
+
+```javascript
+// 函数声明（有提升）
+function sum(a, b) { return a + b; }
+
+// 函数表达式（无提升）
+const sum = function(a, b) { return a + b; };
+
+// 箭头函数（ES6+）
+const sum = (a, b) => a + b;
+```
+
+---
+
+## 核心区别：复制语义不同
+
+这是理解 JavaScript 引用行为的关键。常见资料会用“栈和堆”画图解释，但规范并不要求引擎采用固定的内存布局；对业务代码来说，复制后的行为更值得关注。
+
+```
+基本类型：赋值时复制值
+对象类型：赋值时复制引用，多个变量可以指向同一个对象
+```
+
+### 基本类型：值是复制的
+
+```javascript
+let a = 10;
+let b = a;       // 复制了一份 10 给 b
+b = 20;          // 只改了 b，a 不受影响
+console.log(a);  // 10
+```
+
+### 对象类型：引用是复制的
+
+```javascript
+let obj1 = { name: 'Alice' };
+let obj2 = obj1;               // 复制引用，两个变量指向同一对象
+obj2.name = 'Bob';             // 通过 obj2 修改共享对象
+console.log(obj1.name);         // 'Bob' — obj1 也被改了！
+```
+
+这就是为什么 `{} == {}` 和 `[] == []` 是 `false`：两边分别创建了不同对象，相等比较检查的是不是同一个引用，而不是内容是否相同。
+
+---
+
+## 回到对象复制这个问题
+
+```javascript
+// 浅拷贝：只拷贝第一层，嵌套对象还是共享的
+const copy1 = { ...original };
+const copy2 = Object.assign({}, original);
+
+// 深拷贝：根据数据类型选择方案
+const copyJson = JSON.parse(JSON.stringify(original)); // 仅适合 JSON 数据
+const copyNative = structuredClone(original);          // 支持循环引用等结构
+
+// structuredClone 不能克隆函数；复杂业务对象需要单独设计复制策略
+```
+
+---
+
+## 小结
+
+| 类型 | 存储 | 赋值 | 比较 |
+|---|---|---|---|
+| 基本类型 | 值本身 | 复制值 | 比较值 |
+| 对象类型 | 对象引用 | 复制引用 | 比较是否为同一引用 |
+
+有了“复制值”和“复制引用”这层区分，赋值、比较、函数传参和对象拷贝中的很多现象都会更容易解释。

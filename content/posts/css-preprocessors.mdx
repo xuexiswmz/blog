@@ -1,0 +1,237 @@
+---
+title: CSS 预处理器：Sass、Less 与 Stylus
+source: yuque-export
+date: "2025-07-26"
+description: "围绕样式维护问题，对比 Sass、Less 和 Stylus 的变量、嵌套、Mixin、作用域与模块化能力。"
+tags:
+  - css
+  - 预处理器
+  - less
+  - sass
+
+---
+
+# CSS 预处理器：Sass、Less 与 Stylus 如何改善样式维护
+
+你维护过一个两三千行的 CSS 文件吗？
+
+同名选择器散落在各处，`#0077cc` 这个蓝色在 47 个地方重复出现，改个主色要全局搜索替换，某几个组件的 padding 是 16px 另一个是 18px 没人知道为什么……
+
+写 CSS 本身不难，**维护 CSS 才难。**
+
+CSS 预处理器就是来解决这个问题的——用编程语言的思路写样式，最后编译成标准 CSS。
+
+---
+
+## 三大预处理器一览
+
+| | Sass（SCSS） | Less | Stylus |
+|---|---|---|---|
+| 语法 | 花括号（标准 CSS 语法） | 花括号 | 可省略括号和分号 |
+| 变量符号 | `$` | `@` | `=` |
+| 混合（Mixin） | `@mixin` + `@include` | class 直接调用 | 函数式声明 |
+| 嵌套 | ✅ `&` 引用父级 | ✅ `&` 引用父级 | ✅ `&` 引用父级 |
+| 模块化 | `@use`（推荐） | `@import` | `@import` |
+| 循环 | ✅ | ✅ 可用递归 Mixin / `each` | ✅ |
+| 条件判断 | ✅ | ✅ Guards | ✅ |
+
+> **如果是新项目：** 团队需要变量、Mixin、循环和成熟工具链时，SCSS 通常比较稳妥；现有项目已经使用 Less 或 Stylus 时，保持一致往往比为了“流行度”迁移更重要。小型项目也可以先看看原生 CSS 变量与嵌套是否已经够用。
+
+---
+
+## 基本语法对比
+
+### 变量：一次定义，到处引用
+
+**CSS 原生变量（对比参考）：**
+```css
+:root {
+  --primary: #c00;
+  --spacing: 16px;
+}
+.button { color: var(--primary); padding: var(--spacing); }
+```
+
+**SCSS 变量：**
+```scss
+$primary: #c00;
+$spacing: 16px;
+
+.button {
+  color: $primary;
+  padding: $spacing;
+}
+```
+
+**Less 变量：**
+```less
+@primary: #c00;
+@spacing: 16px;
+
+.button {
+  color: @primary;
+  padding: @spacing;
+}
+```
+
+> 原生 CSS 变量（`--var`）现在也能用，功能接近预处理器变量，但没有嵌套、循环、Mixin。所以预处理器在复杂项目里依然有优势。
+
+---
+
+### 嵌套：减少重复的父选择器
+
+```scss
+// SCSS — 嵌套写，子选择器自动继承父级路径
+.card {
+  padding: 16px;
+
+  &__title {
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+  &:hover {           // & 代表 .card 本身
+    background: #f5f5f5;
+  }
+
+  .content {          // 普通嵌套，编译为 .card .content
+    color: #666;
+  }
+}
+```
+
+编译后：
+```css
+.card { padding: 16px; }
+.card__title { font-size: 18px; font-weight: bold; }
+.card:hover { background: #f5f5f5; }
+.card .content { color: #666; }
+```
+
+嵌套让结构一目了然，修改时不用在几千行里找一个选择器的位置。
+
+---
+
+### Mixin：把重复样式封装成函数
+
+这是预处理器最核心的价值——**DRY（Don't Repeat Yourself）**。
+
+```scss
+// 定义一个可以传参数的 mixin
+@mixin card($padding: 16px, $radius: 8px) {
+  padding: $padding;
+  border-radius: $radius;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+// 定义一个无参数的
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// 使用
+.header {
+  @include flex-center;
+  @include card($padding: 24px, $radius: 12px);
+}
+
+.modal {
+  @include flex-center;
+  @include card($padding: 32px);
+}
+```
+
+Less 的写法类似，不过用 class 直接当 mixin 调用（不需要 `mixin` 关键字）：
+
+```less
+.card-base() {
+  padding: 16px;
+  border-radius: 8px;
+}
+.button {
+  .card-base();  // 直接用 class 名调用
+}
+```
+
+---
+
+### 作用域：局部变量和全局变量如何相遇
+
+SCSS 的变量作用域和大多数语言不一样——**局部变量会覆盖全局变量，而且这个覆盖是"永久性"的**，一旦定义，全局同名变量也受影响：
+
+```scss
+$color: black;
+
+.scoped {
+  $color: white;   // 局部定义，覆盖了全局
+  color: $color;  // → white，没问题
+}
+
+.unscoped {
+  color: $color;  // → white！全局变量被改了！
+}
+```
+
+Less 的行为更接近 JS，局部变量不会污染全局：
+
+```less
+@color: black;
+
+.scoped {
+  @color: white;
+  color: @color;   // → white
+}
+
+.unscoped {
+  color: @color;  // → black，全局还在
+}
+```
+
+**实践中尽量避免给同名变量重复定义。** 或者 SCSS 里用 `!global` 显式标记。
+
+---
+
+### 模块化：从 @import 到 @use
+
+早期 SCSS 用 `@import` 引入其他文件，但 `@import` 是全局导入，所有变量混在一起，容易命名冲突。
+
+**新版 SCSS 推荐用 `@use`：**
+
+```scss
+// _variables.scss
+$brand-color: #c00;
+$spacing: 16px;
+
+// main.scss
+@use 'variables';      // 创建命名空间
+@use 'mixins';
+
+.button {
+  color: variables.$brand-color;  // 通过命名空间访问
+  padding: variables.$spacing;
+}
+```
+
+> 旧项目迁移时 `@import` 还能用，但新写代码优先 `@use`。
+
+---
+
+## 预处理器和现代原生 CSS 怎么分工
+
+| 功能 | 预处理器 | 原生 CSS |
+|---|---|---|
+| 变量 | ✅ `$` / `@` | ✅ `--var`（但没有 Mixin） |
+| 嵌套 | ✅ | ✅（现代浏览器） |
+| Mixin / 函数 | ✅ | ❌ |
+| 循环 | ✅ | ❌ |
+| 条件判断 | ✅ | ❌ |
+| 模块化 | ✅ `@use` | 原生 `@import`；文件级隔离通常依赖构建工具 |
+
+**结论：**
+- 从零开始的小项目 → 试试纯 CSS 变量 + 原生嵌套，可能够用
+- 中大型项目 / 需要循环逻辑 → 选 SCSS
+- Bootstrap 生态 → 用它配套的预处理器
+
+是否引入预处理器，更多取决于项目复杂度和团队习惯。原生 CSS 已经补上不少能力，SCSS 等工具仍然擅长更复杂的复用和编译期逻辑。

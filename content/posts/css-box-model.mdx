@@ -1,0 +1,191 @@
+---
+title: CSS 盒模型
+source: yuque-export
+date: "2025-08-06"
+description: "通过具体尺寸计算，对比 content-box 和 border-box，并延伸到 box-sizing、margin 折叠和 DevTools 调试。"
+tags:
+  - css
+  - 盒模型
+---
+
+# CSS 盒模型：content-box、border-box 与实际尺寸
+
+有时候明明写了 `width: 200px`，DevTools 里看到的元素却有 `260px` 宽。多出来的尺寸并不是浏览器算错了，而是 padding、border 和 `box-sizing` 一起参与了结果。
+
+盒模型聊的就是这件事：我们写下的宽高，到底框住了哪一层。
+
+## 标准盒模型（content-box）
+
+CSS 默认使用标准盒模型（也叫 W3C 盒模型）。在这种模型下：
+
+> `width` 和 `height` 只包含 content，不包含 padding 和 border。
+
+看一个具体的计算：
+
+```css
+.box {
+  width: 200px;
+  padding: 20px;
+  border: 10px solid #333;
+}
+```
+
+这个盒子的**实际宽度**是多少？
+
+```
+content:  200px
+padding:  20px × 2 = 40px
+border:   10px × 2 = 20px
+─────────────────────────
+实际宽度 = 260px
+```
+
+**不是你设的 200px，是 260px。** 原因：`width: 200px` 只约束了 content 区域，padding 和 border 是在这之外额外增加的。
+
+同样，`height: 100px` 的元素，实际高度会是 `100 + 40 + 20 = 160px`。
+
+---
+
+## IE 盒模型（border-box）
+
+IE 浏览器历史上用了不同的规则。在 IE 盒模型下：
+
+> `width` 和 `height` 包含 content + padding + border。
+
+仍然是同一个例子：
+
+```css
+.box {
+  width: 200px;
+  padding: 20px;
+  border: 10px solid #333;
+}
+```
+
+用 border-box 的话：
+
+```
+content:  200 - 40 - 20 = 140px    ← 内容区域被压缩了
+padding:  40px
+border:   20px
+─────────────────────────
+实际宽度 = 200px                  ← 正好是你设的 200px
+```
+
+你设多少，实际就是多少。padding 和 border **从 width 里面扣**，不往外撑。
+
+---
+
+## box-sizing：两个模型的切换开关
+
+```css
+/* 默认：标准盒模型 */
+box-sizing: content-box;
+
+/* IE 盒模型 */
+box-sizing: border-box;
+
+/* 继承父元素 */
+box-sizing: inherit;
+```
+
+现在你理解为什么很多人写：
+
+```css
+* {
+  box-sizing: border-box;
+}
+```
+
+这行代码几乎出现在所有现代 CSS 框架里（Bootstrap、Tailwind、normalize.css）。原因很简单：**border-box 更符合直觉**——你写 `width: 200px`，元素就是 200px，不会因为加了 padding 就变大。
+
+---
+
+## 算一次实际尺寸
+
+看一段很常见的 HTML：
+
+```html
+<div style="width: 300px; padding: 20px; border: 5px solid black;">
+  内容区域
+</div>
+```
+
+**问题：标准盒模型下，这个 div 的实际宽度是多少？**
+
+<details>
+<summary>点击查看答案</summary>
+
+`300 + 20×2 + 5×2 = 350px`
+
+content: 300px，padding 左右各 20px（+40px），border 左右各 5px（+10px），合计 **350px**。
+</details>
+
+---
+
+## Chrome DevTools 可视化调试
+
+盒模型最实用的工具是 Chrome DevTools 的盒模型可视化。在 Elements 面板里，选中一个元素，右边可以看到：
+
+```
+┌────────────────────────┐  ← margin（黄色）
+│  ████████████████     │  ← border（橙色）
+│  ██ content ██████    │  ← content（蓝色）
+│  ████████████████     │  ← padding（绿色）
+└────────────────────────┘
+```
+
+每个区域会用不同颜色标注，数值也直接写在旁边。遇到尺寸对不上的情况时，DevTools 的盒模型图通常比手算更快找到差异。
+
+右键 → 检查元素，快捷键 `Cmd + Option + I`（Mac）。
+
+---
+
+## margin 的特殊规则：折叠
+
+padding 和 border 的数值是加上去的，但 margin 有个特殊行为：**外边距折叠（Margin Collapsing）**。
+
+**垂直方向上，相邻的两个元素的外边距会合并**，取较大值，而不是相加。
+
+```css
+.box1 { margin-bottom: 30px; }
+.box2 { margin-top: 20px; }
+```
+
+两个 div 之间的间距，不是 30 + 20 = 50px，而是 **30px**（取较大值）。
+
+折叠发生在：
+- 相邻的块级元素之间
+- 父元素和第一个/最后一个子元素之间
+
+这个规则经常让新手困惑："我明明给了子元素 margin-top: 20px，为什么父元素被顶下去了？"——答案就是 margin 折叠。
+
+---
+
+## 实际写样式时
+
+**很多项目会全局声明 `border-box`**
+
+```css
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+```
+
+它常被放进 reset 或全局样式，让组件尺寸更接近设计稿里“整个盒子宽多少”的直觉。
+
+**内部间距通常更适合交给 padding**
+
+margin 有折叠行为，padding 没有。盒子和内部内容之间的距离交给 padding，通常会更可控。
+
+**组件里更值得先确认的是“这个宽度算到哪里”**
+
+如果你写一个卡片组件，你预期的宽度包含了 padding 还是不包含？如果包含，用 border-box；如果不包含，用 content-box（默认）。但最好统一用 border-box。
+
+---
+
+*参考：MDN CSS Basic Box Model | W3C CSS2 Specification*
+
+---
+
+**相关文档**：[BFC](/posts/css-bfc) | **相关文档**：[回流重绘](/posts/browser-reflow-repaint) | **相关文档**：[flexbox](/posts/css-flexbox)

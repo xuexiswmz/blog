@@ -1,0 +1,425 @@
+---
+title: Flexbox 布局指南
+source: yuque-export
+date: "2025-07-13"
+description: "从主轴、交叉轴和弹性伸缩开始，梳理 Flexbox 容器与项目属性，以及常见的一维布局写法。"
+tags:
+  - css
+  - flexbox
+  - 布局
+
+---
+
+# Flexbox 布局指南：处理一维排列与对齐
+
+你想要三个元素水平居中，等宽分布：
+
+```css
+/* 传统方案 */
+.container {
+  text-align: center;
+}
+.item {
+  display: inline-block;
+  width: 33.33%;
+}
+```
+
+问题：元素之间有空白符间隙，要对齐还要消隙。
+
+用 Flexbox 可以直接表达这组元素的排列与对齐关系：
+
+```css
+.container {
+  display: flex;
+  justify-content: center;
+}
+.item {
+  flex: 1;
+}
+```
+
+Flexbox 是一维布局：一次处理一行或一列。Grid 是二维布局：同时处理行和列。
+
+---
+
+## 1. 核心概念
+
+### 1.1 主轴和交叉轴
+
+- **主轴**：元素排列的方向（默认水平）
+- **交叉轴**：垂直于主轴的方向
+
+```css
+.container {
+  display: flex;
+  flex-direction: row; /* 主轴水平，交叉轴垂直 */
+}
+```
+
+### 1.2 容器和项目
+
+- **容器（flex container）**：设置 `display: flex` 的元素
+- **项目（flex item）**：容器的直接子元素
+
+---
+
+## 2. 容器属性
+
+### 2.1 flex-direction：主轴方向
+
+```css
+.container {
+  flex-direction: row;            /* 水平，左→右（默认） */
+  flex-direction: row-reverse;    /* 水平，右→左 */
+  flex-direction: column;         /* 垂直，上→下 */
+  flex-direction: column-reverse; /* 垂直，下→上 */
+}
+```
+
+### 2.2 flex-wrap：是否换行
+
+```css
+.container {
+  flex-wrap: nowrap;       /* 不换行（默认），项目会被压缩 */
+  flex-wrap: wrap;         /* 换行，第一行在上 */
+  flex-wrap: wrap-reverse; /* 换行，第一行在下 */
+}
+```
+
+**注意：** `nowrap` 时项目会被压缩，不会溢出。
+
+### 2.3 justify-content：主轴对齐
+
+```css
+.container {
+  justify-content: flex-start;    /* 起点（默认） */
+  justify-content: flex-end;      /* 终点 */
+  justify-content: center;        /* 居中 */
+  justify-content: space-between; /* 两端对齐，中间等距 */
+  justify-content: space-around;  /* 每个项目两侧等距 */
+  justify-content: space-evenly;  /* 所有间距相等 */
+}
+```
+
+### 2.4 align-items：交叉轴对齐
+
+```css
+.container {
+  align-items: stretch;    /* 拉伸填满（默认） */
+  align-items: flex-start; /* 起点 */
+  align-items: flex-end;   /* 终点 */
+  align-items: center;     /* 居中 */
+  align-items: baseline;   /* 文字基线对齐 */
+}
+```
+
+### 2.5 align-content：多行对齐
+
+**仅当 `flex-wrap: wrap` 且有多行时生效。**
+
+```css
+.container {
+  align-content: stretch;        /* 拉伸填满（默认） */
+  align-content: flex-start;     /* 起点对齐 */
+  align-content: flex-end;       /* 终点对齐 */
+  align-content: center;         /* 居中 */
+  align-content: space-between;  /* 两端对齐 */
+  align-content: space-around;   /* 等距分布 */
+}
+```
+
+### 2.6 gap：项目间距
+
+```css
+.container {
+  gap: 20px;        /* 行列间距都是 20px */
+  row-gap: 10px;    /* 行间距 */
+  column-gap: 20px; /* 列间距 */
+}
+```
+
+---
+
+## 3. 项目属性
+
+### 3.1 flex-grow：放大比例
+
+**当容器有剩余空间时，项目如何放大。**
+
+```css
+.item {
+  flex-grow: 0; /* 不放大（默认） */
+  flex-grow: 1; /* 等分剩余空间 */
+  flex-grow: 2; /* 占比 2 */
+}
+```
+
+**示例：**
+
+```css
+.container {
+  display: flex;
+}
+.item1 {
+  flex-grow: 1; /* 占 1/3 */
+}
+.item2 {
+  flex-grow: 2; /* 占 2/3 */
+}
+```
+
+### 3.2 flex-shrink：缩小比例
+
+**当容器空间不足时，项目如何缩小。**
+
+```css
+.item {
+  flex-shrink: 1; /* 等比例缩小（默认） */
+  flex-shrink: 0; /* 不缩小 */
+}
+```
+
+**示例：**
+
+```css
+.item {
+  flex-shrink: 0; /* 固定宽度，不压缩 */
+  width: 200px;
+}
+```
+
+### 3.3 flex-basis：初始尺寸
+
+**在放大/缩小之前的基础尺寸。**
+
+```css
+.item {
+  flex-basis: auto;  /* 使用 width/height（默认） */
+  flex-basis: 200px; /* 固定 200px */
+  flex-basis: 0;     /* 忽略内容尺寸 */
+}
+```
+
+### 3.4 flex：简写
+
+```css
+.item {
+  flex: 0 1 auto; /* 默认值 */
+  flex: 1;        /* = 1 1 0%，等分空间 */
+  flex: auto;     /* = 1 1 auto */
+  flex: none;     /* = 0 0 auto，固定尺寸 */
+}
+```
+
+**flex: 1 vs flex: auto：**
+
+- `flex: 1` = `1 1 0%`：忽略内容尺寸，等分空间
+- `flex: auto` = `1 1 auto`：考虑内容尺寸，按内容比例分配
+
+### 3.5 order：排序
+
+```css
+.item1 {
+  order: 2; /* 排第二 */
+}
+.item2 {
+  order: 1; /* 排第一 */
+}
+.item3 {
+  order: 3; /* 排第三 */
+}
+```
+
+### 3.6 align-self：单独对齐
+
+```css
+.container {
+  align-items: center;
+}
+.item {
+  align-self: flex-start; /* 覆盖容器的 align-items */
+}
+```
+
+---
+
+## 4. 常见布局模式
+
+### 4.1 水平居中
+
+```css
+.container {
+  display: flex;
+  justify-content: center;
+}
+```
+
+### 4.2 垂直居中
+
+```css
+.container {
+  display: flex;
+  align-items: center;
+}
+```
+
+### 4.3 水平垂直居中
+
+```css
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+```
+
+### 4.4 两端对齐
+
+```css
+.container {
+  display: flex;
+  justify-content: space-between;
+}
+```
+
+### 4.5 左固定右自适应
+
+```css
+.container {
+  display: flex;
+}
+.left {
+  flex: none;
+  width: 200px;
+}
+.right {
+  flex: 1;
+}
+```
+
+### 4.6 等宽分布
+
+```css
+.container {
+  display: flex;
+}
+.item {
+  flex: 1;
+}
+```
+
+### 4.7 底部固定
+
+```css
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.content {
+  flex: 1;
+}
+.footer {
+  flex: none;
+}
+```
+
+### 4.8 圣杯布局
+
+```css
+.container {
+  display: flex;
+}
+.left {
+  flex: 0 0 200px;
+}
+.center {
+  flex: 1;
+}
+.right {
+  flex: 0 0 200px;
+}
+```
+
+---
+
+## 5. 注意事项
+
+### 5.1 flex 项目会忽略 float
+
+```css
+.item {
+  float: left; /* 无效！flex 项目不响应 float */
+}
+```
+
+### 5.2 flex 项目默认 min-width: auto
+
+```css
+.item {
+  /* 默认 min-width: auto，内容撑开 */
+}
+
+/* 如果要允许缩小到比内容小 */
+.item {
+  min-width: 0;
+}
+```
+
+### 5.3 flex-basis 优先于 width
+
+```css
+.item {
+  width: 100px;
+  flex-basis: 200px; /* 实际是 200px */
+}
+```
+
+### 5.4 margin: auto 吸收剩余空间
+
+```css
+.container {
+  display: flex;
+}
+.item {
+  margin-left: auto; /* 推到最右边 */
+}
+```
+
+---
+
+## 6. 把常用关系收一下
+
+**容器属性：**
+
+| 属性 | 作用 |
+|------|------|
+| flex-direction | 主轴方向 |
+| flex-wrap | 是否换行 |
+| justify-content | 主轴对齐 |
+| align-items | 交叉轴对齐 |
+| align-content | 多行对齐 |
+| gap | 间距 |
+
+**项目属性：**
+
+| 属性 | 作用 |
+|------|------|
+| flex-grow | 放大比例 |
+| flex-shrink | 缩小比例 |
+| flex-basis | 初始尺寸 |
+| flex | 简写 |
+| order | 排序 |
+| align-self | 单独对齐 |
+
+**常用值：**
+
+- `flex: 1` — 等分空间
+- `flex: none` — 固定尺寸
+- `justify-content: center` — 主轴居中
+- `align-items: center` — 交叉轴居中
+
+---
+
+**相关文档**：[grid](/posts/css-grid) | [盒模型](/posts/css-box-model) | [响应式](/posts/responsive-web-design)

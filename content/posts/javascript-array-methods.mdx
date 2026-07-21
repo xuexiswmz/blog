@@ -1,0 +1,351 @@
+---
+title: JavaScript 数组常用方法
+source: yuque-export
+date: "2025-06-25"
+description: "按是否修改原数组、查找、遍历、归约和转换等场景整理数组方法，并拆解 map、sort、slice 等常见误区。"
+tags:
+  - javascript
+  - 数组
+  - 方法
+
+---
+
+# JavaScript 数组常用方法：修改、查找与遍历
+
+先看一个很容易凭直觉答错的问题：`['1', '2', '3'].map(parseInt)` 会得到什么？
+
+实际输出不是 `[1, 2, 3]`，而是 `[1, NaN, NaN]`。
+
+为什么？因为 `map` 给 `parseInt` 传了三个参数，而 `parseInt` 的第二个参数是进制。
+
+数组方法本身不复杂，容易出错的地方通常是回调参数、返回值，以及是否会修改原数组。
+
+---
+
+## 1. 会改变原数组的方法（破坏性）
+
+这些方法会**直接修改原数组**，使用时要小心：
+
+### push / pop / shift / unshift
+
+```javascript
+const arr = [1, 2, 3];
+
+arr.push(4);     // [1, 2, 3, 4] 返回新长度
+arr.pop();       // [1, 2, 3]    返回删除的元素
+arr.shift();     // [2, 3]       删除第一个
+arr.unshift(0);  // [0, 2, 3]    在开头添加
+```
+
+### splice（增删改）
+
+```javascript
+const arr = [1, 2, 3, 4, 5];
+
+// splice(起始索引, 删除数量, ...插入元素)
+arr.splice(2, 1);        // [1, 2, 4, 5] 删除 1 个
+arr.splice(2, 0, 'a');   // [1, 2, 'a', 4, 5] 插入
+arr.splice(2, 1, 'b');   // [1, 2, 'b', 4, 5] 替换
+```
+
+### sort / reverse
+
+```javascript
+const arr = [3, 1, 2];
+
+arr.sort();      // [1, 2, 3] 原地排序
+arr.reverse();   // [3, 2, 1] 反转
+
+// sort 默认按字符串排序！
+[10, 2, 1].sort(); // [1, 10, 2] ← 错了！
+
+// 正确：传比较函数
+[10, 2, 1].sort((a, b) => a - b); // [1, 2, 10] ✅
+```
+
+### fill
+
+```javascript
+const arr = [1, 2, 3];
+arr.fill(0);        // [0, 0, 0]
+arr.fill(1, 1, 2);  // [0, 1, 0] 从索引 1 到 2 填充
+```
+
+---
+
+## 2. 不改变原数组的方法（非破坏性）
+
+这些方法返回新数组，原数组不变：
+
+### map / filter / slice
+
+```javascript
+const arr = [1, 2, 3];
+
+const doubled = arr.map(x => x * 2);    // [2, 4, 6]
+const evens = arr.filter(x => x % 2 === 0); // [2]
+const sliced = arr.slice(1, 2);         // [2]
+
+console.log(arr); // [1, 2, 3] ← 原数组不变
+```
+
+### concat
+
+```javascript
+const arr1 = [1, 2];
+const arr2 = [3, 4];
+const merged = arr1.concat(arr2); // [1, 2, 3, 4]
+```
+
+### flat / flatMap
+
+```javascript
+const nested = [1, [2, 3], [4, [5]]];
+nested.flat();    // [1, 2, 3, 4, [5]] 拍平一层
+nested.flat(2);   // [1, 2, 3, 4, 5]  拍平两层
+nested.flat(Infinity); // 全部拍平
+
+// flatMap = map + flat
+const arr = [1, 2, 3];
+arr.flatMap(x => [x, x * 2]); // [1, 2, 2, 4, 3, 6]
+```
+
+### toSorted / toReversed / toSpliced（ES2023）
+
+```javascript
+const arr = [3, 1, 2];
+
+const sorted = arr.toSorted();    // [1, 2, 3] 原数组不变
+const reversed = arr.toReversed(); // [2, 1, 3]
+const spliced = arr.toSpliced(1, 1); // [3, 2]
+
+console.log(arr); // [3, 1, 2] ← 不变
+```
+
+---
+
+## 3. 查找方法
+
+### indexOf / lastIndexOf / includes
+
+```javascript
+const arr = [1, 2, 3, 2, 1];
+
+arr.indexOf(2);      // 1 第一次出现的位置
+arr.lastIndexOf(2);  // 3 最后一次出现的位置
+arr.includes(2);     // true 是否包含
+
+// 找不到返回 -1 或 false
+arr.indexOf(99);     // -1
+arr.includes(99);    // false
+```
+
+### find / findIndex / findLast
+
+```javascript
+const users = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Charlie' }
+];
+
+users.find(u => u.id === 2);        // { id: 2, name: 'Bob' }
+users.findIndex(u => u.id === 2);   // 1
+users.findLast(u => u.id > 1);      // { id: 3, name: 'Charlie' }
+```
+
+---
+
+## 4. 遍历方法
+
+### forEach
+
+```javascript
+const arr = [1, 2, 3];
+arr.forEach((value, index, array) => {
+  console.log(value, index);
+});
+// 1 0
+// 2 1
+// 3 2
+
+// 注意：forEach 不能 break！
+```
+
+### for...of（需要提前结束遍历时很顺手）
+
+```javascript
+const arr = [1, 2, 3];
+for (const value of arr) {
+  if (value === 2) break; // 可以 break
+  console.log(value);
+}
+// 1
+```
+
+### entries / keys / values
+
+```javascript
+const arr = ['a', 'b', 'c'];
+
+for (const [index, value] of arr.entries()) {
+  console.log(index, value);
+}
+// 0 'a'
+// 1 'b'
+// 2 'c'
+
+for (const index of arr.keys()) {
+  console.log(index);
+}
+// 0 1 2
+```
+
+---
+
+## 5. 归约方法
+
+### reduce
+
+```javascript
+const arr = [1, 2, 3, 4];
+
+// 求和
+arr.reduce((sum, num) => sum + num, 0); // 10
+
+// 找最大值
+arr.reduce((max, num) => Math.max(max, num), -Infinity); // 4
+
+// 数组转对象
+const users = [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }];
+users.reduce((obj, user) => {
+  obj[user.id] = user.name;
+  return obj;
+}, {});
+// { 1: 'Alice', 2: 'Bob' }
+```
+
+### reduceRight
+
+从右往左归约：
+
+```javascript
+['a', 'b', 'c'].reduceRight((acc, cur) => acc + cur, '');
+// 'cba'
+```
+
+---
+
+## 6. 判断方法
+
+### every / some
+
+```javascript
+const arr = [1, 2, 3, 4, 5];
+
+arr.every(x => x > 0);  // true 所有都满足
+arr.every(x => x > 3);  // false
+
+arr.some(x => x > 3);   // true 至少一个满足
+arr.some(x => x > 10);  // false
+```
+
+---
+
+## 7. 转换方法
+
+### join
+
+```javascript
+['a', 'b', 'c'].join();      // 'a,b,c' 默认逗号
+['a', 'b', 'c'].join('-');   // 'a-b-c'
+['a', 'b', 'c'].join('');    // 'abc'
+```
+
+### Array.from / Array.of
+
+```javascript
+// 类数组转数组
+Array.from(document.querySelectorAll('div'));
+
+// 字符串转数组
+Array.from('hello'); // ['h', 'e', 'l', 'l', 'o']
+
+// 带映射
+Array.from([1, 2, 3], x => x * 2); // [2, 4, 6]
+
+// 创建数组
+Array.of(1, 2, 3); // [1, 2, 3]
+Array(3);          // [empty × 3] 稀疏数组
+```
+
+---
+
+## 8. 常见误区
+
+### 误区 1：map + parseInt
+
+```javascript
+['1', '2', '3'].map(parseInt);
+// [1, NaN, NaN]
+
+// 原因：map 传 (value, index, array)，parseInt 接收 (string, radix)
+// parseInt('1', 0) → 1
+// parseInt('2', 1) → NaN（1 进制不存在）
+// parseInt('3', 2) → NaN（3 不是合法的 2 进制数）
+
+// 正确写法
+['1', '2', '3'].map(x => parseInt(x)); // [1, 2, 3]
+```
+
+### 误区 2：sort 默认按字符串排序
+
+```javascript
+[10, 2, 1].sort(); // [1, 10, 2] ← 错了
+
+// 正确
+[10, 2, 1].sort((a, b) => a - b); // [1, 2, 10]
+```
+
+### 误区 3：splice vs slice
+
+```javascript
+const arr = [1, 2, 3, 4, 5];
+
+arr.splice(1, 2); // 返回 [2, 3]，arr 变成 [1, 4, 5]
+arr.slice(1, 3);  // 返回 [2, 3]，arr 不变
+
+// 记忆：splice 有 p = 破坏性，slice 没有 p = 非破坏性
+```
+
+### 误区 4：空数组 reduce 没有初始值
+
+```javascript
+[].reduce((a, b) => a + b); // TypeError
+
+// 必须提供初始值
+[].reduce((a, b) => a + b, 0); // 0
+```
+
+---
+
+## 9. 速查表
+
+| 方法 | 改变原数组 | 返回值 |
+|------|-----------|--------|
+| push/pop/shift/unshift | ✅ | 长度/删除元素 |
+| splice | ✅ | 删除的元素数组 |
+| sort/reverse | ✅ | 排序后的数组 |
+| fill | ✅ | 修改后的数组 |
+| map/filter/slice | ❌ | 新数组 |
+| concat/flat | ❌ | 新数组 |
+| find/findIndex | ❌ | 元素/索引 |
+| forEach | ❌ | undefined |
+| reduce | ❌ | 累积值 |
+| every/some | ❌ | boolean |
+
+方法多不等于都要背下来。使用时先确认三个问题：会不会修改原数组、回调会收到哪些参数、方法最终返回什么。大多数数组问题都能据此快速判断。
+
+---
+
+**相关文档**：[字符串常用方法](/posts/javascript-string-methods) | [数据类型](/posts/javascript-data-types)

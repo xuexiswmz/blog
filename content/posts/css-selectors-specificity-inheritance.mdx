@@ -1,0 +1,225 @@
+---
+title: CSS 选择器、优先级与继承
+source: yuque-export
+date: "2025-07-24"
+description: "把选择器、优先级和继承放在一起分析，说明样式冲突为什么发生，以及如何从 DevTools 中找到来源。"
+tags:
+  - css
+  - 选择器
+  - 优先级
+  - 继承
+
+---
+
+# CSS 选择器、优先级与继承：样式冲突时谁会生效
+
+你给 `.btn` 写了红色背景，用 `#app .btn` 写了蓝色背景。
+
+结果——蓝色生效了。你没加 `!important`，但蓝色赢了。
+
+这不是浏览器随机选择，而是 CSS 优先级规则在起作用。
+
+把三个问题放在一起看——怎么选中元素、规则冲突时谁生效、哪些属性会继承——大部分样式冲突就不再像浏览器的随机决定。
+
+---
+
+## 选择器分类：从简单到复杂
+
+### 基础选择器
+
+```css
+*               /* 通配符：选中所有元素 */
+div             /* 元素名：选中所有 div */
+.container      /* 类名：选中 class="container" */
+#header         /* ID：选中 id="header" */
+```
+
+### 组合选择器
+
+```css
+div p           /* 后代：div 内所有 p（任意层级） */
+div > p         /* 子代：div 直接子元素 p */
+h1 + p          /* 相邻兄弟：紧跟 h1 的 p */
+h1 ~ p          /* 通用兄弟：h1 后所有同级的 p */
+div, p          /* 群组：所有 div 和 p */
+```
+
+### 属性选择器
+
+```css
+[type="text"]        /* 精确匹配 */
+[class^="btn-"]     /* 以 btn- 开头 */
+[class$="-primary"]  /* 以 -primary 结尾 */
+[class*="button"]    /* 包含 button */
+```
+
+### 伪类 vs 伪元素
+
+```css
+/* 伪类：描述元素的状态（不是真实元素） */
+a:hover             /* 鼠标悬停 */
+input:focus         /* 获得焦点 */
+li:first-child      /* 第一个子元素 */
+li:nth-child(2)     /* 第 2 个 */
+li:not(.active)     /* 不含 active 类 */
+
+/* 伪元素：在内容前后插入"假"元素 */
+p::before           /* p 内容前插入一个元素 */
+p::after            /* p 内容后插入一个元素 */
+::first-letter      /* 首字母 */
+::first-line        /* 首行 */
+```
+
+> **记忆技巧：** 伪类用 `:`（一个冒号），伪元素用 `::`（两个冒号）。Vue/React 的 `v-bind` 样式里用单冒号即可。
+
+---
+
+## 优先级计算：谁赢？
+
+### 怎么计算
+
+每条 CSS 规则有一个优先级得分，格式是 **(A, B, C)**：
+
+| 来源 | 得分 |
+|---|---|
+| 内联样式 `style="color: red"` | (1, 0, 0) |
+| ID 选择器 `#header` | (0, 1, 0) |
+| 类选择器 / 属性选择器 / 伪类 | (0, 0, 1) |
+| 元素名 / 伪元素 | (0, 0, 0) |
+
+**比较规则：从左往右逐位比较，大者赢。**
+
+```css
+#header .nav a       /* (0, 1, 1) = 1个ID + 1个类 + 1个元素 */
+.container .item     /* (0, 0, 2) = 2个类 */
+.text                /* (0, 0, 1) = 1个类 */
+
+/* 结果：#header .nav a 赢（第二位 1 > 0）*/
+```
+
+### 两个常见陷阱
+
+**陷阱一：11 个类不如 1 个 ID**
+
+```css
+/* ❌ 白费力：11个类 = (0,0,11) */
+.btn.btn.btn.btn.btn.btn.btn.btn.btn.btn.btn { background: red; }
+
+/* ✅ 一个 ID 直接翻盘：ID = (0,1,0) */
+#submit-btn { background: blue; }  /* 赢 */
+```
+
+**陷阱二：后面写的样式不一定赢**
+
+```css
+.container .item { color: red; }  /* (0,0,2) */
+.item { color: blue; }            /* (0,0,1) → 不生效！ */
+```
+
+CSS 不是"后写优先"，而是"优先级高优先"。
+
+> **!important 是作弊：** `!important` 优先级最高，会覆盖一切，包括内联样式。除非必要，尽量别用——用了之后很难覆盖，维护地狱。
+
+---
+
+## 继承：哪些属性会自动传下去？
+
+有些 CSS 属性，子元素会自动继承父元素的值，不需要你重复写。
+
+### 可继承属性（常用）
+
+```css
+/* 字体相关 */
+color, font-size, font-family, font-weight,
+font-style, line-height, text-align
+
+/* 文本相关 */
+letter-spacing, word-spacing, text-indent, direction
+
+/* 其他 */
+visibility, cursor, opacity
+```
+
+```html
+<!-- body 设置了 color，p 自动继承红色 -->
+<body style="color: red;">
+  <p>这段文字是红色 ✅</p>
+</body>
+```
+
+### 不可继承属性
+
+盒模型、布局相关属性**不继承**：
+
+```css
+/* 这些不会自动继承 */
+width, height, margin, padding, border
+display, position, float, flex, grid
+background, overflow, z-index, transform
+```
+
+### 强制继承 / 取消继承
+
+```css
+/* 强制继承父元素的值 */
+.child {
+  border: inherit;    /* 继承父元素的 border */
+}
+
+/* 恢复成 CSS 规范定义的初始值 */
+.child {
+  color: initial;     /* 不管父元素是什么，变回默认值（通常是 black） */
+}
+```
+
+---
+
+## 两个常见情况
+
+### 情况一：链接颜色看起来没有继承
+
+```html
+<body style="color: red;">
+  <a href="#">这个链接不是红色的</a> ← 有浏览器默认样式！
+</body>
+```
+
+`<a>` 有默认的蓝色浏览器样式，优先级高于继承值。
+
+```css
+/* ✅ 强制继承 */
+a { color: inherit; }
+```
+
+### 情况二：标题字号看起来没有继承
+
+标题元素有默认的 `font-size`，子元素的字体大小不会自动继承父元素：
+
+```css
+/* ✅ 强制继承 */
+h1, h2, h3, h4, h5, h6 {
+  font-size: inherit;
+}
+```
+
+---
+
+## 调试技巧
+
+Chrome DevTools → Elements → Styles 面板：
+- 被划掉的样式 = 优先级不够，没生效
+- 每个选择器旁边会显示优先级值：(0, 1, 2) 这样
+
+---
+
+## 小结
+
+**优先级：** `!important` > 内联 > ID > 类/属性/伪类 > 元素 > *（用 `===` 类比记忆）
+
+**继承：** 文本和字体相关属性通常可继承，布局和盒模型属性通常不继承
+
+**实际维护时常见的做法：**
+- 以类选择器为主，减少 ID 和内联样式带来的高优先级
+- 控制嵌套层级，让选择器保持容易阅读
+- `!important` 留给确实需要覆盖既有优先级体系的场景
+- 能通过继承表达的文本样式，可以集中写在父元素上

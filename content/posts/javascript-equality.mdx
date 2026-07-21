@@ -1,0 +1,211 @@
+---
+title: JavaScript 中 == 和 === 的区别
+source: yuque-export
+date: "2025-08-01"
+description: "通过一组反直觉比较结果，拆解宽松相等的类型转换规则，并说明严格相等、Object.is 与对象比较的差别。"
+tags:
+  - javascript
+  - 类型转换
+  - 相等比较
+---
+
+# JavaScript 中 `==` 和 `===` 的区别：类型转换如何影响比较
+
+下面这几行代码很适合拿来检验直觉：
+
+```javascript
+console.log(0 == '');       // true
+console.log(0 == '0');      // true
+console.log('' == '0');     // false
+
+console.log(false == '0');  // true
+console.log(false == '');   // true
+console.log(false == null); // false
+
+console.log(null == undefined);  // true
+console.log(null === undefined); // false
+```
+
+如果只看表面值，这些结果很难连成一套规律。问题不在比较本身，而在 `==` 会先做隐式类型转换；`===` 不会。
+
+## 核心区别
+
+| 比较方式 | `==` | `===` |
+|---|---|---|
+| 类型不同时 | 按规则转换后再比较 | 直接返回 `false` |
+| `null` 与 `undefined` | 相等 | 不相等 |
+| `NaN` 与自身 | 不相等 | 不相等 |
+
+把两者放在一起看，差别就在这里：`==` 比较前可能转换参与比较的值，`===` 则同时检查类型和值。
+
+## `==` 会做哪些转换
+
+### 布尔值先转成数字
+
+```javascript
+true == 1   // true
+false == 0  // true
+false == '' // true，因为 false → 0，'' → 0
+```
+
+布尔值参与宽松相等比较时，会先转成 `0` 或 `1`，然后继续比较。
+
+### 字符串可能转成数字
+
+```javascript
+'55' == 55      // true
+'0' == 0        // true
+'' == 0         // true
+' \t\r\n' == 0  // true，只有空白字符的字符串会转成 0
+```
+
+这也是表单值特别容易踩坑的地方：从输入框拿到的通常是字符串，即使它看起来像数字。
+
+### 对象先转成原始值
+
+```javascript
+const obj = {
+  valueOf() { return 1; }
+};
+
+obj == 1 // true，比较过程中调用了 valueOf
+```
+
+对象与原始值比较时，会尝试通过 `valueOf()`、`toString()` 等步骤得到原始值，再继续比较。
+
+### `null` 和 `undefined` 是特例
+
+```javascript
+null == undefined // true
+null == 0         // false
+undefined == 0    // false
+```
+
+`null` 与 `undefined` 在宽松相等比较中彼此相等，但不会因此等于 `0` 或其他值。
+
+### `NaN` 不等于任何值
+
+```javascript
+NaN == NaN  // false
+NaN === NaN // false
+```
+
+判断一个值是不是 `NaN`，更合适的方式是 `Number.isNaN()`。
+
+### 对象比较的是引用
+
+```javascript
+const a = { x: 1 };
+const b = { x: 1 };
+
+a == b  // false，不是同一个对象
+a === b // false
+
+const c = a;
+a == c  // true，指向同一个对象
+a === c // true
+```
+
+两个对象内容看起来一样，不代表它们是同一个引用。这一点对 `==` 和 `===` 都成立。
+
+## 为什么 `==` 的结果容易反直觉
+
+```javascript
+0 == ''   // true
+0 == '0'  // true
+'' == '0' // false
+```
+
+前两次比较都会触发类型转换，最后一次则是两个字符串直接比较。因此，不能把每次 `==` 的结果串起来推导：`a == b` 且 `b == c`，并不能保证 `a == c`。
+
+这不是随机行为，只是阅读时要同时考虑两边类型和转换规则。代码一复杂，推导成本就会迅速上升。
+
+## `===` 的行为更直接
+
+```javascript
+55 === 55               // true
+'55' === 55             // false，类型不同
+true === 1              // false
+null === null           // true
+undefined === undefined // true
+null === undefined      // false
+```
+
+`===` 不做隐式类型转换，所以结果通常更容易从代码表面判断。
+
+## `==` 仍有一个常见用法
+
+有一个常见且明确的用法：同时检查 `null` 和 `undefined`。
+
+```javascript
+if (value == null) {
+  // value 是 null 或 undefined
+}
+
+// 等价于
+if (value === null || value === undefined) {
+  // ...
+}
+```
+
+这里使用 `== null` 是有意利用语言规范中的特例。除此之外，默认使用 `===`，通常能让意图更清楚。
+
+## `Object.is()` 与深度比较
+
+`Object.is()` 和 `===` 很接近，但它对 `NaN`、`-0` 与 `+0` 的处理不同：
+
+```javascript
+NaN === NaN         // false
+Object.is(NaN, NaN) // true
+
+-0 === +0           // true
+Object.is(-0, +0)   // false
+```
+
+如果要比较两个对象的内容，就需要深度比较，而不是换一种相等运算符：
+
+```javascript
+function deepEqual(a, b) {
+  if (a === b) return true;
+
+  if (typeof a !== 'object' || typeof b !== 'object') {
+    return false;
+  }
+
+  if (a === null || b === null) return false;
+
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+
+  if (keysA.length !== keysB.length) return false;
+
+  return keysA.every(key => deepEqual(a[key], b[key]));
+}
+
+deepEqual({ x: 1 }, { x: 1 }); // true
+```
+
+这个示例适合解释思路；实际项目还要考虑循环引用、`Date`、`Map`、`Set` 等特殊对象。
+
+## 常见结果速查
+
+| 表达式 | `==` 结果 | `===` 结果 |
+|---|---:|---:|
+| `0` 与 `''` | `true` | `false` |
+| `0` 与 `'0'` | `true` | `false` |
+| `''` 与 `'0'` | `false` | `false` |
+| `false` 与 `0` | `true` | `false` |
+| `false` 与 `''` | `true` | `false` |
+| `false` 与 `'0'` | `true` | `false` |
+| `null` 与 `undefined` | `true` | `false` |
+| `null` 与 `0` | `false` | `false` |
+| `NaN` 与 `NaN` | `false` | `false` |
+
+## 小结
+
+- 默认使用 `===`，让类型和值都明确参与比较。
+- 需要同时判断 `null` 和 `undefined` 时，可以有意识地使用 `value == null`。
+- 对象相等比较的是引用；比较内容需要单独的深度比较逻辑。
+- 遇到反直觉结果时，先写出两边的类型，再按转换规则分析。
+
+**相关文档**：[类型转换](/posts/javascript-type-coercion) | [数据类型](/posts/javascript-data-types)

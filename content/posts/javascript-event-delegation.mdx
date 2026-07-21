@@ -1,0 +1,335 @@
+---
+title: JavaScript 事件委托
+source: yuque-export
+date: "2025-07-04"
+description: "从列表点击事件出发，说明事件冒泡如何支撑事件委托，以及动态元素、嵌套目标和委托层级的处理方式。"
+tags:
+  - javascript
+  - 事件
+  - 事件委托
+
+---
+
+# JavaScript 事件委托：用一个监听器管理一组元素
+
+你有 100 个列表项，每个都要响应点击：
+
+```javascript
+// 错误做法：给每个都绑定事件
+const items = document.querySelectorAll('.item');
+items.forEach(item => {
+  item.addEventListener('click', handleClick);
+});
+```
+
+100 个监听器，100 份内存。
+
+如果列表是动态的，新增元素还得重新绑定：
+
+```javascript
+function addItem() {
+  const item = document.createElement('li');
+  item.className = 'item';
+  item.addEventListener('click', handleClick); // 又要绑定一次
+  list.appendChild(item);
+}
+```
+
+麻烦，而且容易内存泄漏。
+
+**更好的做法：只给父元素绑定一个事件。**
+
+```javascript
+const list = document.querySelector('.list');
+list.addEventListener('click', (e) => {
+  if (e.target.classList.contains('item')) {
+    handleClick(e);
+  }
+});
+```
+
+这就是**事件委托**：把子元素的事件委托给父元素处理。
+
+---
+
+## 1. 原理：事件冒泡
+
+当你点击一个元素时，事件会**冒泡**：
+
+```
+点击 .item
+  ↓
+.item 触发 click
+  ↓
+.list 触发 click（冒泡上来）
+  ↓
+document 触发 click
+```
+
+所以你在 `.list` 上监听 `click`，也能捕获到 `.item` 的点击。
+
+```javascript
+document.querySelector('.list').addEventListener('click', (e) => {
+  console.log(e.target); // 被点击的那个元素
+});
+```
+
+`e.target` 是**实际被点击的元素**，`e.currentTarget` 是**绑定事件的元素**。
+
+---
+
+## 2. 基本实现
+
+```html
+<ul class="list">
+  <li class="item" data-id="1">Item 1</li>
+  <li class="item" data-id="2">Item 2</li>
+  <li class="item" data-id="3">Item 3</li>
+</ul>
+
+<script>
+const list = document.querySelector('.list');
+
+list.addEventListener('click', (e) => {
+  // 检查点击的是不是 .item
+  const item = e.target.closest('.item');
+  
+  if (item) {
+    const id = item.dataset.id;
+    console.log('点击了 Item', id);
+  }
+});
+</script>
+```
+
+**`closest()` 的作用：**
+
+如果 `.item` 里有子元素（如 `<span>`），点击 `span` 时 `e.target` 是 `span`，不是 `.item`。
+
+`closest('.item')` 会向上查找最近的 `.item` 祖先元素。
+
+---
+
+## 3. 它为什么经常被用到
+
+### 监听器更集中
+
+```javascript
+// ❌ 每个子元素都绑定：100 个监听器
+items.forEach(item => item.addEventListener('click', handler));
+
+// ✅ 委托给父元素：1 个监听器
+list.addEventListener('click', handler);
+```
+
+内存占用减少，初始化更快。
+
+### 动态元素也能接住
+
+```javascript
+// 新增元素不需要绑定事件
+function addItem(id) {
+  const item = document.createElement('li');
+  item.className = 'item';
+  item.dataset.id = id;
+  item.textContent = `Item ${id}`;
+  list.appendChild(item);
+  // 不需要 addEventListener！
+}
+
+addItem(4); // 自动响应点击
+addItem(5);
+```
+
+### 交互逻辑更容易集中管理
+
+```javascript
+// ❌ 重复代码
+items.forEach(item => {
+  item.addEventListener('click', handleClick);
+  item.addEventListener('mouseenter', handleHover);
+  item.addEventListener('mouseleave', handleLeave);
+});
+
+// ✅ 统一管理
+list.addEventListener('click', handleClick);
+list.addEventListener('mouseenter', handleHover, true);
+list.addEventListener('mouseleave', handleLeave, true);
+```
+
+---
+
+## 4. 哪些地方会碰到
+
+### 场景 1：长列表
+
+评论区、商品列表、表格行——元素很多，用委托：
+
+```javascript
+document.querySelector('.comment-list').addEventListener('click', (e) => {
+  const likeBtn = e.target.closest('.like-btn');
+  const replyBtn = e.target.closest('.reply-btn');
+  
+  if (likeBtn) {
+    handleLike(likeBtn.dataset.commentId);
+  } else if (replyBtn) {
+    handleReply(replyBtn.dataset.commentId);
+  }
+});
+```
+
+### 场景 2：动态内容
+
+无限滚动、懒加载的内容：
+
+```javascript
+// 不需要给新加载的内容绑定事件
+// 委托给父元素，自动生效
+```
+
+### 场景 3：表格操作
+
+```javascript
+document.querySelector('table').addEventListener('click', (e) => {
+  const row = e.target.closest('tr');
+  if (!row) return;
+  
+  if (e.target.closest('.edit-btn')) {
+    editRow(row.dataset.id);
+  } else if (e.target.closest('.delete-btn')) {
+    deleteRow(row.dataset.id);
+  }
+});
+```
+
+---
+
+## 5. 几个边界
+
+### 注意 1：不是所有事件都冒泡
+
+`focus`、`blur` 不冒泡，用 `focusin`、`focusout` 替代：
+
+```javascript
+// ❌ focus 不冒泡，委托无效
+form.addEventListener('focus', handler);
+
+// ✅ focusin 冒泡
+form.addEventListener('focusin', (e) => {
+  if (e.target.matches('input')) {
+    console.log('输入框获得焦点');
+  }
+});
+```
+
+### 注意 2：阻止冒泡会破坏委托
+
+```javascript
+item.addEventListener('click', (e) => {
+  e.stopPropagation(); // 阻止冒泡
+  // 父元素的委托监听器收不到事件！
+});
+```
+
+如果子元素阻止了冒泡，委托就失效了。
+
+### 委托层级不宜过高
+
+```javascript
+// ❌ 委托到 document，任何点击都会触发检查
+document.addEventListener('click', handler);
+
+// ✅ 委托到最近的公共父元素
+list.addEventListener('click', handler);
+```
+
+委托到 `document` 会让每次点击都执行判断逻辑，影响性能。
+
+### 注意 4：检查 target 的层级
+
+```html
+<ul class="list">
+  <li class="item">
+    <span class="title">Title</span>
+    <span class="desc">Description</span>
+  </li>
+</ul>
+```
+
+点击 `.title` 时，`e.target` 是 `.title`，不是 `.item`。
+
+用 `closest()` 或检查祖先：
+
+```javascript
+list.addEventListener('click', (e) => {
+  const item = e.target.closest('.item');
+  if (item) {
+    // 处理点击
+  }
+});
+```
+
+---
+
+## 6. 框架中的事件委托
+
+### React
+
+React 17 之前，所有事件都委托到 `document`。
+
+React 17 之后，委托到渲染树的根节点（`ReactDOM.render` 的容器）。
+
+这就是为什么 React 不需要你手动绑定事件——它内部已经用了委托。
+
+### Vue
+
+Vue 的 `v-on` 在编译时会优化，但默认还是给每个元素绑定。
+
+对于动态列表，可以手动用委托：
+
+```vue
+<ul @click="handleClick">
+  <li v-for="item in items" :data-id="item.id" class="item">
+    {{ item.name }}
+  </li>
+</ul>
+
+<script>
+export default {
+  methods: {
+    handleClick(e) {
+      const item = e.target.closest('.item');
+      if (item) {
+        console.log('点击了', item.dataset.id);
+      }
+    }
+  }
+}
+</script>
+```
+
+---
+
+## 7. 回到父元素上的那个监听器
+
+**事件委托的本质：** 利用事件冒泡，把子元素的事件处理委托给父元素。
+
+**这套做法带来的变化：**
+1. 减少监听器数量，节省内存
+2. 自动适配动态新增元素
+3. 代码更简洁
+
+**它常出现在：**
+- 大量同类元素（列表、表格）
+- 动态内容（无限滚动、懒加载）
+- 需要统一管理的交互
+
+**边界也很明确：**
+- `focus`、`blur` 不冒泡，对应场景可以看看 `focusin`、`focusout`
+- 传播过程被提前阻止时，父元素自然接不到事件
+- 委托层级过高，会让无关事件也进入筛选逻辑
+- 点击目标存在嵌套结构时，`closest()` 往往比直接比较 `target` 更稳妥
+
+---
+
+**相关文档**：[闭包](/posts/javascript-closures)；相关主题：事件循环

@@ -1,0 +1,171 @@
+---
+title: JavaScript 类型转换
+source: yuque-export
+date: "2025-07-22"
+description: "整理 Number、String、Boolean 等显式转换，并通过常见表达式解释运算符触发的隐式转换规则。"
+tags:
+  - javascript
+  - 类型转换
+
+---
+
+# JavaScript 类型转换：显式转换与隐式规则
+
+看这段代码，猜输出是什么：
+
+```javascript
+[] == false   // ？
+[] == []      // ？
+{} == {}      // ？
+[] + {}       // ？
+{} + []       // ？
+```
+
+如果一时拿不准，很正常：这些表达式混合了对象转原始值、数字转换和语法上下文，单靠直觉很容易判断错。
+
+JavaScript 的类型转换分两种：**显式转换**由代码主动调用，**隐式转换**则由运算符和语法规则自动触发。麻烦通常出在后者，因为转换步骤没有直接写在代码里。
+
+---
+
+## 显式转换：代码里明确写出来
+
+### Number() — 转数字
+
+```javascript
+Number(324)            // 324
+Number('324')          // 324
+Number('324abc')       // NaN  ← 有一个字符不能转，整个就 NaN
+Number('')             // 0
+Number(true)           // 1
+Number(false)          // 0
+Number(null)           // 0    ← 注意：null 是 0
+Number(undefined)      // NaN  ← undefined 是 NaN
+```
+
+> **最容易记错的是 null = 0，undefined = NaN。** `null + 1 = 1` 但 `undefined + 1 = NaN`，差别很大。
+
+### parseInt() — 逐字解析数字
+
+和 `Number()` 的区别在于：**遇到不能解析的字符就停下，后面的不要了。**
+
+```javascript
+parseInt('32a3')   // 32 — 遇到 'a' 就停了
+Number('32a3')     // NaN — 有一个字符不行，整个报废
+```
+
+所以处理 "12px"、"20%" 这种带单位字符串时，用 `parseInt` 更合适。
+
+### String() — 转字符串
+
+```javascript
+String(1)               // "1"
+String(true)            // "true"
+String(null)            // "null"    ← 小心：字符串 "null"
+String(undefined)       // "undefined"
+String({a: 1})          // "[object Object]"
+String([1, 2, 3])       // "1,2,3"  ← 数组变成逗号分隔
+```
+
+### Boolean() — 转布尔
+
+```javascript
+Boolean(0)          // false
+Boolean('')         // false
+Boolean(null)       // false
+Boolean(undefined)  // false
+Boolean(NaN)         // false
+Boolean({})         // true   ← 空对象也是 true！
+Boolean([])         // true   ← 空数组也是 true！
+Boolean(Infinity)    // true   ← 无穷大是 true
+```
+
+布尔上下文里的假值包括 `false`、数值零（含 `0`、`-0`、`0n`）、空字符串、`null`、`undefined` 和 `NaN`；其他值会转成 `true`。
+
+---
+
+## 隐式转换：由运算符自动触发
+
+隐式转换发生在**两种场景**：比较运算和算术运算。
+
+### 自动转布尔
+
+`if`、`while`、三元运算符 `?:` 需要布尔值的地方，JavaScript 会自动把非布尔值转成布尔。
+
+自动调的是 `Boolean()`，所以规则和上面完全一样。
+
+### 自动转字符串
+
+`+` 运算时，只要有一边是字符串，另一边就会被转成字符串，然后做**拼接**。
+
+```javascript
+'5' + 1           // '51'   ← 1 被转成了 '1'
+'5' + true        // '5true'
+'5' + {}          // '5[object Object]'
+'5' + []          // '5'    ← 空数组变成空字符串
+'5' + function(){} // '5function (){}'
+'5' + null        // '5null'
+'5' + undefined   // '5undefined'
+```
+
+> 所以 `"列表共" + count + "条"` 能正常工作，但小心 `"共" + count + 1 + "页"` 变成 `"共101页"`。
+
+### 自动转数值
+
+`-`、`*`、`/`、`%` 这些运算符，会把两边都转成数字（除了 `+`，因为 `+` 有字符串拼接的歧义）。
+
+```javascript
+'5' - '2'    // 3
+'5' * '2'    // 10
+'5' / '2'    // 2.5
+'5' % '2'    // 1
+
+true - 1     // 0
+false - 1    // -1
+
+null + 1     // 1        ← null → 0
+undefined + 1 // NaN      ← undefined → NaN
+
+'abc' - 1    // NaN
+'5' * []    // 0        ← [] → '' → 0
+```
+
+---
+
+## 几个容易判断错的例子
+
+### `[] == false` 是 true，但 `[] === false` 是 false
+
+```javascript
+[] == false   // true  ← 两边都转成数字：[] → '' → 0，false → 0
+[] === false  // false ← === 不做类型转换，类型不同直接 false
+```
+
+### `0 == ""` 是 true，但意义完全不同
+
+```javascript
+0 == ''      // true  ← '' → 0
+0 == null    // false ← null 不转成 0
+```
+
+### `NaN` 永远不等于自己
+
+```javascript
+NaN == NaN   // false  ← NaN 是唯一一个不等于自身的值
+NaN === NaN  // false  ← 同上
+
+// 更推荐 Number.isNaN()，它不会先做类型转换
+Number.isNaN(NaN)  // true
+```
+
+---
+
+## 回到开头那些表达式
+
+| 转换方向 | 触发场景 | 注意事项 |
+|---|---|---|
+| → 数字 | `Number()`、`parseInt()`、`- * / %` | `null → 0`，`undefined → NaN` |
+| → 字符串 | `String()`、`+` 有字符串时 | `{} → '[object Object]'`，`[] → ''` |
+| → 布尔 | `Boolean()`、`if/while/?:`、`!!` | `false`、数值零、空字符串、`null`、`undefined`、`NaN` 等会转成假值 |
+| 隐式 | 比较运算 `==`、`!=` | **尽量用 `===` / `!==`** |
+
+日常代码默认使用 `===`，可以减少读代码时推导隐式转换的负担。确实需要 `==` 的特例时，例如同时判断 `null` 和 `undefined`，最好让意图足够明确。

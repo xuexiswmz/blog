@@ -1,0 +1,278 @@
+---
+title: JavaScript 作用域链
+source: yuque-export
+date: "2025-07-05"
+description: "用嵌套函数中的变量查找过程解释词法作用域和作用域链，并对比原型链、闭包以及 let 与 var 的差异。"
+tags:
+  - javascript
+  - 作用域
+
+---
+
+# JavaScript 作用域链：变量是怎样被找到的
+
+看这段代码：
+
+```javascript
+const a = 1;
+
+function outer() {
+  const b = 2;
+  
+  function inner() {
+    const c = 3;
+    console.log(a + b + c); // 6
+  }
+  
+  inner();
+}
+
+outer();
+```
+
+`inner` 函数里用了 `a`、`b`、`c` 三个变量。
+
+`c` 就在当前函数里，`b` 在外层函数里，`a` 在全局。
+
+JavaScript 怎么找到它们的？
+
+它沿着一条链往上找：
+```
+inner 的作用域 → outer 的作用域 → 全局作用域
+```
+
+这就是**作用域链**。
+
+---
+
+## 1. 作用域是什么？
+
+作用域就是**变量的可访问范围**。
+
+```javascript
+function foo() {
+  const x = 1;
+  console.log(x); // 1 ✅
+}
+
+console.log(x); // ReferenceError ❌
+```
+
+`x` 只在 `foo` 函数内部存在，外面访问不到。
+
+JavaScript 有三种作用域：
+
+| 类型 | 说明 |
+|------|------|
+| 全局作用域 | 代码任何地方都能访问 |
+| 函数作用域 | 函数内部声明的变量，外面访问不到 |
+| 块级作用域 | `let`/`const` 声明的变量，只在 `{}` 内有效 |
+
+```javascript
+// 全局
+var global = '我是全局';
+
+function foo() {
+  // 函数作用域
+  var funcVar = '函数内部';
+  
+  if (true) {
+    // 块级作用域
+    let blockLet = '块内 let';
+    const blockConst = '块内 const';
+    var blockVar = '块内 var'; // var 没有块级作用域！
+  }
+  
+  console.log(blockLet);   // ReferenceError ❌
+  console.log(blockConst); // ReferenceError ❌
+  console.log(blockVar);   // '块内 var' ✅
+}
+```
+
+---
+
+## 2. 作用域链怎么形成的？
+
+**关键：函数定义时，不是调用时。**
+
+```javascript
+const a = 1;
+
+function outer() {
+  const b = 2;
+  
+  function inner() {
+    console.log(a, b); // 能访问 a 和 b
+  }
+  
+  return inner;
+}
+
+const fn = outer(); // outer 执行完，b 应该销毁了？
+fn(); // 1, 2 — b 还在！
+```
+
+`outer` 执行完了，按理说 `b` 应该被销毁。
+
+但 `inner` 函数在定义时，就把 `outer` 的作用域"记"下来了。
+
+所以即使 `outer` 执行完了，`b` 还活着——这就是**闭包**的原理。
+
+### 作用域链的形成过程
+
+```javascript
+const global = 1;
+
+function foo() {
+  const outer = 2;
+  
+  function bar() {
+    const inner = 3;
+    // bar 的作用域链：
+    // bar → foo → global
+  }
+  
+  bar();
+}
+
+foo();
+```
+
+1. 全局代码执行，创建**全局作用域**
+2. `foo` 定义，记录下当前作用域（全局）作为它的**词法环境**
+3. `foo` 调用，创建 `foo` 的作用域，父作用域是全局
+4. `bar` 定义，记录下当前作用域（foo）
+5. `bar` 调用，创建 `bar` 的作用域，父作用域是 foo
+
+当 `bar` 访问变量时：
+```
+1. 在 bar 自己的作用域找 → 没找到
+2. 去 bar 的父作用域（foo）找 → 找到了！
+```
+
+---
+
+## 3. 变量查找：从内到外
+
+```javascript
+const x = 'global';
+
+function outer() {
+  const x = 'outer';
+  
+  function inner() {
+    const x = 'inner';
+    console.log(x); // 'inner'
+  }
+  
+  inner();
+  console.log(x); // 'outer'
+}
+
+outer();
+console.log(x); // 'global'
+```
+
+每次 `console.log(x)` 都找到了**最近的那个 x**。
+
+查找顺序：当前作用域 → 父作用域 → ... → 全局作用域 → 找不到就报错
+
+---
+
+## 4. 作用域链 vs 原型链
+
+它们很像，但查找的东西不同：
+
+| | 查找什么 | 查找失败 |
+|---|---------|---------|
+| 作用域链 | 变量 | `ReferenceError` |
+| 原型链 | 对象属性 | 返回 `undefined` |
+
+```javascript
+// 作用域链查找变量
+console.log(notExist); // ReferenceError
+
+// 原型链查找属性
+const obj = {};
+console.log(obj.notExist); // undefined
+```
+
+---
+
+## 5. 用两个例子走一遍
+
+### 例子 1：下面输出什么？
+
+```javascript
+var a = 1;
+
+function foo() {
+  console.log(a);
+  var a = 2;
+}
+
+foo();
+```
+
+**答案：** `undefined`
+
+**解析：**
+- `var` 有变量提升，`foo` 内部的 `a` 被提升到函数顶部
+- 但赋值还在原地，所以 `console.log(a)` 时 `a` 是 `undefined`
+- 作用域链先在 `foo` 内部找到了 `a`，不会去全局找
+
+### 例子 2：let 和 var 的区别
+
+```javascript
+function foo() {
+  console.log(a); // ?
+  console.log(b); // ?
+  
+  var a = 1;
+  let b = 2;
+}
+
+foo();
+```
+
+**答案：** `undefined`，然后 `ReferenceError`
+
+**解析：**
+- `var a` 提升，初始值 `undefined`
+- `let b` 也提升，但在声明前处于**暂时性死区（TDZ）**，访问会报错
+
+---
+
+## 6. 回到变量查找
+
+作用域链是 JavaScript 变量查找的机制：
+
+1. **定义时确定，不是调用时** — 这就是词法作用域
+2. **从内到外查找** — 找到就停，找不到继续往外
+3. **闭包的本质** — 函数带着它的作用域链一起被"带走"了
+
+这张图可以把查找顺序连起来：
+
+```
+┌─────────────────────────────────────┐
+│  inner() 执行                        │
+│  ┌─────────────────────────────┐    │
+│  │ inner 作用域: { c: 3 }       │    │
+│  │ __parent__ → outer 作用域    │    │
+│  └─────────────────────────────┘    │
+│           ↓                         │
+│  ┌─────────────────────────────┐    │
+│  │ outer 作用域: { b: 2 }       │    │
+│  │ __parent__ → global 作用域   │    │
+│  └─────────────────────────────┘    │
+│           ↓                         │
+│  ┌─────────────────────────────┐    │
+│  │ global 作用域: { a: 1 }      │    │
+│  │ __parent__ → null           │    │
+│  └─────────────────────────────┘    │
+└─────────────────────────────────────┘
+```
+
+---
+
+**相关文档**：[闭包](/posts/javascript-closures) | [原型和原型链](/posts/javascript-prototype-chain) | [数据类型](/posts/javascript-data-types)

@@ -1,0 +1,239 @@
+---
+title: JavaScript 浅拷贝与深拷贝
+source: yuque-export
+date: "2025-07-17"
+description: "从配置对象被意外修改的问题出发，对比赋值、浅拷贝、JSON、structuredClone 和递归复制的适用边界。"
+tags:
+  - javascript
+  - 拷贝
+  - 引用
+
+---
+
+# JavaScript 浅拷贝与深拷贝：复制对象时究竟复制了什么
+
+你的代码出 Bug 了。
+
+你定义了一个用户配置对象 `userConfig`，然后想复制一份给新用户稍作修改。你写了：
+
+```javascript
+const newUserConfig = userConfig;
+newUserConfig.name = 'New User';
+```
+
+结果：两个用户的配置全被改了。
+
+你明明只是复制了一下，怎么原始数据也没了？
+
+---
+
+## 复制的三种层次
+
+这个问题要先从 JavaScript 的数据类型说起。
+
+JavaScript 里，数据分两类：
+
+| 类型 | 特点 | 赋值/拷贝时 |
+|---|---|---|
+| **基本类型**（string、number、boolean） | 存的是值本身 | 复制值，互不影响 |
+| **引用类型**（object、array、function） | 存的是内存地址 | 复制地址，指向同一块内存 |
+
+```javascript
+// 基本类型：复制值
+let a = 1;
+let b = a;
+b = 2;
+console.log(a); // 1 — 没事
+
+// 引用类型：复制地址
+let obj1 = { x: 1 };
+let obj2 = obj1;
+obj2.x = 100;
+console.log(obj1.x); // 100 — 原始数据被改了！
+```
+
+所以 `const copy = original` —— 这不是拷贝，这是**两个人拿同一把钥匙开同一扇门**。
+
+---
+
+## 浅拷贝：只复制了第一层
+
+你试了展开运算符：
+
+```javascript
+const copy = { ...original };
+copy.name = 'Bob';
+copy.hobbies.push('gaming');
+```
+
+第一层好了，但嵌套对象还在共享引用：
+
+```javascript
+console.log(original.name);     // 'Alice' ✅ 没问题
+console.log(original.hobbies);  // ['reading', 'coding', 'gaming'] ❌
+```
+
+这就是**浅拷贝**：只复制了一层，深层的引用类型还是共享的。
+
+### 常用浅拷贝方法
+
+```javascript
+// 展开运算符（对象）
+const copy = { ...original };
+
+// 展开运算符（数组）
+const arrCopy = [...originalArr];
+
+// Object.assign
+const copy = Object.assign({}, original);
+
+// Array.slice / Array.from
+const arrCopy = originalArr.slice();
+const arrCopy2 = Array.from(originalArr);
+```
+
+---
+
+## 深拷贝：继续复制嵌套数据
+
+**深拷贝**会继续复制嵌套数据，使副本不再共享原对象中的可复制子对象。具体能复制哪些类型，取决于采用的工具和策略。
+
+### 方案一：JSON 序列化（最简单）
+
+```javascript
+const deepCopy = JSON.parse(JSON.stringify(original));
+```
+
+原理粗暴：对象 → JSON字符串 → 新对象。字符串里存的是值不是地址，解析回来自然是全新对象。
+
+**它的限制也很明显：**
+
+```javascript
+const obj = {
+  name: 'Alice',
+  fn: () => {},         // ❌ 丢失
+  undef: undefined,      // ❌ 丢失
+  date: new Date(),     // ⚠️ 变成字符串
+  regex: /test/i,       // ⚠️ 变成 {}
+};
+
+JSON.parse(JSON.stringify(obj));
+// { name: 'Alice', date: '2024-...', regex: {} }
+```
+
+函数、undefined、Symbol、循环引用都不行。用之前先想清楚你的数据结构。
+
+### 方案二：structuredClone（适合多数可克隆数据）
+
+```javascript
+const deepCopy = structuredClone(original);
+```
+
+这是浏览器和现代 JavaScript 运行时提供的原生 API，能处理 `Date`、`RegExp`、`Map`、`Set` 和循环引用等常见结构。性能需要结合具体数据测试，不必假定它总是快多少倍。
+
+**限制：** 函数和 DOM 节点不能直接克隆，部分宿主环境对象也可能不受支持。
+
+### 方案三：手写递归（按业务类型定制）
+
+```javascript
+function deepClone(obj, hash = new WeakMap()) {
+  if (obj === null || typeof obj !== 'object') return obj;
+
+  // 循环引用：已拷贝过的直接返回
+  if (hash.has(obj)) return hash.get(obj);
+
+  // 特殊类型单独处理
+  if (obj instanceof Date) return new Date(obj);
+  if (obj instanceof RegExp) return new RegExp(obj.source, obj.flags);
+  if (obj instanceof Map) {
+    const copy = new Map();
+    hash.set(obj, copy);
+    obj.forEach((v, k) => copy.set(deepClone(k, hash), deepClone(v, hash)));
+    return copy;
+  }
+  if (obj instanceof Set) {
+    const copy = new Set();
+    hash.set(obj, copy);
+    obj.forEach(v => copy.add(deepClone(v, hash)));
+    return copy;
+  }
+
+  // 数组/普通对象
+  const copy = Array.isArray(obj) ? [] : {};
+  hash.set(obj, copy);
+
+  for (const key in obj) {
+    if (Object.hasOwn(obj, key)) {
+      copy[key] = deepClone(obj[key], hash);
+    }
+  }
+  return copy;
+}
+```
+
+> **循环引用**是什么？`obj.self = obj` 就是循环引用——对象的某个属性指向自己。不处理的话递归会无限循环，直接栈溢出。JSON 方法遇到循环引用会直接报错：`TypeError: Converting circular structure to JSON`。
+
+---
+
+## 实际开发中的常见问题
+
+### 场景 1：Vue/React 中的状态修改
+
+```javascript
+// ❌ 直接修改原对象，触发响应式问题
+const newState = this.state;
+newState.count = 10;
+this.setState(newState); // 可能不更新
+
+// ✅ 深拷贝后再改
+const newState = JSON.parse(JSON.stringify(this.state));
+newState.count = 10;
+this.setState(newState);
+
+// ✅ 现代做法：用 Immer 保持不可变性
+import { produce } from 'immer';
+this.setState(produce(draft => {
+  draft.count = 10;
+}));
+```
+
+### 场景 2：表单数据暂存
+
+用户填写表单，刷新页面后想恢复——如果直接引用原对象，修改暂存数据会污染原始值：
+
+```javascript
+// 暂存用深拷贝，分开管理
+const savedFormData = deepClone(currentFormData);
+```
+
+### 场景 3：多层配置合并
+
+```javascript
+const defaultConfig = { theme: { color: '#000', size: 14 } };
+const userConfig = { theme: { color: '#fff' } };
+
+// ❌ 这样 userConfig.theme 直接替换了整个 theme 对象
+const merged = { ...defaultConfig, ...userConfig };
+// merged.theme = { color: '#fff' } — size 没了！
+
+// ✅ 深拷贝后再合并
+const merged = deepClone(defaultConfig);
+Object.assign(merged.theme, userConfig.theme);
+```
+
+---
+
+## 小结
+
+| 方式 | 复制深度 | 适用场景 |
+|---|---|---|
+| `=` 赋值 | 0 层（共享引用） | 需要共享同一对象时；它不是拷贝 |
+| `{ ...obj }` | 1层 | 只有基本类型的简单对象 |
+| `JSON.parse/stringify` | 全部层 | 无函数、无循环引用的普通数据 |
+| `structuredClone` | 全部层 | 现代浏览器，无函数的数据 |
+| 手写递归 | 全部层 | 复杂对象，需要完整控制 |
+
+**实际选择时：**
+- 普通对象 → `structuredClone`（原生、快速）
+- 有函数 → 手写递归，或用 lodash 的 `_.cloneDeep`
+- 状态更新逻辑复杂 → 可以评估 Immer，让不可变更新更容易维护

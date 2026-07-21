@@ -1,0 +1,393 @@
+---
+title: 响应式网页设计
+source: yuque-export
+date: "2025-06-28"
+description: "从移动端布局失控的问题出发，串起 viewport、相对单位、媒体查询、Flexbox、Grid 和响应式图片。"
+tags:
+  - css
+  - 响应式
+  - 媒体查询
+
+---
+
+# 响应式网页设计：让一套页面适配不同屏幕
+
+你做的网站在电脑上看起来很完美。
+
+用户打开手机一看：文字太小、图片溢出、按钮点不到。
+
+老板说："要做响应式，适配手机和平板。"
+
+你开始写媒体查询：
+
+```css
+@media (max-width: 768px) { /* 手机 */ }
+@media (min-width: 769px) and (max-width: 1024px) { /* 平板 */ }
+@media (min-width: 1025px) { /* 电脑 */ }
+```
+
+写完才发现：如果只是按设备抄三套样式，每个组件都要重复维护，改一个间距也可能要同步好几处。
+
+**响应式不是写三套样式，而是用相对单位 + 弹性布局 + 媒体查询，让布局自动适配。**
+
+---
+
+## 1. viewport 设置
+
+响应式的第一步：设置 viewport。
+
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1">
+```
+
+| 属性 | 说明 |
+|------|------|
+| `width=device-width` | 宽度等于设备宽度 |
+| `initial-scale=1` | 初始缩放比例 1 |
+
+不要为了固定视觉效果而禁用缩放。允许用户放大页面对低视力用户很重要，也能避免不必要的可访问性问题。
+
+**不设置会怎样？**
+
+手机浏览器会假设页面宽度 980px，然后缩放显示。结果：文字太小，用户要手动放大。
+
+---
+
+## 2. 四种响应式方案
+
+### 方案 1：媒体查询
+
+根据屏幕宽度应用不同样式：
+
+```css
+/* 手机优先 */
+.container {
+  width: 100%;
+  padding: 1rem;
+}
+
+/* 平板 */
+@media (min-width: 768px) {
+  .container {
+    width: 750px;
+    margin: 0 auto;
+  }
+}
+
+/* 电脑 */
+@media (min-width: 1024px) {
+  .container {
+    width: 960px;
+  }
+}
+```
+
+**断点选择：**
+
+| 断点 | 设备 |
+|------|------|
+| 320px - 480px | 小手机 |
+| 481px - 768px | 大手机 / 小平板 |
+| 769px - 1024px | 平板 |
+| 1025px - 1200px | 小电脑 |
+| 1201px+ | 大电脑 |
+
+断点通常跟着内容需要走：布局开始拥挤时再加，而不是先照抄一整套设备尺寸。
+
+---
+
+### 方案 2：百分比布局
+
+```css
+.sidebar {
+  width: 30%;
+}
+
+.main {
+  width: 70%;
+}
+```
+
+**坑：** 百分比相对于父元素，嵌套时计算复杂。
+
+```css
+/* padding 和 margin 的百分比相对于父元素的 width！ */
+.box {
+  width: 50%;
+  padding-top: 10%; /* 相对于父元素的 width，不是 height */
+}
+```
+
+**适用：** 简单的两栏/三栏布局。
+
+---
+
+### 方案 3：vw/vh
+
+视口单位，相对于视口尺寸：
+
+```css
+.hero {
+  width: 100vw;   /* 视口宽度 */
+  height: 100vh;  /* 视口高度 */
+}
+
+.sidebar {
+  width: 20vw;    /* 视口宽度的 20% */
+}
+```
+
+**它的特点：** 不依赖父元素，直接相对于视口计算。
+
+**坑：** 移动端 `100vh` 包含地址栏高度，地址栏收起后内容被截断。
+
+**解决：**
+
+```css
+.hero {
+  height: 100vh;
+  height: 100dvh; /* 动态视口高度 */
+}
+```
+
+---
+
+### 方案 4：rem + 动态根字体
+
+`rem` 相对于根元素字体大小。动态设置根字体，所有 rem 元素自动缩放。
+
+```javascript
+function setRootFontSize() {
+  const width = document.documentElement.clientWidth;
+  // 设计稿宽度 750px，分成 10 份，1rem = 75px
+  document.documentElement.style.fontSize = width / 10 + 'px';
+}
+
+setRootFontSize();
+window.addEventListener('resize', setRootFontSize);
+```
+
+```css
+/* 设计稿：元素宽度 150px，150/75 = 2rem */
+.box {
+  width: 2rem;  /* 自动适配不同屏幕 */
+}
+```
+
+**计算公式：**
+
+```
+rem 值 = 设计稿元素尺寸 / (设计稿宽度 / 分割份数)
+```
+
+**常用分割：**
+
+- 分成 10 份：`1rem = 设计稿宽度 / 10`
+- 分成 100 份：`1rem = 设计稿宽度 / 100`（更接近 px 值）
+
+---
+
+## 3. 弹性布局：flexbox + grid
+
+### flexbox：一维布局
+
+```css
+.container {
+  display: flex;
+  flex-wrap: wrap; /* 自动换行 */
+}
+
+.item {
+  flex: 1; /* 平均分配 */
+  min-width: 200px; /* 最小宽度，触发换行 */
+}
+```
+
+**响应式卡片：**
+
+```css
+.card-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.card {
+  flex: 1 1 300px; /* 最小 300px，自动换行 */
+}
+```
+
+### grid：二维布局
+
+```css
+.container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+```
+
+`auto-fit` + `minmax`：自动计算列数，完美响应式。
+
+---
+
+## 4. 响应式图片
+
+### 图片自适应
+
+```css
+img {
+  max-width: 100%;  /* 不超过容器宽度 */
+  height: auto;     /* 保持比例 */
+}
+```
+
+### 响应式图片（不同尺寸）
+
+```html
+<picture>
+  <source media="(min-width: 1024px)" srcset="large.jpg">
+  <source media="(min-width: 768px)" srcset="medium.jpg">
+  <img src="small.jpg" alt="响应式图片">
+</picture>
+```
+
+### 艺术指导（不同裁剪）
+
+```html
+<picture>
+  <source media="(min-width: 768px)" srcset="wide.jpg">
+  <source media="(max-width: 767px)" srcset="tall.jpg">
+  <img src="default.jpg" alt="不同裁剪">
+</picture>
+```
+
+---
+
+## 5. 响应式字体
+
+### 相对单位
+
+```css
+body {
+  font-size: 16px;
+}
+
+h1 {
+  font-size: 2rem;  /* 32px */
+}
+
+.text {
+  font-size: 1rem;  /* 16px */
+}
+```
+
+### 流体排版（clamp）
+
+```css
+h1 {
+  /* 最小 24px，最大 48px，中间线性缩放 */
+  font-size: clamp(1.5rem, 5vw, 3rem);
+}
+```
+
+`clamp(min, preferred, max)`：在最小和最大之间，按首选值缩放。
+
+---
+
+## 6. 设计时常见的取舍
+
+### 移动优先
+
+先写手机样式，再用媒体查询扩展：
+
+```css
+/* 手机样式（默认） */
+.nav {
+  display: none;
+}
+
+.menu-btn {
+  display: block;
+}
+
+/* 平板及以上 */
+@media (min-width: 768px) {
+  .nav {
+    display: flex;
+  }
+  
+  .menu-btn {
+    display: none;
+  }
+}
+```
+
+**好处：** 手机样式更简单，渐进增强。
+
+### 内容优先
+
+- 小屏幕：只显示核心内容
+- 大屏幕：显示更多细节
+
+```css
+.extra-info {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .extra-info {
+    display: block;
+  }
+}
+```
+
+### 触摸友好
+
+```css
+button {
+  min-height: 44px;  /* iOS 推荐最小触摸区域 */
+  min-width: 44px;
+}
+```
+
+---
+
+## 7. 调试技巧
+
+### Chrome DevTools
+
+1. 打开开发者工具（F12）
+2. 点击设备工具栏图标
+3. 选择不同设备或自定义尺寸
+
+### 常用测试尺寸
+
+| 设备 | 宽度 |
+|------|------|
+| iPhone SE | 375px |
+| iPhone 12 | 390px |
+| iPhone 14 Pro Max | 430px |
+| iPad | 768px |
+| iPad Pro | 1024px |
+
+---
+
+## 8. 回到“一套页面适配多种屏幕”
+
+**响应式四要素：**
+
+1. **viewport 设置**：`width=device-width`
+2. **相对单位**：rem、vw、%
+3. **弹性布局**：flexbox、grid
+4. **媒体查询**：针对断点调整
+
+**放到项目里，可以这样考虑：**
+
+移动优先适合从内容最拥挤的空间开始组织样式；Flexbox 和 Grid 负责让结构有弹性，`clamp()` 可以让字号与间距平滑变化，图片则经常通过 `max-width: 100%` 避免溢出。固定像素并非不能用，只是不适合独自承担整套响应式逻辑。
+
+换个角度看，响应式不是为每类设备抄一套样式，而是让布局本身具备伸缩空间。
+
+---
+
+**相关文档**：[CSS 长度单位](/posts/css-length-units) | [Flexbox](/posts/css-flexbox)；相关主题：媒体查询

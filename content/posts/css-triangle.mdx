@@ -1,0 +1,224 @@
+---
+title: 用 CSS border 绘制三角形
+source: yuque-export
+date: "2025-07-23"
+description: "解释零尺寸元素的 border 如何形成三角形，并延伸到方向控制、描边三角和气泡箭头等用法。"
+tags:
+  - css
+  - 技巧
+  - border
+
+---
+
+# 用 CSS border 绘制三角形：原理、方向与气泡箭头
+
+你可能写过这样的代码：
+
+```css
+border: 1px solid red;
+```
+
+四条线围成边框，这没问题。
+
+但如果把 width 和 height 都设为 0 呢？
+
+```css
+width: 0;
+height: 0;
+border: 50px solid red;
+```
+
+四条边全都没地方画——它们撞在一起，挤成了一个**菱形**。四条边各自独立成三角形，在中心点相遇。
+
+这就是 CSS 三角形的原理：**把边框当成四个三角形，让它们在零点交汇，然后隐藏不需要的三个。**
+
+---
+
+## 实心三角形：四个方向
+
+### 向下指的三角形
+
+```css
+.triangle-bottom {
+  width: 0;
+  height: 0;
+  border: 50px solid transparent;
+  border-bottom-color: #d9534f;
+}
+```
+
+四条边都是 `50px`，只有底边显示颜色，其他三条透明——就得到了一个底边朝下的红色三角形。
+
+### 向上指的三角形
+
+```css
+.triangle-top {
+  width: 0;
+  height: 0;
+  border: 50px solid transparent;
+  border-top-color: #d9534f;
+}
+```
+
+### 向右 / 向左指的三角形
+
+```css
+.triangle-right {
+  width: 0;
+  height: 0;
+  border: 50px solid transparent;
+  border-left-color: #d9534f;
+}
+
+.triangle-left {
+  width: 0;
+  height: 0;
+  border: 50px solid transparent;
+  border-right-color: #d9534f;
+}
+```
+
+**四个方向可以这样对照：**
+
+```css
+/* 上 */
+border-top-color: color;
+
+/* 下 */
+border-bottom-color: color;
+
+/* 左 */
+border-left-color: color;
+
+/* 右 */
+border-right-color: color;
+```
+
+哪个方向有颜色，三角形就朝哪个方向开口。
+
+---
+
+## 空心三角形：带描边的三角
+
+气泡提示框里的尖头通常不是纯色三角形——外边是深色、内边是白色，形成"描边"效果。
+
+原理：两个三角形叠在一起，父元素比子元素大一圈，利用定位偏移露出父元素的底边颜色。
+
+```css
+.tooltip-arrow {
+  position: absolute;
+  bottom: -20px;
+  left: 20px;
+  width: 0;
+  height: 0;
+  border: 10px solid transparent;
+  border-top-color: #333;
+}
+
+.tooltip-arrow::after {
+  content: '';
+  position: absolute;
+  border: 8px solid transparent;
+  border-top-color: #fff;
+  top: -12px;              /* 比父元素小一圈，差值决定描边粗细 */
+  left: -8px;
+}
+```
+
+父元素底边宽 10px，子元素底边宽 8px，差值 2px 就是每边的描边宽度。
+
+> **描边粗细的规律：** 父 border 宽度 - 子 border 宽度 = 描边粗细。差值越大，描边越粗。
+
+---
+
+## 完整气泡提示实例
+
+```html
+<div class="tooltip">
+  这是一个提示框
+  <div class="arrow"></div>
+</div>
+```
+
+```css
+.tooltip {
+  position: relative;
+  background: #333;
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  width: 200px;
+}
+
+.arrow {
+  position: absolute;
+  bottom: -20px;
+  left: 20px;
+  width: 0;
+  height: 0;
+  border: 10px solid transparent;
+  border-top-color: #333;
+}
+
+.arrow::after {
+  content: '';
+  position: absolute;
+  border: 8px solid transparent;
+  border-top-color: #fff;
+  top: -12px;
+  left: -8px;
+}
+```
+
+`::after` 的白色底边叠在父元素黑色底边上方，差值产生 2px 白边，看起来就像给黑色三角加了一圈白描。
+
+---
+
+## 常见问题
+
+### 1. 小三角形在高清屏上模糊
+
+border-width 小于 7px 时，高清屏（DPR > 2）上可能出现锯齿。用 `clip-path` 替代可以解决这个问题：
+
+```css
+/* clip-path 用坐标点画三角形，不依赖 border */
+.triangle-clip {
+  background: #d9534f;
+  width: 100px;
+  height: 87px;   /* 宽:高 ≈ 1:0.866（等边三角形） */
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+```
+
+### 2. 忘了写 border-style
+
+如果不写 `border-style: solid`，三角形不显示：
+
+```css
+/* ❌ 不写 border-style，透明的不显示 */
+border-color: transparent transparent red transparent;
+
+/* ✅ 必须显式声明 */
+border: 50px solid transparent;
+border-bottom-color: red;
+```
+
+### 3. `transparent` 和 `rgba(0,0,0,0)` 有区别
+
+在某些旧版浏览器里，`rgba(0,0,0,0)` 渲染出来可能是黑色。用纯 `transparent` 更安全：
+
+```css
+border-color: transparent transparent #d9534f transparent;
+```
+
+---
+
+## 小结
+
+**原理：** `width: 0; height: 0` → 四条边框在零点交汇成四个三角形 → 只保留想要的那一条 → 就是三角形。
+
+**两个方向：**
+- **实心三角**：一条边有颜色，三条边 transparent
+- **空心三角**：父三角 + 子三角叠一起，子三角偏移露出父三角的边 → 描边效果
+
+简单箭头用 border 很方便；形状更复杂、尺寸变化更多时，`clip-path` 往往更直观。

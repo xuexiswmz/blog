@@ -1,0 +1,182 @@
+---
+title: CSS 水平垂直居中方法
+source: yuque-export
+date: "2025-07-30"
+description: "整理 Flex、Grid、绝对定位和 table-cell 等居中方式，结合元素尺寸与布局条件比较各自适合的场景。"
+tags:
+  - css
+  - 布局
+  - 居中
+
+---
+
+# CSS 水平垂直居中：不同场景该选哪种方法
+
+"让元素居中"——听起来是 CSS 里最简单的事。
+
+打开调试器一看：`margin: auto`、`position: 50%`、`transform: translate(-50%, -50%)`、`display: flex`、`vertical-align: middle`……全都能居中，但用哪个才对？
+
+下面按元素类型和已知条件整理常见方案，并在结尾给出一张对照表，方便需要时快速选择。
+
+---
+
+## 一、Flex 布局（常用方案）
+
+在大多数普通容器里，Flex 往往是最顺手的起点：
+
+```css
+.father {
+  display: flex;
+  justify-content: center;  /* 水平居中 */
+  align-items: center;      /* 垂直居中 */
+}
+```
+
+两行解决，**不知道子元素宽高也没关系**，这几乎是现在的主流做法。
+
+---
+
+## 二、Grid 布局（更简洁）
+
+```css
+.father {
+  display: grid;
+  place-items: center;      /* 同时处理水平和垂直 */
+}
+```
+
+`place-items: center` 是 `align-items` + `justify-items` 的简写，比 Flex 还能少写一行。
+
+---
+
+## 三、绝对定位方案
+
+### 方案 A：margin 负值（需要知道子元素宽高）
+
+```css
+.father {
+  position: relative;  /* 父级相对定位 */
+}
+.son {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-left: -50px;   /* 子元素宽度的一半 */
+  margin-top: -50px;    /* 子元素高度的一半 */
+  width: 100px;
+  height: 100px;
+}
+```
+
+原理很简单：先让子元素左上角移动到父级正中心（50%, 50%），再往左往上各拉半个自身宽高。
+
+**缺点：** 必须知道子元素尺寸，一旦子元素宽高变化就得改 CSS。
+
+### 方案 B：transform（不需要知道子元素宽高）
+
+```css
+.son {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  /* 不需要知道子元素宽高 */
+}
+```
+
+和方案 A 逻辑完全一样，但 `translate(-50%, -50%)` 是相对于**自身**的百分比，所以会自动取自身宽高，不需要手动写死数字。
+
+相比负 margin，这种写法不依赖子元素尺寸，维护起来通常轻松一些。
+
+### 方案 C：margin: auto + 四边全为 0（不需要知道宽高）
+
+```css
+.son {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;     /* 关键在这里 */
+}
+```
+
+这个 trick 很巧妙：绝对定位把子元素"拉伸"到填满父级（因为 top/right/bottom/left 全为 0），此时 margin: auto 会在各个方向上均分空间——结果就是完美居中。
+
+适合弹出层、固定弹窗这类场景。
+
+---
+
+## 四、table-cell 方案（老浏览器的选择）
+
+```css
+.father {
+  display: table-cell;
+  vertical-align: middle;  /* 垂直居中 */
+  text-align: center;      /* 水平居中 */
+}
+.son {
+  display: inline-block;
+}
+```
+
+原理：把父级变成表格单元格，单元格天然支持 `vertical-align: middle` 垂直对齐。再加 `text-align: center` 水平居中。
+
+这种写法在新项目里已经少见，但老项目中仍可能遇到，所以保留在这里作对照。
+
+---
+
+## 五、inline 元素的居中（特殊情况）
+
+### 文字居中
+
+```css
+/* 水平 */
+text-align: center;
+
+/* 单行文字垂直居中：行高=容器高度 */
+height: 40px;
+line-height: 40px;
+
+/* 多行文字垂直居中 */
+display: table-cell;
+vertical-align: middle;
+```
+
+---
+
+## 六、定宽块级元素的居中
+
+```css
+/* 最经典的一行 */
+width: 200px;
+margin: 0 auto;
+```
+
+这行代码背后有个常见误解：`margin: 0 auto` 水平居中，`margin: auto 0` 垂直居中。实际上标准块级元素，`margin: auto` 的垂直方向默认是 0，所以**只有水平方向会生效**。
+
+要让垂直方向也居中，块级元素必须先脱离文档流（absolute/fixed）或用 Flex/Grid。
+
+---
+
+## 方案对比
+
+| 方案 | 需知子元素宽高 | 兼容性 | 代码量 | 推荐场景 |
+|---|---|---|---|---|
+| Flex | ❌ 不需要 | 现代浏览器 | 3行 | 日常首选 |
+| Grid + place-items | ❌ 不需要 | 现代浏览器 | 1行 | 网格布局时 |
+| 绝对定位 + transform | ❌ 不需要 | 现代浏览器 | 3行 | 弹出层、遮罩 |
+| 绝对定位 + margin负值 | ✅ 需要 | 全部 | 4行 | 老项目兼容 |
+| 绝对定位 + margin:auto | ❌ 不需要 | 现代浏览器 | 4行 | 固定弹窗 |
+| table-cell | ❌ 不需要 | 旧浏览器 | 2行 | 老项目 |
+| margin: 0 auto | ✅ 定宽 | 全部 | 1行 | 定宽块级元素 |
+
+---
+
+## 小结
+
+普通的一维容器对齐，Flex 往往已经够用。
+
+复杂布局（弹出层、固定定位元素）用绝对定位 + `transform: translate(-50%, -50%)`，最稳。
+
+Grid 在二维区域中更自然；绝对定位、`table-cell` 等方案则更依赖具体约束或历史兼容需求。

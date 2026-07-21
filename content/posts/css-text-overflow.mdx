@@ -1,0 +1,155 @@
+---
+title: CSS 单行与多行文本溢出
+source: yuque-export
+date: "2025-08-04"
+description: "从卡片标题溢出的常见问题出发，整理单行省略、多行截断、渐变遮罩和 JavaScript 控制方案。"
+tags:
+  - css
+  - 文本溢出
+  - 省略号
+---
+
+# CSS 单行与多行文本溢出：省略号、兼容性与注意事项
+
+卡片标题短的时候一切正常，换成一段真实内容后，却把按钮挤到了下一行。文本溢出通常就是这样出现的：不是样式突然失效，而是内容终于超过了设计时预留的空间。
+
+单行和多行截断看起来相似，背后用到的规则并不完全一样。
+
+## 单行文本溢出
+
+这是最常见的场景：**标题或描述只能占一行，超出的部分变成 `...`**。
+
+实现它需要三个 CSS 属性配合：
+
+```css
+.card-title {
+  overflow: hidden;          /* ① 截住超出容器的内容 */
+  white-space: nowrap;        /* ② 强制文字不换行 */
+  text-overflow: ellipsis;    /* ③ 溢出部分显示省略号 */
+}
+```
+
+为什么三个缺一不可？
+
+- `overflow: hidden`——给容器装上"边界"，超出部分物理隐藏
+- `white-space: nowrap`——正常情况下文字遇到容器边缘会自动换行，这个属性说"不换"
+- `text-overflow: ellipsis`——告诉浏览器：溢出部分用省略号
+
+> 三条缺一条，省略号就不生效。`white-space` 最容易被忘。
+
+### text-overflow 的两个值
+
+| 值 | 效果 |
+|---|---|
+| `clip` | 直接裁掉，不留痕迹 |
+| `ellipsis` | 显示省略号（默认就是这个） |
+
+```css
+/* 裁掉型 */
+text-overflow: clip;
+
+/* 省略号型 */
+text-overflow: ellipsis;
+```
+
+---
+
+## 多行文本溢出
+
+这是真正让人头大的地方——单行一个属性不够用了，需要多行。
+
+### 方案一：行数截断（现代项目中的常见写法）
+
+限制最多显示 N 行，CSS 三件套：
+
+```css
+.product-desc {
+  display: -webkit-box;           /* 把元素变成弹性盒子 */
+  -webkit-box-orient: vertical;  /* 子元素垂直排列 */
+  -webkit-line-clamp: 3;         /* 最多显示 3 行 */
+  overflow: hidden;              /* 截住超出的行 */
+  text-overflow: ellipsis;        /* 最后一行末尾带省略号 */
+}
+```
+
+效果是这样的：
+
+```
+这是第一行文字内容...
+这是第二行文字内容...
+这是第三行文字内容
+```
+
+为什么能工作？
+
+这套写法借用了旧版弹性盒模型：`display: -webkit-box` 创建纵向盒子，`-webkit-line-clamp` 限制显示行数，`overflow: hidden` 负责裁掉剩余内容。
+
+**兼容性：** 这套带前缀的组合在现代主流浏览器中已经得到广泛支持，但它仍属于历史兼容语法。上线前应根据项目的浏览器范围实际测试，特别是复杂行内元素和特殊书写模式。
+
+> 如果文本里有超长英文单词或数字，防止它撑破容器，可以加 `word-break: break-all` 或 `word-wrap: break-word`。
+
+### 方案二：高度截断 + 渐变遮罩（兼容旧浏览器）
+
+当目标环境不适合使用 `-webkit-line-clamp`，或者需要更可控的视觉效果时，可以用伪元素配合渐变遮罩：
+
+```css
+.desc-wrapper {
+  position: relative;
+  height: 60px;            /* 两行的固定高度 */
+  line-height: 20px;        /* 一行的高度 */
+  overflow: hidden;         /* 截住超出的文字 */
+}
+
+.desc-wrapper::after {
+  content: "...";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  padding-left: 40px;       /* 给省略号留白 */
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    #fff 40%               /* 渐变遮罩，白色覆盖超出文字 */
+  );
+}
+```
+
+原理很巧妙：
+1. 固定高度 + `overflow: hidden` 把第三行文字物理截掉
+2. 伪元素绝对定位到底部
+3. `background: linear-gradient` 做白色渐变，从透明过渡到白色，制造"渐隐"效果
+
+**缺点：** 渐变遮罩是背景色，如果容器背景不是纯色（图片、渐变），这个方案就废了。
+
+### 方案三：JS 精确控制
+
+想要更精确控制（比如根据实际行数决定是否显示省略号），用 JS 来算：
+
+```javascript
+const clampText = (el, maxLines) => {
+  const lineHeight = parseFloat(getComputedStyle(el).lineHeight);
+  const maxHeight = lineHeight * maxLines;
+
+  if (el.scrollHeight > maxHeight) {
+    // 超出行数，截断并加省略号
+    el.style.height = maxHeight + 'px';
+    el.classList.add('clamped');
+  }
+};
+
+// 对所有需要截断的元素执行
+document.querySelectorAll('.desc').forEach(el => clampText(el, 3));
+```
+
+适合 CMS 内容、多变字体大小、或者需要动态计算行数的场景。
+
+---
+
+## 聊到这里
+
+| 场景 | 常见方案 |
+|---|---|
+| 单行溢出 | `overflow` + `white-space: nowrap` + `text-overflow: ellipsis` |
+| 多行（移动端 / 现代浏览器） | `-webkit-line-clamp` |
+| 多行（渐变背景 / 旧浏览器） | 伪元素 + 高度截断 + 渐变遮罩 |
+| 动态精确控制 | JS 算行高 + 动态加类 |

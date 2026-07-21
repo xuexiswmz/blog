@@ -1,0 +1,236 @@
+---
+title: CSS 两栏与三栏自适应布局
+source: yuque-export
+date: "2025-07-28"
+description: "对比 Flex、Grid、Float、圣杯、双飞翼和 Table 布局，看看两栏与三栏结构在不同兼容条件下如何取舍。"
+tags:
+  - css
+  - 布局
+  - 响应式
+
+---
+
+# CSS 两栏与三栏自适应布局：常用方案与选择
+
+"两栏布局"——听起来很简单。
+
+左边固定、右边自适应，需求很短，真正实现时却有不少选择：
+
+- 用 float？父元素要加 BFC，否则下方内容会钻上来
+- 用 flex？`flex: 1` 让右边占满，但两个栏高度不一致怎么办？
+- 三栏布局？还会遇到圣杯布局、双飞翼、table、grid 等不同方案。
+
+这一篇把每个方案的原理、优劣、适用场景讲清楚。
+
+---
+
+## 两栏布局
+
+### 方案一：Flex（现代项目中的常见写法）
+
+```css
+.box {
+  display: flex;
+}
+.left {
+  width: 200px;     /* 固定宽度 */
+  flex-shrink: 0;   /* 不被压缩 */
+}
+.right {
+  flex: 1;           /* 剩余空间全占，自适应 */
+}
+```
+
+**原理：** Flex 容器默认 `align-items: stretch`，左右栏高度会自动撑满父容器。
+
+**优点：** 结构简单，一行代码解决自适应
+**缺点：** 旧浏览器不支持（ie10 以下）
+
+---
+
+### 方案二：Float + BFC（传统方案）
+
+```css
+.box {
+  overflow: hidden;  /* 触发 BFC，阻止浮动影响下方 */
+}
+.left {
+  float: left;
+  width: 200px;
+}
+.right {
+  margin-left: 210px;  /* 留出左栏宽度 + 间距 */
+}
+```
+
+**原理：**
+1. 左栏 `float: left` 脱离文档流，父容器高度塌陷
+2. `overflow: hidden` 触发块级格式化上下文（BFC），让父容器在计算高度时把浮动元素算进去
+3. 右栏用 `margin-left` 撑开位置，不和左栏重叠
+
+**注意：** 右栏的 `margin-left` 值必须 ≥ 左栏宽度，否则会挤到左栏下面。
+
+---
+
+## 三栏布局
+
+两边固定宽度，中间自适应——这是 CSS 布局的经典问题，解决方案多到让人选择困难。
+
+### 方案一：Flex（结构简单时很顺手）
+
+```css
+.wrap {
+  display: flex;
+}
+.left  { width: 200px; flex-shrink: 0; }
+.right { width: 120px; flex-shrink: 0; }
+.middle {
+  flex: 1;
+  margin: 0 20px;   /* 左右间距 */
+}
+```
+
+**优点：** 结构简单、代码少，也容易实现垂直等高。
+
+`order` 可以调整视觉顺序，但不会改变 DOM、键盘导航和屏幕阅读器的阅读顺序。不要把它当成 SEO 技巧；内容顺序应优先在 HTML 结构中安排正确。
+
+```css
+.middle { order: -1; }  /* 中间内容显示在最前，但 DOM 在后 */
+```
+
+---
+
+### 方案二：Grid（一行解决）
+
+```css
+.wrap {
+  display: grid;
+  grid-template-columns: 200px 1fr 120px;
+  gap: 20px;
+}
+```
+
+`grid-template-columns: 200px 1fr 120px` 意思是：左边 200px，右边 120px，中间 `1fr`（剩余比例）自动填满。
+
+**优点：** 最简洁，支持不对称布局
+**缺点：** ie 不支持
+
+---
+
+### 方案三：圣杯布局（Float 时代的经典）
+
+HTML 结构要求**中间栏在最前面**：
+
+```html
+<div class="wrap">
+  <div class="middle">中间内容</div>   <!-- 必须写在最前 -->
+  <div class="left">左边</div>
+  <div class="right">右边</div>
+</div>
+```
+
+```css
+.wrap {
+  padding: 0 120px 0 200px;  /* 给左右栏留位置 */
+}
+.middle {
+  float: left;
+  width: 100%;                /* 占满整行 */
+  background: lightpink;
+}
+.left {
+  float: left;
+  width: 200px;
+  margin-left: -100%;         /* 往上拉到最左边 */
+  position: relative;
+  left: -200px;              /* 再拉回来显示在左侧 */
+  background: coral;
+}
+.right {
+  float: left;
+  width: 120px;
+  margin-left: -120px;        /* 往上拉，拉到父容器最右边 */
+  position: relative;
+  right: -120px;
+  background: lightblue;
+}
+```
+
+**原理：** 三栏全部 `float: left` + `width: 100%`，然后用**负 margin** 把左右两栏"向上拉"到中间栏的两侧。
+
+**优点：** 中间内容在 DOM 最前面，SEO 好，首屏渲染快
+**缺点：** 负 margin 调试困难，结构复杂
+
+---
+
+### 方案四：双飞翼（圣杯的改进版）
+
+结构上比圣杯多一层中间栏，但写法更干净：
+
+```html
+<div class="wrap">
+  <div class="middle-wrap">
+    <div class="middle">中间内容</div>
+  </div>
+  <div class="left">左边</div>
+  <div class="right">右边</div>
+</div>
+```
+
+```css
+.middle-wrap {
+  float: left;
+  width: 100%;
+}
+.middle {
+  margin: 0 140px 0 220px;   /* 左右 margin 给两栏留空 */
+}
+.left  { float: left; width: 200px; margin-left: -100%; }
+.right { float: left; width: 120px; margin-left: -120px; }
+```
+
+**圣杯 vs 双飞翼：** 双飞翼不用 `position` 定位，只用 `margin`，结构更简单，但多了一层 DOM 嵌套。
+
+---
+
+### 方案五：Table（兼容性好但有局限）
+
+```css
+.wrap {
+  display: table;
+  width: 100%;
+  table-layout: fixed;   /* 列宽由自身决定，不自动分配 */
+}
+.left, .right, .middle {
+  display: table-cell;
+}
+.left  { width: 200px; background: coral; }
+.right { width: 120px; background: lightblue; }
+.middle { background: lightpink; }
+```
+
+**优点：** 天然等高（表格单元格特性），兼容 ie8
+**缺点：** `table-cell` 不支持部分 CSS 布局属性，`flex` 和 `margin` 的某些用法不生效
+
+---
+
+## 方案对比
+
+| 方案 | 代码量 | 等高支持 | 兼容 | 是否改变 DOM 顺序 | 更适合 |
+|---|---|---|---|---|---|
+| Flex | 少 | ✅ | 现代浏览器 | 否，`order` 只改视觉顺序 | 一维排列、常规栏布局 |
+| Grid | 最少 | ✅ | 现代浏览器 | 否 | 同时控制行与列 |
+| Float + BFC（两栏） | 中 | ❌ | 较老浏览器 | 否 | 维护传统页面 |
+| 圣杯布局 | 多 | ❌ | 较老浏览器 | 可把主内容写在前面 | 理解旧式三栏布局 |
+| 双飞翼 | 中 | ❌ | 较老浏览器 | 可把主内容写在前面 | 维护历史项目 |
+| Table | 少 | ✅ | 较老浏览器 | 否 | 需要旧浏览器等高布局 |
+
+---
+
+## 如何选择
+
+只有一个方向上的排列和对齐，优先考虑 Flex；需要同时控制行与列，Grid 往往更自然。
+
+如果项目确实要兼容老旧浏览器，再评估 Table、Float、圣杯或双飞翼方案。
+
+如果主内容需要优先出现在阅读顺序中，应直接调整 HTML 结构，而不是只依赖 Flex 的 `order`。

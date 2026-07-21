@@ -1,0 +1,252 @@
+---
+title: CSS 滚动视差效果
+source: yuque-export
+date: "2025-06-23"
+description: "从运动视差的原理出发，介绍 fixed 背景与 transform 两种实现方式，并讨论性能和减弱动画支持。"
+tags:
+  - css
+  - 视觉差
+  - 效果
+
+---
+
+# CSS 滚动视差：用不同速度营造页面层次
+
+视差滚动（Parallax Scrolling）是一种视觉效果技术——当用户滚动页面时，不同层的元素以不同速度移动，创造出深度感和立体感。
+
+常见场景：产品落地页、品牌官网、故事性长页面。
+
+---
+
+## 一、视差的本质
+
+人眼判断深度的一个关键线索是**运动视差**：近的物体移动快，远的物体移动慢。
+
+在网页中模拟这个效果：
+- 背景层 → 移动慢（模拟远处）
+- 内容层 → 正常速度
+- 悬浮层 → 移动更快或固定（模拟近处）
+
+---
+
+## 二、实现方式一：background-attachment: fixed
+
+最简单的视差效果，让背景图固定不动，内容在上面滚动。
+
+### 原理
+
+`background-attachment` 控制背景图像是否随元素内容滚动：
+
+| 值 | 效果 |
+|----|------|
+| `scroll` | 背景随元素滚动（默认） |
+| `fixed` | 背景相对于**视口**固定，不随元素滚动 |
+| `local` | 背景相对于**元素内容**固定 |
+
+### 代码示例
+
+```html
+<section class="parallax-section">
+  <h1>滚动时背景不动</h1>
+</section>
+
+<style>
+.parallax-section {
+  height: 100vh;
+  background-image: url('mountain.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed; /* 关键：背景固定 */
+}
+</style>
+```
+
+### 效果说明
+
+当用户滚动页面时：
+- `<section>` 元素本身随页面滚动
+- 但背景图始终固定在视口位置
+- 视觉上产生"背景慢、内容快"的视差效果
+
+### 注意事项
+
+- `background-attachment: fixed` 在 iOS Safari 中有兼容性问题
+- 解决方案：使用 `transform: translate3d` 方案替代
+
+---
+
+## 三、实现方式二：transform: translate3d（3D 视差）
+
+更强大的视差效果，利用 CSS 3D 变换让不同元素在 Z 轴上有不同位置。
+
+### 核心概念
+
+1. **perspective**：定义观察者到 Z=0 平面的距离，产生透视效果
+2. **transform-style: preserve-3d**：让子元素保持 3D 空间关系
+3. **translateZ()**：设置元素在 Z 轴的位置
+
+### 原理图解
+
+```
+观察者 (眼睛)
+    │
+    │  perspective: 1px
+    │
+    ▼
+┌─────────────────────┐  ← Z = 0 (屏幕)
+│                     │
+│  ┌─────────────┐    │  ← translateZ(-2px) 移动最慢
+│  │  背景层     │    │
+│  └─────────────┘    │
+│                     │
+│  ┌─────────────┐    │  ← translateZ(-1px) 移动较慢
+│  │  中间层     │    │
+│  └─────────────┘    │
+│                     │
+│  ┌─────────────┐    │  ← translateZ(0) 正常速度
+│  │  内容层     │    │
+│  └─────────────┘    │
+└─────────────────────┘
+```
+
+当滚动时，Z 轴位置不同的元素在屏幕上的移动距离不同：
+- `translateZ(-2px)` 的元素移动距离 ≈ 滚动距离 × 0.5（慢）
+- `translateZ(-1px)` 的元素移动距离 ≈ 滚动距离 × 0.67（较慢）
+- `translateZ(0)` 的元素移动距离 = 滚动距离（正常）
+
+### 完整代码
+
+```html
+<div class="parallax-container">
+  <div class="layer layer-back">背景层</div>
+  <div class="layer layer-mid">中间层</div>
+  <div class="layer layer-front">内容层</div>
+</div>
+
+<style>
+.parallax-container {
+  height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  perspective: 1px;           /* 透视距离 */
+  transform-style: preserve-3d; /* 保持 3D 空间 */
+}
+
+.layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.layer-back {
+  transform: translateZ(-2px) scale(3);  /* 最远，移动最慢 */
+  background: url('bg.jpg') center/cover;
+}
+
+.layer-mid {
+  transform: translateZ(-1px) scale(2);  /* 中等距离 */
+  background: rgba(255,255,255,0.5);
+}
+
+.layer-front {
+  transform: translateZ(0);  /* 最近，正常速度 */
+  z-index: 1;
+}
+
+/* scale 的作用：补偿 perspective 造成的缩放 */
+/* translateZ(-1px) + perspective: 1px → 元素缩小为 1/(1+1) = 0.5 */
+/* 所以需要 scale(2) 恢复原始大小 */
+</style>
+```
+
+### 为什么需要 scale？
+
+当元素有 `translateZ(-z)` 时，透视投影会让元素缩小：
+
+```
+缩放比例 = perspective / (perspective + z)
+```
+
+例如 `perspective: 1px, translateZ(-1px)`：
+```
+缩放比例 = 1 / (1 + 1) = 0.5
+```
+
+所以需要 `scale(2)` 来补偿，让元素恢复原始大小。
+
+---
+
+## 四、两种方案对比
+
+| 特性 | background-attachment | transform: translate3d |
+|------|----------------------|------------------------|
+| 实现难度 | 简单 | 中等 |
+| 效果强度 | 固定背景 | 多层不同速度 |
+| 性能 | 较好 | 好（GPU 加速） |
+| 兼容性 | iOS 有问题 | 现代浏览器良好 |
+| 灵活性 | 只能固定背景 | 可控制每层速度 |
+
+---
+
+## 五、实际应用技巧
+
+### 1. 适度使用
+
+视差效果很炫，但：
+- 页面里同时出现太多视差层时，部分用户可能会感到眩晕
+- 移动端谨慎使用，滚动体验敏感
+- 考虑性能，避免大量元素参与视差
+
+### 2. 减弱动画（Accessibility）
+
+尊重用户的 `prefers-reduced-motion` 设置：
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  .parallax-container {
+    perspective: none;
+  }
+  .layer {
+    transform: none !important;
+  }
+}
+```
+
+### 3. 性能优化
+
+- 使用 `will-change: transform` 提示浏览器优化
+- 避免在视差元素上使用 `box-shadow`、`filter` 等昂贵属性
+- 使用 `transform3d()` 触发 GPU 加速
+
+```css
+.layer {
+  will-change: transform;
+  transform: translateZ(-1px) scale(2);
+}
+```
+
+---
+
+## 六、JavaScript 方案（可选）
+
+对于更复杂的视差效果，可以用 JavaScript 监听滚动：
+
+```javascript
+window.addEventListener('scroll', () => {
+  const scrollY = window.scrollY;
+  
+  document.querySelector('.layer-back').style.transform 
+    = `translateY(${scrollY * 0.3}px)`;
+  
+  document.querySelector('.layer-mid').style.transform 
+    = `translateY(${scrollY * 0.5}px)`;
+});
+```
+
+但纯 CSS 方案性能更好，优先使用。
+
+---
+
+**相关文档**：[CSS动画](/posts/css-animation) | [CSS3新增特性](/posts/css3-features)

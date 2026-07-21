@@ -1,0 +1,339 @@
+---
+title: JavaScript 原型与原型链
+source: yuque-export
+date: "2025-07-07"
+description: "从 instanceof 和对象共享方法出发，串起 prototype、对象原型、属性查找、constructor 与 class 之间的关系。"
+tags:
+  - javascript
+  - 原型链
+
+---
+
+# JavaScript 原型与原型链：对象如何共享能力
+
+`instanceof` 经常被解释成“检查对象是不是某个构造函数的实例”。这个说法方便记忆，却解释不了一个常见结果：为什么 `[] instanceof Object` 是 `true`？
+
+或者更经典的：
+```javascript
+function Person() {}
+const p = new Person();
+
+console.log(p.__proto__ === Person.prototype); // true
+console.log(Person.prototype.__proto__ === Object.prototype); // true
+console.log(Object.prototype.__proto__); // null
+```
+
+这三行输出并不难记，真正值得弄清楚的是：
+- 为什么要有 `__proto__` 和 `prototype` 两个东西？
+- 原型链到底在解决什么问题？
+- `Object.create(null)` 创建的对象有什么特殊之处？
+
+这些问题都指向同一个核心：原型链是一套对象共享属性和继续查找属性的机制。
+
+---
+
+## 1. 先回到一个问题：JavaScript 为什么需要原型？
+
+早期 JavaScript 没有原生 `class` 语法，对象复用主要依靠构造函数和原型。现代 `class` 让写法更接近传统面向对象语言，但底层的属性查找仍建立在原型链上。
+
+Java 里，你写 `class Person`，然后 `new Person()`，这叫"从类创建实例"。
+
+JavaScript 里，你写 `function Person() {}`，然后 `new Person()`，这叫什么？
+
+这叫**用一个函数构造一个对象**。
+
+那问题来了：如果我想让所有 Person 实例共享一个方法，怎么办？
+
+### 方案 1：写在构造函数里？
+
+```javascript
+function Person(name) {
+  this.name = name;
+  this.sayHello = function() {
+    console.log('Hello, ' + this.name);
+  };
+}
+
+const p1 = new Person('Alice');
+const p2 = new Person('Bob');
+
+console.log(p1.sayHello === p2.sayHello); // false ❌
+```
+
+每个实例都会创建一个新的 `sayHello` 函数。实例越多，重复函数对象也越多，而这些方法原本完全可以共享。
+
+### 方案 2：写在函数外面？
+
+```javascript
+function Person(name) {
+  this.name = name;
+}
+
+function sayHello() {
+  console.log('Hello, ' + this.name);
+}
+
+const p1 = new Person('Alice');
+sayHello.call(p1); // 每次都要 .call，太丑了
+```
+
+能用，但丑。
+
+### 方案 3：原型
+
+JavaScript 的设计者给每个函数加了一个 `prototype` 属性——一个对象。
+
+当你 `new Person()` 时，创建的实例会自动关联到这个 `prototype` 对象。
+
+```javascript
+function Person(name) {
+  this.name = name;
+}
+
+Person.prototype.sayHello = function() {
+  console.log('Hello, ' + this.name);
+};
+
+const p1 = new Person('Alice');
+const p2 = new Person('Bob');
+
+p1.sayHello(); // "Hello, Alice"
+p2.sayHello(); // "Hello, Bob"
+
+console.log(p1.sayHello === p2.sayHello); // true ✅
+```
+
+**这就是原型存在的意义：让所有实例共享同一份方法，节省内存。**
+
+---
+
+## 2. prototype 和 __proto__ 到底什么关系？
+
+这是最容易晕的地方。
+
+画个图：
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│   Person（构造函数）                                          │
+│   ┌──────────────────┐                                      │
+│   │ prototype ───────────┐                                  │
+│   └──────────────────┘  │                                  │
+│                          ▼                                  │
+│   Person.prototype     ┌──────────────────────┐             │
+│   （原型对象）          │ constructor: Person  │             │
+│                        │ sayHello: function   │             │
+│                        └──────────────────────┘             │
+│                                 ▲                           │
+│                                 │                           │
+│   p1, p2（实例）                 │ __proto__                 │
+│   ┌──────────────┐              │                           │
+│   │ name: 'Alice'│──────────────┘                           │
+│   └──────────────┘                                          │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**把两个属性放在一起看：**
+- `prototype` 是**构造函数**的属性，指向原型对象
+- `__proto__` 是**实例**的属性，指向同一个原型对象
+
+因此在这个例子中，`p.__proto__ === Person.prototype` 是 `true`。更推荐用 `Object.getPrototypeOf(p)` 查看实例原型，因为 `__proto__` 主要用于兼容和调试。
+
+**为什么要有两个？**
+
+因为构造函数需要知道"我的原型是谁"（`prototype`），实例需要知道"我的原型在哪"（`__proto__`）。
+
+它们是同一根绳的两端。
+
+---
+
+## 3. 原型链：属性如何沿着链查找
+
+当你访问 `p.sayHello` 时，JavaScript 引擎开始一场寻宝：
+
+```
+1. 在 p 自身找 → 没有
+2. 沿找到？去 p.__proto__（Person.prototype）找 → 找到了！
+3. 返回这个函数
+```
+
+如果 `Person.prototype` 也没有呢？
+
+```javascript
+console.log(p.toString); // 哪来的？
+```
+
+寻宝继续：
+```
+1. p 自身 → 没有
+2. p.__proto__（Person.prototype）→ 没有
+3. p.__proto__.__proto__（Object.prototype）→ 找到了！
+4. 返回 Object.prototype.toString
+```
+
+这就是**原型链**：一层层向上查找，直到找到或遇到 `null`。
+
+```
+p → Person.prototype → Object.prototype → null
+```
+
+现在你能回答开头的问题了：
+
+**为什么 `[] instanceof Object` 是 true？**
+
+因为数组的原型链是：
+```
+[] → Array.prototype → Object.prototype → null
+```
+
+`Object.prototype` 在这条链上，所以 `[]` 是 Object 的实例。
+
+---
+
+## 4. instanceof 的原理：就是沿着链找
+
+自己实现一个：
+
+```javascript
+function myInstanceof(obj, Constructor) {
+  let proto = obj.__proto__;
+  
+  while (proto) {
+    if (proto === Constructor.prototype) {
+      return true;  // 找到了！
+    }
+    proto = proto.__proto__;  // 继续往上找
+  }
+  
+  return false;  // 走到 null 还没找到
+}
+
+console.log(myInstanceof([], Array));  // true
+console.log(myInstanceof([], Object)); // true
+console.log(myInstanceof([], Function)); // false
+```
+
+就这么简单。
+
+---
+
+## 5. 一个有趣的特例：Object.create(null)
+
+正常对象的原型链最终都指向 `Object.prototype`，所以它们都有 `toString`、`hasOwnProperty` 等方法。
+
+但如果你这样创建：
+
+```javascript
+const pureObj = Object.create(null);
+
+console.log(pureObj.__proto__); // undefined
+console.log(pureObj.toString);  // undefined ❌
+```
+
+这是一个"纯净"的对象——没有原型，没有继承任何方法。
+
+**有什么用？**
+
+当你把对象当 Map 用时，不用担心原型链污染：
+
+```javascript
+const dict = Object.create(null);
+
+dict.hasOwnProperty = 'oops';  // 不会和原型方法冲突
+console.log(dict.hasOwnProperty); // 'oops'（字符串，不是方法）
+
+// 普通对象就不行：
+const normalDict = {};
+normalDict.hasOwnProperty = 'oops';
+console.log(normalDict.hasOwnProperty); // 'oops'
+// 但原型方法还在，只是被覆盖了
+```
+
+---
+
+## 6. constructor：被遗忘的属性
+
+每个原型对象都有一个 `constructor` 属性，指向构造函数：
+
+```javascript
+function Person() {}
+
+console.log(Person.prototype.constructor === Person); // true
+
+const p = new Person();
+console.log(p.constructor === Person); // true（沿原型链找到）
+```
+
+**但有个坑：**
+
+如果你这样重写 prototype：
+
+```javascript
+function Person() {}
+Person.prototype = {
+  sayHello: function() {}
+};
+
+console.log(Person.prototype.constructor === Person); // false ❌
+console.log(Person.prototype.constructor === Object); // true
+```
+
+因为 `{ sayHello: ... }` 这个对象是 `new Object()` 创建的，它的 constructor 指向 Object。
+
+**修复：**
+
+```javascript
+Person.prototype = {
+  constructor: Person,  // 手动指回去
+  sayHello: function() {}
+};
+```
+
+---
+
+## 7. ES6 class：语法糖
+
+ES6 的 class 看起来像 Java 的类，但底层还是原型：
+
+```javascript
+class Person {
+  constructor(name) {
+    this.name = name;
+  }
+  
+  sayHello() {
+    console.log('Hello, ' + this.name);
+  }
+}
+
+// 等价于：
+function Person(name) {
+  this.name = name;
+}
+Person.prototype.sayHello = function() {
+  console.log('Hello, ' + this.name);
+};
+```
+
+class 只是让代码更好看，原型链机制完全一样。
+
+---
+
+## 8. 小结
+
+原型链主要解决一个问题：
+
+**如何让多个对象共享同一份方法？**
+
+答案：给每个对象一个"原型"指针，找不到属性就去原型里找。原型还有原型，就形成了一条链。
+
+整套机制可以收成三点：
+1. `prototype` 是构造函数的属性，`__proto__` 是实例的属性
+2. 原型链是属性查找的路径，终点是 `null`
+3. `instanceof` 就是在原型链上找 `Constructor.prototype`
+
+---
+
+**相关文档**：[作用域链](/posts/javascript-scope-chain) | [闭包](/posts/javascript-closures) | [实现继承](/posts/javascript-inheritance) | [浅拷贝与深拷贝](/posts/javascript-shallow-deep-copy)

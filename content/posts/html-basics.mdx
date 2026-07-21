@@ -1,0 +1,973 @@
+---
+title: HTML 基础：常用标签与 HTML5 能力
+source: yuque-export
+date: "2025-06-20"
+description: "从页面基本骨架开始，整理常用标签、表单、表格、多媒体、Canvas、存储、Worker 与无障碍相关知识。"
+tags:
+  - html
+  - 基础
+
+---
+
+# HTML 基础：从页面结构到 HTML5 常用能力
+
+浏览器拿到一份 HTML 文档时，先关心的不是颜色和布局，而是“这段内容是什么”：标题、段落、导航、图片，还是表单。标签选得越准确，页面结构、可访问性和后续样式都会越清楚。
+
+## 基本语法
+```html
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>我的测试站点</title>
+  </head>
+  <body>
+    <p>这是我的页面</p>
+  </body>
+</html>
+```
+
+1. `<!doctype html>`：声明当前文档使用现代 HTML。早期 XHTML 文档的声明更长，下面的写法适合作为历史对照，新页面不需要再使用：
+
+```html
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+```
+
+2. `<html></html>`: [`<html>`](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/html) 元素。这个元素包裹了页面中所有的内容，有时被称为根元素。
+3. `<head></head>`：[`<head>`](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/head) 保存页面元数据，例如标题、字符集、样式表链接和搜索摘要，这些内容通常不会直接显示在正文中。
+4. `<meta charset="utf-8">`：将文档字符集设置为 UTF-8，避免中文和其他字符因编码不一致而显示异常。
+5. `<title></title>`：[`<title>`](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/title) 设置浏览器标签页、书签和搜索结果中常用的页面标题。
+6. `<body></body>`：[`<body>`](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/body) 包含页面中实际呈现的文本、图片、表单和多媒体内容。
+
+### 从常用标签聊起
+#### 分区div
+**`<div>`** 是一个通用容器，本身不表达特殊语义，也不会自动带来某种布局。通常要配合 [CSS](https://developer.mozilla.org/zh-CN/docs/Glossary/CSS) 或父元素的布局模型，例如[弹性盒子](https://developer.mozilla.org/zh-CN/docs/Web/CSS/CSS_flexible_box_layout)，才能决定它的视觉表现。
+
+##### 使用时可以留意
++ 这个元素包含[全局属性](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Global_attributes)。
++ 只有当没有其他合适的语义元素（例如 [`<article>`](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/article) 或 [`<nav>`](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/nav)）时，才应使用 `<div>` 元素。
+
+##### 示例
+```html
+<div>
+  <p>这里可以是任何内容。</p>
+</div>
+```
+
+> `<div>` 元素具有[一个隐含角色generic](https://www.w3.org/TR/wai-aria-1.2/#generic)，而不是 none。这可能会影响某些 ARIA 组合声明，这些声明希望具有特定角色的直接后代元素能正常运行。
+#### 标题h1~h6
+呈现了六个不同的级别的标题，`<h1>` 级别最高，而 `<h6>` 级别最低。
+
+##### 属性、使用要点
++ 该元素包含所有[全局特性](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Global_attributes)。
++ 用户代理可以使用标题信息，例如自动构建文档的目录。
++ 标题层级更适合表达文档结构；视觉上的字号大小可以交给 [CSS](https://developer.mozilla.org/zh-CN/docs/Web/CSS) [font-size](https://developer.mozilla.org/zh-CN/docs/Web/CSS/font-size)。
++ 避免跳过某级标题：始终要从 `<h1>` 开始，接下来依次使用 `<h2>` 等等
+
+##### 示例
+```html
+<h1>一级标题</h1>
+<h2>二级标题</h2>
+<h3>三级标题</h3>
+<h4>四级标题</h4>
+<h5>五级标题</h5>
+<h6>六级标题</h6>
+```
+
+#### 段落p
+**`<p>`** [HTML](https://developer.mozilla.org/zh-CN/docs/Web/HTML) 元素表示文本的一个段落。在视觉媒体中，段落通常表现为用空行和/或首行缩进与相邻段落分隔的文本块，但 HTML 段落可以是相关内容的任何结构分组，如图像或表格字段。
+
+段落是[块级元素](https://developer.mozilla.org/zh-CN/docs/Glossary/Block-level_content)，如果在关闭的 `</p>` 标签之前解析了另一个块级元素，则该标签将自动关闭。
+
+##### 属性
+这个元素包含[全局属性](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Global_attributes)。
+
+##### 示例
+```html
+<p>这是第一个段落。这是第一个段落。这是第一个段落。这是第一个段落。</p>
+<p>这是第二个段落。这是第二个段落。这是第二个段落。这是第二个段落。</p>
+```
+
+
+
+> **备注：** `<p>` 标签的 `align` 属性已被弃用，请不要使用。
+#### 图像[img](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/img)
+**`<img>`** HTML 元素将一张图像嵌入文档。
+
++ `src` 属性是**必须的**，它包含了你想嵌入的图片的路径。
++ `alt` 为图像提供文字替代。屏幕阅读器会读取它，图片加载失败时浏览器也可能显示这段文字。装饰性图片可以使用空的 `alt=""`，有信息含义的图片则应写出简洁准确的描述。
++ HTML 标准并没有给出需要支持的图像格式的列表，因此每个[用户代理](https://developer.mozilla.org/zh-CN/docs/Glossary/User_agent)支持一组不同的格式。
+
+##### 属性
+这个元素支持[全局属性](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Global_attributes)。
+
+1. alt
+2. crossorigin
+3. decoding
+4. fetchpriority
+5. heigh
+6. ismap
+7. loading
+8. referrerpolicy
+9. sizes
+10. src
+11. srcset
+12. width
+13. usemap
+
+[更多详情](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/img#%E5%B1%9E%E6%80%A7)
+
+##### 示例
+```html
+<img src="favicon144.png" alt="MDN logo" />
+```
+
+```html
+<a href="https://developer.mozilla.org">
+  <img src="favicon144.png" alt="Visit the MDN site" />
+</a>
+```
+
+```html
+
+<img src="favicon72.png" alt="MDN logo" srcset="favicon144.png 2x" />
+```
+
+```html
+
+<img
+  src="clock-demo-200px.png"
+  alt="Clock"
+  srcset="clock-demo-200px.png 200w, clock-demo-400px.png 400w"
+  sizes="(max-width: 600px) 200px, 50vw" />
+```
+
+#### 列表ol/ul
+**`<ul>`** 元素表示无序的项目列表，通常渲染为项目符号列表。
+
+**`<ol>` 元素**表示有序列表，通常渲染为一个带编号的列表。
+
+##### 属性
+ul/ol元素包含[全局属性](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Global_attributes)。
+
+1. [ol](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/ol#%E5%B1%9E%E6%80%A7)
++ reversed
++ start
++ type
+2. ul（已弃用）
++ compact
++ type
+
+##### 使用说明
+`<ol>` 和 [`<ul>`](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/ul) 元素两者可以无限嵌套，既可以同类嵌套，也可以互相嵌套。
+
+`<ol>` 和 [`<ul>`](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/ul) 元素都表示列表。区别在于，`<ol>` 元素的有序列表的顺序是有意义的。
+
+至于如何确定该选择哪一个列表元素，可以尝试更改列表项的顺序：如果顺序改变后含义也会变化，就使用 `<ol>`；否则使用 `<ul>` 更合适。
+
+##### 示例
+```html
+<ol>
+  <li>first item</li>
+  <li>
+    second item
+    
+    <ul>
+      <li>second item first subitem</li>
+      <li>second item second subitem</li>
+      <li>second item third subitem</li>
+    </ul>
+  </li>
+  
+  <li>third item</li>
+</ol>
+```
+
+#### 超链接a
+**`<a>`** 元素（或称_锚_元素）可以通过[它的href属性](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/a#href)创建通向其他网页、文件、电子邮件地址、同一页面内的位置或任何其他 URL 的超链接。
+
+`<a>` 里的文字最好能说明链接会去哪里。如果存在 `href` 属性，元素获得焦点后也可以通过回车键激活。
+
+##### 属性
+该元素的属性包含[全局属性](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Global_attributes)。
+
+1. download
+2. href
+3. hreflang
+4. ping
+5. referrerpolicy
+6. rel
+7. target
+8. type
+
+[更多详情](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/a#%E5%B1%9E%E6%80%A7)
+
+##### 示例
+```html
+<a href="https://www.mozilla.com"> Mozilla </a>
+```
+
+#### 表单form
+**`<form>` 元素**表示文档中的一个区域，此区域包含交互控件，用于向 Web 服务器提交信息。
+
+##### 属性
+此元素拥有全局属性
+
+1. accept-charset
+2. autocapitalize（被 iOS Safari 使用的非标准属性）
+3. autocomplete
+4. name
+5. rel
+
+提交表单相关属性
+
+6. action
+7. enctype
+8. method
+9. novalidate
+10. target
+
+##### 示例
+```html
+<form action="" method="get" class="form-example">
+  <div class="form-example">
+    <label for="name">Enter your name: </label>
+    <input type="text" name="name" id="name" required />
+  </div>
+  <div class="form-example">
+    <label for="email">Enter your email: </label>
+    <input type="email" name="email" id="email" required />
+  </div>
+  <div class="form-example">
+    <input type="submit" value="Subscribe!" />
+  </div>
+</form>
+
+```
+
+```css
+form.form-example {
+  display: table;
+}
+
+div.form-example {
+  display: table-row;
+}
+
+label,
+input {
+  display: table-cell;
+  margin-bottom: 10px;
+}
+
+label {
+  padding-right: 10px;
+}
+
+```
+
+```html
+
+<form>
+  <label
+    >Name:
+    <input name="submitted-name" autocomplete="name" />
+  </label>
+  <button>Save</button>
+</form>
+
+
+<form method="post">
+  <label
+    >Name:
+    <input name="submitted-name" autocomplete="name" />
+  </label>
+  <button>Save</button>
+</form>
+
+
+<form method="post">
+  <fieldset>
+    <legend>Title</legend>
+    <label><input type="radio" name="radio" /> Select me</label>
+  </fieldset>
+</form>
+
+```
+
+#### 表格table
+**`<table>`** 元素表示表格数据——即在一个由包含数据的行和列组成的二维表格中呈现的信息。
+
+允许内容：
+
+1. 一个可选的 [`<caption>`](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/caption) 元素
+2. 零个或多个的 [`<colgroup>`](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/colgroup) 元素
+3. 一个可选的 [`<thead>`](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/thead) 元素
+4. 下列任意一个：
++ 零个或多个 [`<tbody>`](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/tbody)
++ 零个或多个 [`<tr>`](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/tr)
+5. 一个可选的 [`<tfoot>`](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/tfoot) 元素
+
+##### 示例
+```html
+<p>含有表头的表格</p>
+<table>
+  <tr>
+    <th>姓</th>
+    <th>名</th>
+  </tr>
+  <tr>
+    <td>John</td>
+    <td>Doe</td>
+  </tr>
+  <tr>
+    <td>Jane</td>
+    <td>Doe</td>
+  </tr>
+</table>
+
+<p>含有表头、表尾和表格主体的表格</p>
+<table>
+  <thead>
+    <tr>
+      <th>表头内容 1</th>
+      <th>表头内容 2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>表格主体内容 1</td>
+      <td>表格主体内容 2</td>
+    </tr>
+  </tbody>
+  <tfoot>
+    <tr>
+      <td>表尾内容 1</td>
+      <td>表尾内容 2</td>
+    </tr>
+  </tfoot>
+</table>
+
+<p>有列组的表格</p>
+<table>
+  <colgroup span="4"></colgroup>
+  <tr>
+    <th>国家</th>
+    <th>首都</th>
+    <th>人口数量</th>
+    <th>语言</th>
+  </tr>
+  <tr>
+    <td>美国</td>
+    <td>华盛顿</td>
+    <td>3.09 亿</td>
+    <td>英语</td>
+  </tr>
+  <tr>
+    <td>瑞典</td>
+    <td>斯德哥尔摩</td>
+    <td>900 万</td>
+    <td>瑞典语</td>
+  </tr>
+</table>
+
+<p>有列组和列的表格</p>
+<table>
+  <colgroup>
+    <col style="background-color: #0f0" />
+    <col span="2" />
+  </colgroup>
+  <tr>
+    <th>青柠</th>
+    <th>柠檬</th>
+    <th>橘子</th>
+  </tr>
+  <tr>
+    <td>绿色</td>
+    <td>黄色</td>
+    <td>橙色</td>
+  </tr>
+</table>
+
+<p>有标题的简单表格</p>
+<table>
+  <caption>
+    美妙的标题
+  </caption>
+  <tr>
+    <td>美妙的数据</td>
+  </tr>
+</table>
+
+
+```
+
+[更多示例](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/table#%E7%A4%BA%E4%BE%8B)
+
+#### 框架[iframe](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Element/iframe)
+**内联框架元素 `<iframe>`** 表示嵌套的[浏览上下文](https://developer.mozilla.org/zh-CN/docs/Glossary/Browsing_context)，能够将另一个 HTML 页面嵌入当前页面。
+
+每个嵌入的浏览上下文都有自己的[会话历史记录](https://developer.mozilla.org/zh-CN/docs/Web/API/History)和 [DOM 树](https://developer.mozilla.org/zh-CN/docs/Web/API/Document)。包含它的页面属于父级浏览上下文，没有父级的顶层上下文通常对应一个浏览器窗口。
+
+**注意：** 每个 `<iframe>` 都拥有相对独立的文档环境，会增加内存、网络和计算开销。页面中需要嵌入多个框架时，应评估加载时机、权限、安全策略和实际性能。
+
+
+##### 属性
+该元素包含[全局属性](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Global_attributes)。
+
+1. allow
+2. allowfullscreen
+3. allowpaymentrequest
+4. csp
+5. importance
+6. name
+7. referrerpolicy
+8. sandbox
+9. src
+10. srcdoc
+11. width
+12. mozbrowser（非标准）
+
+##### 示例
+```html
+<iframe
+  src="https://example.org"
+  title="iframe Example 1"
+  width="400"
+  height="300">
+</iframe>
+
+```
+
+### 属性
+### HTML5特性
++ 用于绘画的 canvas 元素
++ 用于媒介回放的 video 和 audio 元素
++ 对本地离线存储的更好的支持
++ 新的特殊内容元素，比如 article、footer、header、nav、section
++ 新的表单控件，比如 calendar、date、time、email、url、search
+
+#### 语义化标签
+##### 新的语义/结构元素
+1. `<article>` 定义页面独立的内容区域。
+2. `<aside>` 定义页面的侧边栏内容。 
+3. `<bdi>` 允许您设置一段文本，使其脱离其父元素的文本方向设置。 
+4. `<command>` 曾用于表示命令按钮，但已经废弃，不应在新页面中使用。
+5. `<details>` 用于描述文档或文档某个部分的细节 
+6. `<dialog>` 定义对话框，比如提示框 
+7. `<summary>` 标签包含 details 元素的标题 
+8. `<figure>` 规定独立的流内容（图像、图表、照片、代码等等）。 
+9. `<figcaption>` 定义 `<figure>` 元素的标题 
+10. `<footer>` 定义 section 或 document 的页脚。 
+11. `<header>` 定义了文档的头部区域 
+12. `<main>` 定义文档的主内容
+13. `<mark>` 定义带有记号的文本。 
+14. `<meter>` 定义度量衡。仅用于已知最大和最小值的度量。 
+15. `<nav>` 定义导航链接的部分。 
+16. `<progress>` 定义任何类型的任务的进度。 
+17. `<ruby>` 定义 ruby 注释（中文注音或字符）。 
+18. `<rt>` 定义字符（中文注音或字符）的解释或发音。 
+19. `<rp>` 在 ruby 注释中使用，定义不支持 ruby 元素的浏览器所显示的内容。 
+20. `<section>` 定义文档中的节（section、区段）。 
+21. `<time>` 定义日期或时间。 
+22. `<wbr>` 规定在文本中的何处适合添加换行符。
+
+##### 新的表单元素
+`<datalist>` 定义输入控件的预定义选项。
+
+`<keygen>` 曾用于生成密钥对，但已经从现代 HTML 中移除；新项目应使用 Web Crypto API 等现代方案。
+
+`<output>` 定义计算结果。
+
+##### 新的输入类型
+新输入类型
+
++ color
++ date
++ datetime（已废弃，不用于新代码）
++ datetime-local
++ email
++ month
++ number
++ range
++ search
++ tel
++ time
++ url
++ week
+
+新输入属性
+
++ autocomplete
++ autofocus
++ form
++ formaction
++ formenctype
++ formmethod
++ formnovalidate
++ formtarget
++ height 和 width
++ list
++ min 和 max
++ multiple
++ pattern (regexp)
++ placeholder
++ required
++ step
+
+#### 浏览器支持
+现代浏览器已经普遍支持常用的 HTML5 语义标签、表单类型和多媒体元素。真正需要检查的通常不是“是否支持 HTML5”，而是某个具体元素、属性或编码格式是否落在项目的目标浏览器范围内。
+
+`html5shiv` 曾用于让旧版 Internet Explorer 识别新的语义元素，现在只具有历史参考价值，新项目不需要引入。
+#### 多媒体标签
+1. `<audio>` 定义声音或音乐内容。 
+2. `<embed>` 定义外部应用程序的容器（比如插件）。 
+3. `<source>` 定义 `<video>` 和 `<audio>` 的来源。 
+4. `<track>` 定义 `<video>` 和 `<audio>` 的轨道。 
+5. `<video>` 定义视频或影片内容。
+
+##### 视频
+1. HTML5+object+embed
+
+```html
+<video width="320" height="240" controls="controls">
+  <source src="movie.mp4" type="video/mp4" />
+  <source src="movie.ogg" type="video/ogg" />
+  <source src="movie.webm" type="video/webm" />
+  <object data="movie.mp4" width="320" height="240">
+    <embed src="movie.swf" width="320" height="240" />
+  </object>
+</video>
+```
+
+`<video>` 会按顺序尝试浏览器支持的视频源。示例中的 `<object>`、Flash 和 `<embed>` 回退属于早期兼容方案，现代项目通常提供多个 `<source>`，并在标签内部放一段可读的失败提示或下载链接。
+
+2. 视频网站
+
+```html
+<embed src="http://player.youku.com/player.php/sid/XMzI2NTc4NTMy/v.swf" 
+width="480" height="400" 
+type="application/x-shockwave-flash">
+</embed>
+```
+
+3. 使用超链接
+
+如果网页包含指向媒体文件的超链接，大多数浏览器会使用“辅助应用程序”来播放文件。
+
+以下代码片段显示指向 AVI 文件的链接。如果用户点击该链接，浏览器会启动“辅助应用程序”，比如 Windows Media Player 来播放这个 AVI 文件：
+
+```html
+<a href="movie.swf">Play a video file</a>
+```
+
+##### 音频
+1. HTML5
+
+```html
+<audio controls="controls" height="100" width="100">
+  <source src="song.mp3" type="audio/mp3" />
+  <source src="song.ogg" type="audio/ogg" />
+<embed height="100" width="100" src="song.mp3" />
+</audio>
+```
+
+使用多个 `<source>` 可以让浏览器选择自己支持的音频格式。示例中的 `<embed>` 回退同样属于历史方案，现代页面更适合提供文字提示和直接下载链接。
+
+2. 雅虎媒体播放器
+
+```html
+<a href="song.mp3">Play Sound</a>
+
+<script type="text/javascript" src="http://mediaplayer.yahoo.com/js">
+</script>
+```
+
+雅虎媒体播放器为用户提供的是一个小型的播放按钮，而不是完整的播放器。不过，当点击该按钮，会弹出完整的播放器。
+
+请注意，这个播放器始终停靠在窗框底部。只需点击它，就可将其滑出。
+
+3. 使用超链接
+
+如果网页包含指向媒体文件的超链接，大多数浏览器会使用“辅助应用程序”来播放文件。
+
+以下代码片段显示指向 mp3 文件的链接。如果用户点击该链接，浏览器会启动“辅助应用程序”来播放该文件：
+
+```html
+<a href="song.mp3">Play the sound</a>
+```
+
+#### canvas画布
+HTML5 的 canvas 元素使用 JavaScript 在网页上绘制图像。画布是一个矩形区域，您可以控制其每一像素。
+
+canvas 拥有多种绘制路径、矩形、圆形、字符以及添加图像的方法。
+
+##### 创建canvas画布
+```html
+<canvas id="myCanvas" width="200" height="100"></canvas>
+```
+
+##### 通过js绘制
+```javascript
+<script type="text/javascript">
+  var c=document.getElementById("myCanvas");  //使用 id 来寻找 canvas 元素
+//创建context对象,getContext("2d") 对象是内建的 HTML5 对象，拥有多种绘制路径、矩形、圆形、字符以及添加图像的方法。
+var cxt=c.getContext("2d");   
+//fillStyle 方法将其染成红色，fillRect 方法规定了形状、位置和尺寸。
+cxt.fillStyle="#FF0000";   
+cxt.fillRect(0,0,150,75);   //(0,0,150,75)意思是：在画布上绘制 150x75 的矩形，从左上角开始 (0,0)
+</script>
+```
+
+##### 示例
+1. 线条
+
+```html
+<canvas id="myCanvas" width="200" height="100" style="border:1px solid #c3c3c3;">
+  Your browser does not support the canvas element.
+</canvas>
+```
+
+```javascript
+<script type="text/javascript">
+
+var c=document.getElementById("myCanvas");
+var cxt=c.getContext("2d");
+cxt.moveTo(10,10);
+cxt.lineTo(150,50);
+cxt.lineTo(10,50);
+cxt.stroke();
+
+</script>
+```
+
+2. 圆形
+
+```html
+<canvas id="myCanvas" width="200" height="100" style="border:1px solid #c3c3c3;">
+  Your browser does not support the canvas element.
+</canvas>
+```
+
+```javascript
+<script type="text/javascript">
+
+var c=document.getElementById("myCanvas");
+var cxt=c.getContext("2d");
+cxt.fillStyle="#FF0000";
+cxt.beginPath();
+cxt.arc(70,18,15,0,Math.PI*2,true);
+cxt.closePath();
+cxt.fill();
+
+</script>
+```
+
+3. 渐变
+
+```html
+<canvas id="myCanvas" width="200" height="100" style="border:1px solid #c3c3c3;">
+  Your browser does not support the canvas element.
+</canvas>
+```
+
+```javascript
+<script type="text/javascript">
+
+var c=document.getElementById("myCanvas");
+var cxt=c.getContext("2d");
+var grd=cxt.createLinearGradient(0,0,175,50);
+grd.addColorStop(0,"#FF0000");
+grd.addColorStop(1,"#00FF00");
+cxt.fillStyle=grd;
+cxt.fillRect(0,0,175,50);
+
+</script>
+```
+
+4. 图像
+
+```html
+<canvas id="myCanvas" width="244" height="182" style="border:1px solid #d3d3d3;">
+  Your browser does not support the HTML5 canvas tag.
+</canvas>
+```
+
+```javascript
+<script>
+window.onload = function() {
+    var canvas = document.getElementById("myCanvas");
+    var ctx = canvas.getContext("2d");
+    var img = document.getElementById("scream");
+   ctx.drawImage(img, 10, 10);
+};
+</script>
+```
+
+#### 本地存储
++ window.localStorage - 存储没有截止日期的数据
++ window.sessionStorage - 针对一个 session 来存储数据（当关闭浏览器标签页时数据会丢失）
+
+使用本地存储时，请检测 localStorage 和 sessionStorage 的浏览器支持：
+
+```javascript
+if (typeof(Storage) !== "undefined") {
+  // 针对 localStorage/sessionStorage 的代码
+} else {
+  // 抱歉！不支持 Web Storage ..
+}
+```
+
+##### localStorage
+localStorage 对象存储的是没有截止日期的数据。当浏览器被关闭时数据不会被删除，在下一天、周或年中，都是可用的。
+
++ 创建 localStorage 名称/值对，其中：name="lastname"，value="Gates"
++ 取回 "lastname" 的值，并把它插到 id="result" 的元素中
+
+```javascript
+// 存储
+localStorage.setItem("lastname", "Gates");
+// 取回
+document.getElementById("result").innerHTML = localStorage.getItem("lastname");
+```
+
+上例也可这样写：
+
+```javascript
+// 存储
+localStorage.lastname = "Gates";
+// 取回
+document.getElementById("result").innerHTML = localStorage.lastname;
+localStorage.removeItem("lastname");
+```
+
+**注释：**名称/值对始终存储为字符串。如果需要请记得把它们转换为其他格式！
+
+
+```javascript
+// 用户点击按钮的次数进行计数。在代码中，值字符串被转换为数值，依次对计数进行递增：
+if (localStorage.clickcount) {
+  localStorage.clickcount = Number(localStorage.clickcount) + 1;
+} else {
+  localStorage.clickcount = 1;
+}
+document.getElementById("result").innerHTML = "您已经点击这个按钮 " +
+  localStorage.clickcount + " 次。";
+```
+
+##### sessionStorage
+sessionStorage 对象等同 localStorage 对象，不同之处在于只对一个 session 存储数据。如果用户关闭具体的浏览器标签页，数据也会被删除。
+
+
+
+```javascript
+// 在当前 session 中对用户点击按钮进行计数：
+if (sessionStorage.clickcount) {
+    sessionStorage.clickcount = Number(sessionStorage.clickcount) + 1;
+} else {
+    sessionStorage.clickcount = 1;
+}
+document.getElementById("result").innerHTML = "在本 session 中，您已经点击这个按钮 " +
+sessionStorage.clickcount + " 次。";
+```
+
+#### Web Workers
+HTML 页面中执行脚本时，页面是不可响应的，直到脚本已完成。Web worker 是运行在后台的 JavaScript，独立于其他脚本，不会影响页面的性能。您可以继续做任何愿意做的事情：点击、选取内容等等，而此时 web worker 运行在后台。
+
+在创建 web worker 之前，请检测用户浏览器是否支持它：
+
+```javascript
+if (typeof(Worker) !== "undefined") {
+    // 是的！支持 Web worker！
+    // 一些代码.....
+} else {
+    // 抱歉！不支持 Web Worker！
+}
+```
+
+##### 创建WebWorker文件
+```javascript
+// 在一个外部 JavaScript 文件中创建我们的 web worker。
+// 在此处，我们创建了计数脚本。该脚本存储于 "demo_workers.js" 文件中
+var i = 0;
+
+function timedCount() {
+    i = i + 1;
+    postMessage(i);
+    setTimeout("timedCount()",500);
+}
+
+timedCount();
+```
+
+**注释: **web worker 通常不用于如此简单的脚本，而是用于更耗费 CPU 资源的任务。
+
+
+##### 创建WebWorker对象
+```javascript
+// 检测是否存在 worker，
+// 如果不存在，- 它会创建一个新的 web worker 对象，然后运行 "demo_workers.js" 中的代码
+if (typeof(w) == "undefined") {
+    w = new Worker("demo_workers.js");
+}
+// 向 web worker 添加一个 "onmessage" 事件监听器
+// 当 web worker 传送消息时，会执行事件监听器中的代码。
+// 来自 web worker 的数据会存储于 event.data 中
+w.onmessage = function(event){
+    document.getElementById("result").innerHTML = event.data;
+};
+```
+
+##### 终止WebWorker
+当创建 web worker 后，它会继续监听消息（即使在外部脚本完成后）直到其被终止为止。
+
+如需终止 web worker，并释放浏览器/计算机资源，请使用 terminate() 方法：
+
+```javascript
+w.terminate();
+```
+
+##### 复用WebWorker
+把 worker 变量设置为 undefined，在其被终止后，可以重复使用该代码：
+
+```javascript
+w = undefined;
+```
+
+```html
+<!DOCTYPE html>
+<html>
+  <body>
+
+    <p>Count numbers: <output id="result"></output></p>
+    <button onclick="startWorker()">Start Worker</button> 
+    <button onclick="stopWorker()">Stop Worker</button>
+    <br><br>
+
+    <script>
+      var w;
+
+      function startWorker() {
+        if(typeof(Worker) !== "undefined") {
+          if(typeof(w) == "undefined") {
+            w = new Worker("demo_workers.js");
+          }
+          w.onmessage = function(event) {
+            document.getElementById("result").innerHTML = event.data;
+          };
+        } else {
+          document.getElementById("result").innerHTML = "Sorry! No Web Worker support.";
+        }
+      }
+
+      function stopWorker() { 
+        w.terminate();
+        w = undefined;
+      }
+    </script>
+
+  </body>
+</html>
+```
+
+#### 应用缓存（Cache Manifest，历史方案）
+Application Cache 曾用于让 Web 应用离线访问，但它已经废弃并从现代浏览器中移除。下面保留原理和语法作为历史资料；新项目应使用 Service Worker 配合 Cache Storage。
+
+##### Cache Manifest基础
+旧方案通过在文档的 `<html>` 标签中包含 `manifest` 属性启用应用缓存：
+
+```html
+<!DOCTYPE HTML>
+<html manifest="demo.appcache">
+...
+</html>
+```
+
+每个指定了 manifest 的页面在用户对其访问时都会被缓存。如果未指定 manifest 属性，则页面不会被缓存（除非在 manifest 文件中直接指定了该页面）。
+
+manifest 文件的建议文件扩展名是：".appcache"。
+
+**注意：**manifest 文件需要设置正确的 MIME-type，即 "text/cache-manifest"。必须在 web 服务器上进行配置。
+
+
+##### Manifest文件
+manifest 文件是简单的文本文件，它告知浏览器被缓存的内容（以及不缓存的内容）。
+
+manifest 文件有三个部分：
+
++ CACHE MANIFEST - 在此标题下列出的文件将在首次下载后进行缓存
++ NETWORK - 在此标题下列出的文件需要与服务器的连接，且不会被缓存
++ FALLBACK - 在此标题下列出的文件规定当页面无法访问时的回退页面（比如 404 页面）
+1. CACHE MANIFEST 
+
+CACHE MANIFEST，是必需的。manifest 文件列出了三个资源：一个 CSS 文件，一个 GIF 图像，以及一个 JavaScript 文件。当 manifest 文件被加载后，浏览器会从网站的根目录下载这三个文件。然后，无论用户何时与因特网断开连接，这些资源依然可用。
+
+```plain
+CACHE MANIFEST
+/theme.css
+/logo.gif
+/main.js
+```
+
+2. NETWORK
+
+NETWORK 部分规定文件 "login.php" 永远不会被缓存，且离线时是不可用的
+
+```plain
+NETWORK:
+login.asp
+```
+
+可以使用星号来指示所有其他其他资源/文件都需要因特网连接：
+
+```plain
+NETWORK:
+*
+
+FALLBACK
+```
+
+下面的 FALLBACK 部分规定如果无法建立因特网连接，则用 "offline.html" 替代 /html/ 目录中的所有文件：
+
+```plain
+FALLBACK:
+/html/ /offline.html
+```
+
+**注释：**第一个 URI 是资源，第二个是替补。
+
+
+```plain
+CACHE MANIFEST
+# 2012-02-21 v1.0.0
+/theme.css
+/logo.gif
+/main.js
+
+NETWORK:
+login.asp
+
+FALLBACK:
+/html/ /offline.html
+```
+
+**提示：**以 "#" 开头的是注释行，但也可满足其他用途。应用的缓存只会在其 manifest 文件改变时被更新。如果您编辑了一幅图像，或者修改了一个 JavaScript 函数，这些改变都不会被重新缓存。更新注释行中的日期和版本号是一种使浏览器重新缓存文件的办法。
+
+
+##### 更新缓存
+一旦应用被缓存，它就会保持缓存直到发生下列情况：
+
++ 用户清空浏览器缓存
++ manifest 文件被修改（参阅下面的提示）
++ 由程序来更新应用缓存
+
+请留心缓存的内容。
+
+一旦文件被缓存，则浏览器会继续展示已缓存的版本，即使您修改了服务器上的文件。为了确保浏览器更新缓存，您需要更新 manifest 文件。
+
+**注释：**浏览器对缓存数据的容量限制可能不太一样（某些浏览器的限制是每个站点 5MB）。
+
+
+#### 无障碍
+[具体详情](https://developer.mozilla.org/zh-CN/docs/Learn/Accessibility/HTML)

@@ -1,0 +1,321 @@
+---
+title: JavaScript 闭包
+source: yuque-export
+date: "2025-08-02"
+description: "从计数器示例聊到词法环境，说明闭包如何形成、常见用途，以及循环引用和内存占用等边界。"
+tags:
+  - javascript
+  - 闭包
+---
+
+# JavaScript 闭包：函数如何记住定义时的作用域
+
+闭包这个词听起来有点抽象，其实它描述的是一个很常见的现象：函数离开定义位置后，为什么还能访问当时周围的变量？
+
+> 什么是闭包？闭包有什么用？闭包会导致内存泄漏吗？
+
+从一段计数器代码看起：
+
+```javascript
+function createCounter() {
+  let count = 0;
+  
+  return function() {
+    return ++count;
+  };
+}
+
+const counter = createCounter();
+console.log(counter()); // 1
+console.log(counter()); // 2
+console.log(counter()); // 3
+```
+
+`createCounter` 执行完了，`count` 应该被销毁才对。
+
+但它没有。`count` 还活着，而且每次调用 `counter()` 都在累加。
+
+这就是**闭包**：函数带着它的词法环境一起"逃逸"了。
+
+---
+
+## 1. 闭包是什么？
+
+**规范语境里的说法：** 闭包是函数和其词法环境的组合。
+
+**换个直观的说法：** 函数会保留对定义时作用域的访问，即使后来在别的地方执行，依然能找到那里的变量。
+
+```javascript
+function outer() {
+  const secret = '我是秘密';
+  
+  function inner() {
+    console.log(secret); // 能访问 outer 的变量
+  }
+  
+  return inner;
+}
+
+const fn = outer(); // outer 执行完了
+fn(); // '我是秘密' — secret 还活着
+```
+
+`inner` 函数在 `outer` 内部定义，它"记住"了 `outer` 的作用域。
+
+当 `inner` 被 return 出去后，它带着这个作用域一起走了。
+
+---
+
+## 2. 闭包是怎么形成的？
+
+关键在于**词法作用域**：函数的作用域在**定义时**确定，不是调用时。
+
+```javascript
+const x = 'global';
+
+function foo() {
+  const x = 'foo';
+  
+  function bar() {
+    console.log(x); // 'foo' — 定义时决定，不是调用时
+  }
+  
+  return bar;
+}
+
+const fn = foo();
+fn(); // 'foo'，不是 'global'
+```
+
+`bar` 在 `foo` 内部定义，它的作用域链是：
+
+```
+bar → foo → global
+```
+
+即使 `bar` 在全局执行，它还是沿着这条链找变量。
+
+---
+
+## 3. 闭包会在哪些地方出现？
+
+### 用途 1：数据私有化
+
+JavaScript 没有私有属性，但闭包可以模拟：
+
+```javascript
+function createWallet(initialBalance) {
+  let balance = initialBalance; // 私有变量
+  
+  return {
+    deposit(amount) {
+      balance += amount;
+      console.log(`存入 ${amount}，余额 ${balance}`);
+    },
+    withdraw(amount) {
+      if (amount > balance) {
+        console.log('余额不足');
+        return;
+      }
+      balance -= amount;
+      console.log(`取出 ${amount}，余额 ${balance}`);
+    },
+    getBalance() {
+      return balance;
+    }
+  };
+}
+
+const wallet = createWallet(100);
+wallet.deposit(50);   // 存入 50，余额 150
+wallet.withdraw(30);  // 取出 30，余额 120
+console.log(wallet.balance); // undefined — 外部访问不到！
+```
+
+`balance` 被闭包保护，只能通过暴露的方法操作。
+
+### 用途 2：函数工厂
+
+```javascript
+function createMultiplier(factor) {
+  return function(number) {
+    return number * factor;
+  };
+}
+
+const double = createMultiplier(2);
+const triple = createMultiplier(3);
+
+console.log(double(5));  // 10
+console.log(triple(5));  // 15
+```
+
+`double` 记住了 `factor = 2`，`triple` 记住了 `factor = 3`。
+
+### 用途 3：防抖和节流
+
+```javascript
+function debounce(fn, delay) {
+  let timer = null; // 闭包保存 timer
+  
+  return function(...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      fn.apply(this, args);
+    }, delay);
+  };
+}
+
+const debouncedSearch = debounce(search, 300);
+input.addEventListener('input', debouncedSearch);
+```
+
+`timer` 被闭包保存，每次调用都能访问到上次的 timer。
+
+### 用途 4：缓存（记忆化）
+
+```javascript
+function memoize(fn) {
+  const cache = new Map(); // 闭包保存缓存
+  
+  return function(...args) {
+    const key = JSON.stringify(args);
+    
+    if (cache.has(key)) {
+      console.log('命中缓存');
+      return cache.get(key);
+    }
+    
+    const result = fn.apply(this, args);
+    cache.set(key, result);
+    return result;
+  };
+}
+
+const memoFib = memoize(fibonacci);
+memoFib(40); // 计算一次
+memoFib(40); // 命中缓存
+```
+
+---
+
+## 4. 几个容易混淆的地方
+
+### 情况 1：循环中的闭包
+
+```javascript
+for (var i = 0; i < 3; i++) {
+  setTimeout(() => {
+    console.log(i);
+  }, 100);
+}
+
+// 输出：3, 3, 3 ← 不是 0, 1, 2！
+```
+
+**原因：** `var` 没有块级作用域，三个闭包共享同一个 `i`。循环结束时 `i = 3`。
+
+**解决 1：** 用 `let`
+
+```javascript
+for (let i = 0; i < 3; i++) {
+  setTimeout(() => {
+    console.log(i);
+  }, 100);
+}
+// 输出：0, 1, 2 ✅
+```
+
+**解决 2：** 用 IIFE 创建新作用域
+
+```javascript
+for (var i = 0; i < 3; i++) {
+  ((j) => {
+    setTimeout(() => {
+      console.log(j);
+    }, 100);
+  })(i);
+}
+// 输出：0, 1, 2 ✅
+```
+
+### 情况 2：闭包与内存
+
+**闭包不会自动导致内存泄漏。**
+
+现代 JavaScript 引擎很聪明，会自动回收不再使用的闭包变量。
+
+```javascript
+function outer() {
+  const bigData = new Array(1000000).fill('x');
+  const small = 1;
+  
+  return function() {
+    return small; // 只用 small，不用 bigData
+  };
+}
+
+// V8 引擎会优化：bigData 被回收，只保留 small
+```
+
+**真正的内存泄漏：**
+
+```javascript
+const elements = [];
+for (let i = 0; i < 1000; i++) {
+  elements.push({
+    element: document.getElementById('item-' + i),
+    handler: function() { /* 闭包持有 element 引用 */ }
+  });
+}
+
+// 如果不清理，elements 数组一直持有 DOM 引用
+// 即使 DOM 被删除，内存也不会释放
+```
+
+---
+
+## 5. 换句话说
+
+> 什么是闭包？
+
+闭包是函数和其词法环境的组合。函数在定义时会"记住"它的作用域，即使在外部执行，也能访问作用域内的变量。
+
+> 闭包有什么应用？
+
+1. 数据私有化（模拟私有属性）
+2. 函数工厂（柯里化）
+3. 防抖节流
+4. 缓存/记忆化
+
+> 闭包会导致内存泄漏吗？
+
+不会自动导致。现代 JS 引擎会优化，只保留闭包实际使用的变量。真正的内存泄漏是意外持有大对象引用，与闭包本身无关。
+
+---
+
+## 6. 回到最初的计数器
+
+回头看 `createCounter`，发生了三件事：内部函数在定义时建立了词法作用域关系；它后来执行时仍会沿着这条关系查找 `count`；只要这个函数还在引用 `count`，相关环境就不会被回收。
+
+这张图可以把引用关系串起来：
+
+```
+┌─────────────────────────────────────┐
+│  outer() 执行                        │
+│  ┌─────────────────────────────┐    │
+│  │ outer 作用域                 │    │
+│  │ { secret: '我是秘密' }       │    │
+│  │ 被内部函数引用，不会销毁     │    │
+│  └─────────────────────────────┘    │
+│           ↑                         │
+│           │ inner 函数带着它走了     │
+│                                     │
+│  const fn = outer();                │
+│  fn(); // 还能访问 secret           │
+└─────────────────────────────────────┘
+```
+
+---
+
+**相关文档**：[作用域链](/posts/javascript-scope-chain) | [原型和原型链](/posts/javascript-prototype-chain) | [事件委托](/posts/javascript-event-delegation)

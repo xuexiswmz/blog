@@ -1,0 +1,328 @@
+---
+title: JavaScript 继承的实现方式
+source: yuque-export
+date: "2025-07-08"
+description: "沿着原型链、构造函数、组合与寄生组合等写法，看看 JavaScript 继承方案如何逐步解决属性共享和原型连接。"
+tags:
+  - javascript
+  - 继承
+  - 原型链
+
+---
+
+# JavaScript 继承：从原型链到寄生组合式继承
+
+ES6 有 `extends`：
+
+```javascript
+class Parent {
+  constructor(name) {
+    this.name = name;
+  }
+  getName() {
+    return this.name;
+  }
+}
+
+class Child extends Parent {
+  constructor(name, age) {
+    super(name);
+    this.age = age;
+  }
+}
+```
+
+`extends` 把大部分原型连接细节藏了起来。回头理解传统继承方式，可以看清实例属性和原型方法分别是怎样传递给子类的。
+
+---
+
+## 1. 原型链继承
+
+**思路：** 子类原型指向父类实例。
+
+```javascript
+function Parent() {
+  this.name = 'parent';
+  this.hobbies = ['reading', 'coding'];
+}
+
+function Child() {
+  this.type = 'child';
+}
+
+Child.prototype = new Parent();
+
+const child1 = new Child();
+const child2 = new Child();
+
+child1.hobbies.push('gaming');
+console.log(child2.hobbies); // ['reading', 'coding', 'gaming'] ← 被改了！
+```
+
+**局限：** 引用类型属性被所有实例共享，改一个会影响其他实例。
+
+---
+
+## 2. 构造函数继承（借用构造函数）
+
+**思路：** 在子类构造函数中调用父类构造函数。
+
+```javascript
+function Parent() {
+  this.name = 'parent';
+  this.hobbies = ['reading', 'coding'];
+}
+
+Parent.prototype.getName = function() {
+  return this.name;
+};
+
+function Child() {
+  Parent.call(this); // 调用父类构造函数
+  this.type = 'child';
+}
+
+const child1 = new Child();
+const child2 = new Child();
+
+child1.hobbies.push('gaming');
+console.log(child2.hobbies); // ['reading', 'coding'] ← 不共享了 ✅
+
+console.log(child1.getName); // undefined ← 没继承原型方法 ❌
+```
+
+**局限：** 只继承实例属性，不继承原型方法。
+
+---
+
+## 3. 组合继承
+
+**思路：** 原型链继承 + 构造函数继承。
+
+```javascript
+function Parent() {
+  this.name = 'parent';
+  this.hobbies = ['reading', 'coding'];
+}
+
+Parent.prototype.getName = function() {
+  return this.name;
+};
+
+function Child() {
+  Parent.call(this); // 第二次调用 Parent
+  this.type = 'child';
+}
+
+Child.prototype = new Parent(); // 第一次调用 Parent
+Child.prototype.constructor = Child;
+
+const child1 = new Child();
+const child2 = new Child();
+
+child1.hobbies.push('gaming');
+console.log(child2.hobbies); // ['reading', 'coding'] ✅
+console.log(child1.getName()); // 'parent' ✅
+```
+
+**局限：** 父类构造函数被调用了两次，做了重复初始化。
+
+---
+
+## 4. 原型式继承
+
+**思路：** 用 `Object.create` 基于现有对象创建新对象。
+
+```javascript
+const parent = {
+  name: 'parent',
+  hobbies: ['reading', 'coding'],
+  getName() {
+    return this.name;
+  }
+};
+
+const child1 = Object.create(parent);
+const child2 = Object.create(parent);
+
+child1.hobbies.push('gaming');
+console.log(child2.hobbies); // ['reading', 'coding', 'gaming'] ← 共享 ❌
+```
+
+**局限：** 引用类型仍然共享，和原型链继承一样。
+
+---
+
+## 5. 寄生式继承
+
+**思路：** 在原型式继承基础上增强。
+
+```javascript
+const parent = {
+  name: 'parent',
+  hobbies: ['reading', 'coding'],
+  getName() {
+    return this.name;
+  }
+};
+
+function createChild(parent) {
+  const child = Object.create(parent);
+  child.getHobbies = function() {
+    return this.hobbies;
+  };
+  return child;
+}
+
+const child1 = createChild(parent);
+console.log(child1.getName()); // 'parent'
+console.log(child1.getHobbies()); // ['reading', 'coding']
+```
+
+**局限：** 仍然存在引用类型共享。
+
+---
+
+## 6. 寄生组合式继承（经典完整方案）
+
+**思路：** 用 `Object.create` 优化组合继承，避免两次调用父类构造函数。
+
+```javascript
+function Parent() {
+  this.name = 'parent';
+  this.hobbies = ['reading', 'coding'];
+}
+
+Parent.prototype.getName = function() {
+  return this.name;
+};
+
+function Child() {
+  Parent.call(this); // 只调用一次
+  this.type = 'child';
+}
+
+// 关键：用 Object.create 继承原型，不调用父类构造函数
+Child.prototype = Object.create(Parent.prototype);
+Child.prototype.constructor = Child;
+
+const child1 = new Child();
+const child2 = new Child();
+
+child1.hobbies.push('gaming');
+console.log(child2.hobbies); // ['reading', 'coding'] ✅
+console.log(child1.getName()); // 'parent' ✅
+```
+
+**这版解决了：**
+
+1. 只调用一次父类构造函数
+2. 引用类型不共享
+3. 继承原型方法
+4. 能正常使用 `instanceof` 和 `isPrototypeOf`
+
+---
+
+## 7. 六种方式对比
+
+| 方式     | 引用共享  | 继承原型 | 调用次数 | 备注  |
+| ------ | ----- | ---- | ---- | --- |
+| 原型链继承  | ❌ 共享  | ✅    | 1    | ❌   |
+| 构造函数继承 | ✅ 不共享 | ❌    | 1    | ❌   |
+| 组合继承   | ✅ 不共享 | ✅    | 2    | ⚠️  |
+| 原型式继承  | ❌ 共享  | ✅    | 0    | ❌   |
+| 寄生式继承  | ❌ 共享  | ✅    | 0    | ❌   |
+| 寄生组合继承 | ✅ 不共享 | ✅    | 1    | ✅ 经典方案 |
+
+---
+
+## 8. ES6 extends 的本质
+
+用 Babel 转译 `extends`：
+
+```javascript
+class Parent {
+  constructor(name) {
+    this.name = name;
+  }
+}
+
+class Child extends Parent {
+  constructor(name, age) {
+    super(name);
+    this.age = age;
+  }
+}
+```
+
+转译后就是**寄生组合式继承**。
+
+所以：**ES6 的 `extends` = 寄生组合式继承的语法糖**
+
+---
+
+## 9. 把寄生组合式继承整理成一个 helper
+
+```javascript
+function inherit(Child, Parent) {
+  // 继承原型
+  Child.prototype = Object.create(Parent.prototype);
+  // 修正构造函数指向
+  Child.prototype.constructor = Child;
+  // 继承静态属性（可选）
+  Object.setPrototypeOf(Child, Parent);
+}
+
+function Parent(name) {
+  this.name = name;
+}
+
+Parent.prototype.getName = function() {
+  return this.name;
+};
+
+Parent.staticMethod = function() {
+  return 'static';
+};
+
+function Child(name, age) {
+  Parent.call(this, name);
+  this.age = age;
+}
+
+inherit(Child, Parent);
+
+const child = new Child('Alice', 20);
+console.log(child.getName()); // 'Alice'
+console.log(child instanceof Parent); // true
+console.log(Child.staticMethod()); // 'static'
+```
+
+---
+
+## 10. 这些写法放在今天怎么看
+
+**六种继承方式：**
+
+1. 原型链继承 — 引用共享 ❌
+2. 构造函数继承 — 不继承原型 ❌
+3. 组合继承 — 调用两次 ⚠️
+4. 原型式继承 — 引用共享 ❌
+5. 寄生式继承 — 引用共享 ❌
+6. **寄生组合式继承 — 经典函数构造器方案 ✅**
+
+**这段实现做了三件事：**
+
+- 用 `Parent.call(this)` 继承实例属性
+- 用 `Object.create(Parent.prototype)` 继承原型
+- 修正 `constructor` 指向
+
+**简洁表述：**
+
+> 在传统函数构造器写法中，寄生组合式继承比较完整。它用 `Parent.call(this)` 初始化实例属性，再用 `Object.create(Parent.prototype)` 连接原型，从而避免组合继承重复调用父构造函数。
+>
+> 现代代码通常优先使用 `class` 和 `extends`。它们仍建立在原型机制上，但不应简单等同为这一段手写代码。
+
+---
+
+**相关文档**：[原型和原型链](/posts/javascript-prototype-chain) | [闭包](/posts/javascript-closures)
