@@ -1,0 +1,268 @@
+---
+title: 从一次主题切换报错，重新理解 useEffect
+source: original
+date: "2026-07-21"
+description: "从主题切换组件里的 setState 警告出发，聊聊 effect 为什么会造成额外渲染、它与外部状态的关系，以及什么时候其实并不需要 useEffect。"
+tags:
+  - react
+  - useEffect
+  - 副作用
+  - 性能
+---
+
+# 从一次主题切换报错，重新理解 useEffect
+
+最近在处理博客的主题切换组件时，ESLint 报了这样一个错误：
+
+```text
+Calling setState synchronously within an effect can trigger cascading renders
+```
+
+定位到的代码看起来很普通：组件挂载后读取本地主题和系统主题，再把结果写进 React 状态。
+
+```tsx
+const [theme, setTheme] = useState<Theme>('dark')
+const [mounted, setMounted] = useState(false)
+
+useEffect(() => {
+  const savedTheme = localStorage.getItem('theme') as Theme | null
+  const systemTheme = window.matchMedia(
+    '(prefers-color-scheme: dark)'
+  ).matches
+    ? 'dark'
+    : 'light'
+
+  const initialTheme = savedTheme ?? systemTheme
+
+  setTheme(initialTheme)
+  document.documentElement.dataset.theme = initialTheme
+  setMounted(true)
+}, [])
+```
+
+这段代码以前很常见：先给状态一个默认值，等组件挂载后再读取浏览器数据。于是看到报错时，很容易产生一个疑问：
+
+> 难道 React 19 不允许在 `useEffect` 里调用 `setState` 了？
+
+并不是。这个错误真正想提醒的，是 effect 在这里承担了一件不太适合它的工作。
+
+---
+
+## 这段代码实际经历了什么
+
+把组件的运行过程放慢一点，会看到两次紧挨着的渲染。
+
+```text
+第一次渲染
+theme = "dark"
+mounted = false
+        ↓
+React 把结果提交到页面
+        ↓
+useEffect 执行
+        ↓
+setTheme() + setMounted()
+        ↓
+第二次渲染
+```
+
+第一次渲染结束后，effect 立刻同步修改了状态。React 只好再渲染一次，才能让页面与新状态保持一致。
+
+这就是报错里提到的 **cascading renders**，也就是级联渲染。它不一定会让页面当场卡住，但如果很多组件都采用这种初始化方式，就会形成一串“渲染完再补一次渲染”的过程。
+
+需要特别区分一点：HTML 已经初始化主题，并不是 ESLint 报错的直接原因。
+
+即使没有提前设置主题，下面的代码仍可能触发同样的规则：
+
+```tsx
+useEffect(() => {
+  setTheme('dark')
+}, [])
+```
+
+规则关注的是：effect 一执行，就同步更新 React 状态。
+
+不过在这次主题切换里，HTML 提前初始化主题确实让这个 effect 显得更加多余了。
+
+---
+
+## 同一个主题，记了两本账
+
+为了避免页面刷新时先闪一下亮色再切到暗色，博客会在 React hydration 之前运行一段脚本：
+
+```tsx
+const savedTheme = localStorage.getItem('theme')
+const theme = savedTheme ?? systemTheme
+
+document.documentElement.dataset.theme = theme
+```
+
+也就是说，当主题按钮开始工作时，`html` 元素上的 `data-theme` 已经是最终结果了。
+
+但组件内部又维护了一份 `theme`：
+
+```text
+html[data-theme] 里有一份主题
+React state 里又有一份主题
+```
+
+两份数据表达的是同一件事，却需要 effect 把它们来回同步。这有点像两个人各记一本账，只要其中一本改了，就要记得通知另一本。短期看没什么，时间久了总会有人漏记一笔。
+
+这次报错表面上指向 `setTheme`，背后更值得注意的问题其实是：**主题究竟由谁负责？**
+
+在当前项目里，真正控制页面颜色的是 `document.documentElement.dataset.theme`。React 组件更像是这个外部状态的观察者，而不是另一位主题管理员。
+
+---
+
+## effect 更像一座边界上的桥
+
+`useEffect` 这个名字很容易让人把所有“渲染之后要做的事”都放进去。时间一长，它就会变成组件里的杂物间：请求数据、计算变量、响应点击、同步状态，全都往里塞。
+
+React 对 effect 的定位其实更具体：**让 React 与外部系统保持同步。**
+
+这里的外部系统可能是：
+
+- 浏览器事件和 DOM API
+- WebSocket、定时器或媒体查询
+- 第三方组件库
+- React 之外的状态容器
+
+例如监听系统主题变化，就是一个很自然的 effect 场景：
+
+```tsx
+useEffect(() => {
+  const mediaQuery = window.matchMedia(
+    '(prefers-color-scheme: dark)'
+  )
+
+  function handleChange(event: MediaQueryListEvent) {
+    setTheme(event.matches ? 'dark' : 'light')
+  }
+
+  mediaQuery.addEventListener('change', handleChange)
+
+  return () => {
+    mediaQuery.removeEventListener('change', handleChange)
+  }
+}, [])
+```
+
+这里也调用了 `setTheme`，但它不是 effect 执行时立刻发生的，而是在系统主题真正变化后，由外部事件回调触发。
+
+effect 负责建立订阅，返回的函数负责解除订阅。React 与浏览器之间的边界很清楚。
+
+---
+
+## 有些代码只是看起来需要 effect
+
+写 React 时遇到“某个值发生变化，我要更新另一个值”，第一反应经常是 effect。
+
+例如把姓名拼起来：
+
+```tsx
+useEffect(() => {
+  setFullName(`${firstName} ${lastName}`)
+}, [firstName, lastName])
+```
+
+但 `fullName` 完全可以由已有数据计算出来：
+
+```tsx
+const fullName = `${firstName} ${lastName}`
+```
+
+前一种写法需要先用旧值渲染，再通过 effect 设置新值；后一种写法在本次渲染中就能得到答案。
+
+用户点击带来的操作也类似。假如保存主题发生在按钮点击时，它更适合留在事件处理函数里：
+
+```tsx
+function toggleTheme() {
+  const nextTheme = theme === 'dark' ? 'light' : 'dark'
+
+  document.documentElement.dataset.theme = nextTheme
+  localStorage.setItem('theme', nextTheme)
+}
+```
+
+这是一次明确的用户行为，没有必要先把“用户点击了”存成状态，再等待 effect 发现它。
+
+---
+
+## 这次为什么用了 useSyncExternalStore
+
+既然主题真正保存在 `html[data-theme]` 上，组件需要做的是读取它，并在它变化时重新渲染。
+
+这正是 `useSyncExternalStore` 擅长描述的关系：React 订阅一个外部数据源，而不是在 effect 里复制一份外部数据。
+
+核心代码可以简化成这样：
+
+```tsx
+const THEME_CHANGE_EVENT = 'theme-change'
+
+function getTheme(): Theme {
+  return document.documentElement.dataset.theme === 'dark'
+    ? 'dark'
+    : 'light'
+}
+
+function subscribeToTheme(onThemeChange: () => void) {
+  window.addEventListener(THEME_CHANGE_EVENT, onThemeChange)
+
+  return () => {
+    window.removeEventListener(THEME_CHANGE_EVENT, onThemeChange)
+  }
+}
+
+const theme = useSyncExternalStore<Theme | null>(
+  subscribeToTheme,
+  getTheme,
+  () => null
+)
+```
+
+切换主题时，修改外部状态并发送通知：
+
+```tsx
+function toggleTheme() {
+  if (!theme) return
+
+  const nextTheme = theme === 'dark' ? 'light' : 'dark'
+
+  document.documentElement.dataset.theme = nextTheme
+  localStorage.setItem('theme', nextTheme)
+  window.dispatchEvent(new Event(THEME_CHANGE_EVENT))
+}
+```
+
+这里的 `null` 是服务端快照。服务端没有 `document`，因此先不渲染主题按钮；hydration 完成后，React 再读取浏览器里的真实主题。这样既没有 effect 内的同步状态更新，也不会因为服务端和客户端主题不同而产生 hydration mismatch。
+
+`useSyncExternalStore` 并不是主题切换的唯一写法。它的价值在于把数据关系说得更准确：主题在 React 外部，组件订阅它。
+
+---
+
+## 再遇到 useEffect 时，可以先停半秒
+
+现在看到一个 effect，我会先想一想：它正在连接哪个外部系统？
+
+如果找不到外部系统，代码可能只是在计算派生数据，或者响应一次用户操作。这两种情况往往不需要 effect。
+
+如果确实存在订阅，再看看有没有对应的清理逻辑。开发环境下 React Strict Mode 可能会经历一次“订阅、清理、重新订阅”，缺失的清理函数很容易在这里暴露出来。定时器越来越多、事件触发两遍，通常不是 React 心情不好，而是上一次订阅还没离场。
+
+依赖数组也可以用同样的思路理解。它不是“我希望 effect 什么时候执行”的开关，而是 effect 使用了哪些会变化的 React 数据。刻意漏掉依赖，可能暂时少执行了一次，却也可能让回调一直读到旧值。
+
+---
+
+## 小结
+
+这次错误并不是在宣布“effect 里禁止 setState”。它提醒的是另一件事：如果 effect 一运行就同步更新状态，组件很可能正在通过额外渲染完成本可以直接表达的数据关系。
+
+在主题切换这个场景中：
+
+- 根布局脚本负责在 hydration 前确定主题
+- `html[data-theme]` 是页面主题的真实来源
+- 主题按钮订阅这个外部状态
+- 用户点击时直接修改主题并保存
+
+当这些职责分开后，原来的 effect 自然就消失了。
+
+有时候 ESLint 的报错不只是嫌弃某一行代码。它像是在轻轻敲桌子：这段逻辑能运行，但也许还有一种更贴近数据本来关系的写法。
