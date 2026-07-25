@@ -1,3 +1,4 @@
+import ArticleCommentsProvider from "@/components/Comments/ArticleCommentsProvider";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 
@@ -42,7 +43,9 @@ export default async function PostPage({
       [&_img]:h-auto
       [&_img]:max-w-full
     ">
-      <Post />
+      <ArticleCommentsProvider postSlug={slug}>
+        <Post />
+      </ArticleCommentsProvider>
     </article>
   );
 }

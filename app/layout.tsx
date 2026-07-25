@@ -50,7 +50,7 @@ export default function RootLayout({
             className="mx-auto flex h-full min-h-0 w-[92%] flex-col sm:w-[85%]"
           >
             <Headers />
-            <main className="min-h-0 flex-1 overflow-y-auto">
+            <main className="min-h-0 flex-1 overflow-y-auto scrollbar-hide">
               {children}
             </main>
           </div>
