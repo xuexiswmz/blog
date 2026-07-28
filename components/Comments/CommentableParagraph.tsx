@@ -2,6 +2,7 @@
 import { ComponentPropsWithoutRef, useState } from 'react'
 import { useArticleComments } from './ArticleCommentsProvider'
 import { MessageCircle } from 'lucide-react'
+import CommentList from './CommentList'
 
 type CommentableParagraphProps = ComponentPropsWithoutRef<'p'> &{
     paragraphId: string
@@ -63,29 +64,10 @@ function CommentableParagraph({
                         dark:text-gray-300
                     "
                 >
-                    <p>评论面板连接成功</p>
-
-                    <dl className="mt-3 space-y-1 text-xs">
-                        <div className="flex gap-2">
-                        <dt className="font-medium">
-                            文章：
-                        </dt>
-
-                        <dd className="break-all">
-                            {postSlug}
-                        </dd>
-                        </div>
-
-                        <div className="flex gap-2">
-                        <dt className="font-medium">
-                            段落：
-                        </dt>
-
-                        <dd className="break-all">
-                            {paragraphId}
-                        </dd>
-                        </div>
-                    </dl>
+                    <CommentList
+                        postSlug={postSlug}
+                        paragraphId={paragraphId}
+                    />
                 </div>
                 )}
         </div>
