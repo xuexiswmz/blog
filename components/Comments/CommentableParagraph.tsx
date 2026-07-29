@@ -3,6 +3,8 @@ import { ComponentPropsWithoutRef, useState } from 'react'
 import { useArticleComments } from './ArticleCommentsProvider'
 import { MessageCircle } from 'lucide-react'
 import CommentList from './CommentList'
+import { ParagraphComment } from './types'
+import CommentForm from './CommentForm'
 
 type CommentableParagraphProps = ComponentPropsWithoutRef<'p'> &{
     paragraphId: string
@@ -16,6 +18,8 @@ function CommentableParagraph({
 }: CommentableParagraphProps) {
     const { postSlug } = useArticleComments()
     const [open, setOpen] = useState(false)
+
+    const [replyTarget, setReplyTarget] = useState<ParagraphComment | null>(null)
 
     const panelId = `comments-${paragraphId}`
 
@@ -67,7 +71,18 @@ function CommentableParagraph({
                     <CommentList
                         postSlug={postSlug}
                         paragraphId={paragraphId}
+                        onReply={setReplyTarget}
                     />
+                    <div className='border-t border-gray-200 pt-4 dark:border-gray-700'> 
+                        <CommentForm
+                            postSlug={postSlug}
+                            paragraphId={paragraphId}
+                            replyTarget={replyTarget}
+                            onCancelReply={()=>{
+                                setReplyTarget(null)
+                            }}
+                        />
+                    </div>
                 </div>
                 )}
         </div>
