@@ -1,0 +1,31 @@
+import CommentModerationList from "@/components/Admin/CommentModerationList"
+import { auth } from "@/lib/auth"
+import { headers } from "next/headers"
+import Link from "next/link"
+import { redirect } from "next/navigation"
+
+
+export default async function AdminCommentsPage() {
+    const session = await auth.api.getSession({
+        headers:  await headers()
+    })
+
+    if (!session) {
+        redirect("/api/login")
+    }
+    return (
+    <main className="mx-auto w-full max-w-4xl p-6">
+        <div className="mb-8">
+            <Link href="/admin"
+                className="text-blue-600 text-sm hover:underline"
+            >
+                返回管理中心
+            </Link>
+            <h1 className="mt-4 text-2xl font-semibold">
+                评论审核
+            </h1>
+            <CommentModerationList />
+        </div>
+    </main>
+  )
+}
