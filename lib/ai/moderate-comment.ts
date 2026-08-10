@@ -8,7 +8,6 @@ export type ModerationDecision =
 export type CommentModerationResult = {
   decision: ModerationDecision
   reason: string
-  confidence: number
   model: string
   fallback: boolean
 }
@@ -22,7 +21,6 @@ function fallbackResult(reason: string): CommentModerationResult {
   return {
     decision: "review",
     reason,
-    confidence: 0,
     model: deepseekModel,
     fallback: true,
   }
@@ -64,8 +62,7 @@ export async function moderateComment(
             json 格式示例：
             {
             "decision": "publish",
-            "reason": "正常的技术讨论",
-            "confidence": 0.95
+            "reason": "正常的技术讨论"
             }
           `.trim(),
         },
@@ -98,7 +95,7 @@ export async function moderateComment(
       return fallbackResult("DeepSeek 返回的数据格式不正确")
     }
 
-    const { decision, reason, confidence } = parsed
+    const { decision, reason } = parsed
 
     const validDecisions: ModerationDecision[] = [
       "publish",
@@ -110,11 +107,7 @@ export async function moderateComment(
       typeof decision !== "string" ||
       !validDecisions.includes(decision as ModerationDecision) ||
       typeof reason !== "string" ||
-      reason.trim().length === 0 ||
-      typeof confidence !== "number" ||
-      !Number.isFinite(confidence) ||
-      confidence < 0 ||
-      confidence > 1
+      reason.trim().length === 0
     ) {
       return fallbackResult("DeepSeek 返回的数据字段不正确")
     }
@@ -122,7 +115,6 @@ export async function moderateComment(
     return {
       decision: decision as ModerationDecision,
       reason: reason.trim().slice(0, 500),
-      confidence,
       model: deepseekModel,
       fallback: false,
     }

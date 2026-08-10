@@ -34,7 +34,6 @@ export async function GET(request: Request) {
                 moderation_source,
                 moderation_reason,
                 moderation_model,
-                moderation_confidence,
                 moderated_at,
                 created_at
             from paragraph_comments
@@ -55,7 +54,6 @@ export async function GET(request: Request) {
             moderationSource: row.moderation_source ? String(row.moderation_source) : null,
             moderationReason: row.moderation_reason ? String(row.moderation_reason) : null,
             moderationModel: row.moderation_model ? String(row.moderation_model) : null,
-            moderationConfidence: row.moderation_confidence === null ? null : Number(row.moderation_confidence),
             moderatedAt: row.moderated_at ? new Date(String(row.moderated_at)).toISOString() : null,
             createdAt: new Date(String(row.created_at)).toISOString()
         }))

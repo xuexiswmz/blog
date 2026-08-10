@@ -304,11 +304,10 @@ export async function POST(
                 moderation_source,
                 moderation_reason,
                 moderation_model,
-                moderation_confidence,
                 moderated_at
             )
             values (${slug}, ${blockId}, ${rootId}::uuid, ${replyToId}::uuid, ${vistorId}::uuid, ${username}, ${content}, ${nextStatus},
-                    'guest', 'ai', ${moderation.reason}, ${moderation.model}, ${moderation.confidence}, now()
+                    'guest', 'ai', ${moderation.reason}, ${moderation.model}, now()
                 )
             returning id, username, content, root_id, reply_to_id, created_at, status
         `
