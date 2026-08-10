@@ -310,7 +310,7 @@ export async function POST(
             values (${slug}, ${blockId}, ${rootId}::uuid, ${replyToId}::uuid, ${vistorId}::uuid, ${username}, ${content}, ${nextStatus},
                     'guest', 'ai', ${moderation.reason}, ${moderation.model}, ${moderation.confidence}, now()
                 )
-            returning id, username, content, root_id, reply_to_id, created_at
+            returning id, username, content, root_id, reply_to_id, created_at, status
         `
 
         const comment = insertedRows[0]
