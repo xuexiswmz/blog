@@ -14,7 +14,7 @@ export default async function AdminCommentsPage() {
         redirect("/admin/login")
     }
     return (
-    <main className="mx-auto w-full max-w-4xl p-6">
+    <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
         <div className="mb-8">
             <Link href="/admin"
                 className="text-blue-600 text-sm hover:underline"
