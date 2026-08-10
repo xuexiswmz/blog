@@ -11,7 +11,7 @@ export default async function AdminCommentsPage() {
     })
 
     if (!session) {
-        redirect("/api/login")
+        redirect("/admin/login")
     }
     return (
     <main className="mx-auto w-full max-w-4xl p-6">

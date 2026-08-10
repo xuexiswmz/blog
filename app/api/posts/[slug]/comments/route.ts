@@ -1,3 +1,4 @@
+import { moderateComment } from "@/lib/ai/moderate-comment"
 import { sql } from "@/lib/db"
 import { getOrCreateVisitorId } from "@/lib/visitor"
 
@@ -29,6 +30,7 @@ const BLOCK_ID_PATTERN = /^p-[0-9a-f]{12}(?:-\d+)?$/
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
 
 // 平铺记录 -> 找到root id 为 null 的根评论 -> 把其他评论放入对应根评论的replies
 export async function GET(
@@ -276,17 +278,53 @@ export async function POST(
             rootId = targetComment.root_id ? String(targetComment.root_id) : String(targetComment.id)
         }
 
+        const moderation = await moderateComment({
+            username,
+            content,
+        })
+
+        const nextStatus =
+            moderation.decision === "publish"
+                ? "published"
+                : moderation.decision === "reject"
+                    ? "rejected"
+                    : "pending"
+
         const insertedRows = await sql`
-            insert into paragraph_comments (post_slug, block_id,root_id,reply_to_id,visitor_id,username,content,status)
-                values (${slug}, ${blockId}, ${rootId}::uuid, ${replyToId}::uuid, ${vistorId}::uuid, ${username}, ${content}, 'pending')
-                returning id, username, content, root_id, reply_to_id, created_at
+            insert into paragraph_comments (
+                post_slug, 
+                block_id,
+                root_id,
+                reply_to_id,
+                visitor_id,
+                username,
+                content,
+                status,
+                author_type,
+                moderation_source,
+                moderation_reason,
+                moderation_model,
+                moderation_confidence,
+                moderated_at
+            )
+            values (${slug}, ${blockId}, ${rootId}::uuid, ${replyToId}::uuid, ${vistorId}::uuid, ${username}, ${content}, ${nextStatus},
+                    'guest', 'ai', ${moderation.reason}, ${moderation.model}, ${moderation.confidence}, now()
+                )
+            returning id, username, content, root_id, reply_to_id, created_at
         `
 
         const comment = insertedRows[0]
 
+        const responseMessage =
+        nextStatus === "published"
+            ? "评论已通过 AI 审核并发布"
+            : nextStatus === "rejected"
+                ? "评论未通过审核"
+                : "评论已提交，等待人工审核"
+
         return Response.json(
             {
-                message: "评论已提交，审核通过后会公开显示",
+                message: responseMessage,
                 comment: {
                     id: String(comment.id),
                     username: String(comment.username),
@@ -294,7 +332,7 @@ export async function POST(
                     rootId: comment.root_id ? String(comment.root_id) : null,
                     replyToId: comment.reply_to_id ? String(comment.reply_to_id) : null,
                     createdAt: new Date(String(comment.created_at)).toISOString(),
-                    status: "pending"
+                    status: String(comment.status)
                 }
             },
             {
