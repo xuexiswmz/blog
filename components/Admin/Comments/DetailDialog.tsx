@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { PendingComment, ReviewCommentHandler } from "./types";
+import { type PendingComment, type ReviewCommentHandler } from "./types";
 import Link from "next/link";
 import CommentActions from "./Actions";
 import {

@@ -2,7 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { CommentsResponse, PendingComment, ReviewAction } from "../types";
+import {
+  type CommentsResponse,
+  type PendingComment,
+  type ReviewAction,
+} from "../types";
 
 export default function useCommentModeration() {
   const router = useRouter();
@@ -14,7 +18,7 @@ export default function useCommentModeration() {
   useEffect(() => {
     let cancelled = false;
 
-    async function loadComment() {
+    async function loadComments() {
       try {
         const response = await fetch("/api/admin/comments", {
           cache: "no-store",
@@ -48,7 +52,7 @@ export default function useCommentModeration() {
       }
     }
 
-    void loadComment();
+    void loadComments();
 
     return () => {
       cancelled = true;

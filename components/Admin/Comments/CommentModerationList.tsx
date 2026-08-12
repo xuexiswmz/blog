@@ -21,6 +21,14 @@ export default function CommentModerationList() {
     return <p className="text-sm text-gray-500">正在加载待审核评论...</p>;
   }
 
+  function openDetails(commentId: string) {
+    setSelectedCommentId(commentId);
+  }
+
+  function closeDetails() {
+    setSelectedCommentId(null);
+  }
+
   return (
     <section className="space-y-4">
       <p className="text-sm text-gray-500">共 {comments.length} 条待审核评论</p>
@@ -41,14 +49,14 @@ export default function CommentModerationList() {
             comments={comments}
             reviewingId={reviewingId}
             onReview={reviewComment}
-            onViewDetails={(commentId) => setSelectedCommentId(commentId)}
+            onViewDetails={openDetails}
           />
 
           <CommentMobileList
             comments={comments}
             reviewingId={reviewingId}
             onReview={reviewComment}
-            onViewDetails={(commentId) => setSelectedCommentId(commentId)}
+            onViewDetails={openDetails}
           />
         </>
       )}
@@ -56,7 +64,7 @@ export default function CommentModerationList() {
         comment={selectedComment}
         reviewingId={reviewingId}
         onReview={reviewComment}
-        onClose={() => setSelectedCommentId(null)}
+        onClose={closeDetails}
       />
     </section>
   );

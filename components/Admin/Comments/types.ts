@@ -3,16 +3,12 @@ export type PendingComment = {
   postSlug: string;
   blockId: string;
   rootId: string | null;
-  replyToId: string | null;
   username: string;
   content: string;
-  status: string;
   createdAt: string;
-  authorType: "guest" | "admin" | "ai";
   moderationSource: "ai" | "human" | null;
   moderationReason: string | null;
   moderationModel: string | null;
-  moderatedAt: string | null;
 };
 
 export type CommentsResponse = {

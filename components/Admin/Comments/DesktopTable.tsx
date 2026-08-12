@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import CommentActions from "./Actions";
-import { PendingComment, ReviewCommentHandler } from "./types";
+import { type PendingComment, type ReviewCommentHandler } from "./types";
 import Content from "./Content";
 import { formatCommentDate, getModerationStatus } from "./utils";
 
