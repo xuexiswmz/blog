@@ -1,20 +1,33 @@
 export type ParagraphComment = {
-    id: string
-    username: string
-    content: string
-    createdAt: string
+  id: string;
+  username: string;
+  content: string;
+  createdAt: string;
 
-    rootId: string | null
-    replyToId: string | null
+  rootId: string | null;
+  replyToId: string | null;
 
-    replyToUsername: string | null
-    replyToContent: string | null
-    
-    deleted: boolean
-    replies: ParagraphComment[]
-}
+  replyToUsername: string | null;
+  replyToContent: string | null;
+
+  deleted: boolean;
+  replies: ParagraphComment[];
+};
 
 export type CommentListResponse = {
-    comments: ParagraphComment[]
-    count: number
-}
+  comments: ParagraphComment[];
+  count: number;
+};
+
+export type CommentSubmitResponse = {
+  message?: string;
+  comment?: {
+    id: string;
+    username: string;
+    content: string;
+    rootId: string | null;
+    replyToId: string | null;
+    createdAt: string;
+    status: "published" | "pending" | "rejected";
+  };
+};
