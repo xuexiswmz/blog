@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import I18nGate from "@/components/providers/I18nGate";
 import Headers from "@/components/Headers";
-
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "xuexiswmz",
@@ -24,7 +24,7 @@ const themeScript = `
       document.documentElement.dataset.theme = "light"
     }
   })()
-`
+`;
 
 export default function RootLayout({
   children,
@@ -32,29 +32,25 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="zh-CN"
-      className="h-full antialiased"
-      suppressHydrationWarning
-    >
+    <html lang="zh-CN" className="h-full antialiased" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: themeScript
+            __html: themeScript,
           }}
         />
       </head>
       <body className="h-dvh overflow-hidden flex flex-col">
         <I18nGate>
-          <div
-            className="mx-auto flex h-full min-h-0 w-[92%] flex-col sm:w-[85%]"
-          >
+          <div className="mx-auto flex h-full min-h-0 w-[92%] flex-col sm:w-[85%]">
             <Headers />
             <main className="min-h-0 flex-1 overflow-y-auto scrollbar-hide">
               {children}
             </main>
           </div>
         </I18nGate>
+
+        <Toaster position="top-center" richColors closeButton />
       </body>
     </html>
   );
