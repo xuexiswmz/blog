@@ -2,21 +2,23 @@
 
 import { type SubmitEvent, useId, useState } from "react";
 import { type CommentSubmitResponse, type ParagraphComment } from "./types";
+import { toast } from "sonner";
+import MarkdownEditor from "./Markdown/MarkdownEditor";
 
 type CommentsFormProps = {
   postSlug: string;
   paragraphId: string;
   replyTarget: ParagraphComment | null;
-  onCancelReply: () => void;
   onPublished: () => void;
+  onSubmitted?: () => void;
 };
 
 function CommentForm({
   postSlug,
   paragraphId,
   replyTarget,
-  onCancelReply,
   onPublished,
+  onSubmitted,
 }: CommentsFormProps) {
   const usernameId = useId();
   const contentId = useId();
@@ -24,8 +26,6 @@ function CommentForm({
   const [username, setUsername] = useState("");
   const [content, setContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const usernameLength = [...username.trim()].length;
   const contentLength = [...content.trim()].length;
@@ -46,8 +46,6 @@ function CommentForm({
 
     try {
       setSubmitting(true);
-      setError("");
-      setSuccess("");
 
       const response = await fetch(
         `/api/posts/${encodeURIComponent(postSlug)}/comments`,
@@ -72,15 +70,20 @@ function CommentForm({
       }
 
       setContent("");
-      setSuccess(result.message ?? "评论提交成功");
 
-      onCancelReply();
-
+      const message = result.message ?? "评论提交成功";
       if (result.comment?.status === "published") {
+        toast.success(message);
         onPublished();
+      } else if (result.comment?.status === "pending") {
+        toast.info(message);
+      } else {
+        toast.error(message);
       }
+
+      onSubmitted?.();
     } catch (error) {
-      setError(error instanceof Error ? error.message : "提交评论失败");
+      toast.error(error instanceof Error ? error.message : "提交评论失败");
     } finally {
       setSubmitting(false);
     }
@@ -88,19 +91,6 @@ function CommentForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      {replyTarget && (
-        <div className="flex items-center justify-between rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-          <span>回复 @{replyTarget.username}</span>
-          <button
-            type="button"
-            onClick={onCancelReply}
-            className=" hover:underline"
-          >
-            取消回复
-          </button>
-        </div>
-      )}
-
       <div className=" space-y-1">
         <label htmlFor={usernameId} className=" block text-xs font-medium">
           用户名
@@ -115,7 +105,7 @@ function CommentForm({
           onChange={(event) => {
             setUsername(event.target.value);
           }}
-          className=" w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 dark:border-gray-700 dark:bg-gray-950"
+          className=" w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 dark:border-[#333333] dark:bg-[#181818] dark:text-zinc-100"
         />
 
         <p className="text-right text-xs text-gray-400">{usernameLength}/20</p>
@@ -126,36 +116,18 @@ function CommentForm({
           评论内容
         </label>
 
-        <textarea
+        <MarkdownEditor
           id={contentId}
           value={content}
-          rows={4}
           maxLength={1000}
           placeholder={
             replyTarget
               ? `回复 @${replyTarget.username}`
               : "写下你对这个段落的看法"
           }
-          onChange={(event) => {
-            setContent(event.target.value);
-          }}
-          className=" w-full resize-y rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+          onChange={setContent}
         />
-
-        <p className="text-right text-xs text-gray-400">{contentLength}/1000</p>
       </div>
-
-      {error && (
-        <p role="alert" className="text-sm text-red-500">
-          {error}
-        </p>
-      )}
-
-      {success && (
-        <p role="status" className="text-sm text-green-600 dark:text-green-400">
-          {success}
-        </p>
-      )}
 
       <button
         type="submit"

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CommentListResponse, ParagraphComment } from "./types";
+import CommentItem from "./CommentItem";
 
 type CommentListProps = {
   postSlug: string;
@@ -83,67 +84,30 @@ function CommentList({
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-xs text-gray-500">共 {data.count} 条评论</p>
-
-      {data.comments.map((comment) => (
-        <article key={comment.id} className="space-y-3">
-          <CommentContent comment={comment} onReply={onReply} />
-
-          {comment.replies.length > 0 && (
-            <div className=" ml-5 space-y-3 border-l border-gray-200 pl-4 dark:border-gray-700">
-              {comment.replies.map((reply) => (
-                <CommentContent
-                  key={reply.id}
-                  comment={reply}
-                  onReply={onReply}
-                />
-              ))}
-            </div>
-          )}
-        </article>
-      ))}
-    </div>
-  );
-}
-
-type CommentContentProps = {
-  comment: ParagraphComment;
-  onReply?: (comment: ParagraphComment) => void;
-};
-
-function CommentContent({ comment, onReply }: CommentContentProps) {
-  return (
-    <div className="text-sm">
-      <div className="flex items-center gap-2">
-        <span className="font-medium text-gray-900 dark:text-gray-100">
-          {comment.username}
-        </span>
-
-        <time className="text-xs text-gray-400">
-          {new Date(comment.createdAt).toLocaleString("zh-CN")}
-        </time>
+    <div className="">
+      <div className="text-xs text-slate-500 border-slate-200 px-4 py-3 border-b dark:border-slate-800 dark:text-slate-400">
+        共 {data.count} 条评论
       </div>
 
-      {comment.replyToUsername && (
-        <p className=" mt-1 text-xs text-gray-500">
-          回复 @{comment.replyToUsername}
-        </p>
-      )}
+      <div className="divide-y divide-slate-200 dark:divide-slate-800">
+        {data.comments.map((comment) => (
+          <section key={comment.id}>
+            <CommentItem comment={comment} onReply={onReply} />
 
-      <p className=" mt-1 whitespace-pre-wrap wrap-break-word text-gray-700 dark:text-gray-100">
-        {comment.content}
-      </p>
-
-      {!comment.deleted && onReply && (
-        <button
-          type="button"
-          onClick={() => onReply(comment)}
-          className=" mt-1 text-xs text-blue-600 hover:underline dark:text-blue-400"
-        >
-          回复
-        </button>
-      )}
+            {comment.replies.length > 0 && (
+              <div className=" ml-9 border-l border-slate-200 divide-y divide-slate-200 dark:border-slate-800 dark:divide-slate-800">
+                {comment.replies.map((reply) => (
+                  <CommentItem
+                    key={reply.id}
+                    comment={reply}
+                    onReply={onReply}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        ))}
+      </div>
     </div>
   );
 }

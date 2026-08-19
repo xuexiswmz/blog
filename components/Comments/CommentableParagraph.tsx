@@ -5,6 +5,7 @@ import { MessageCircle } from "lucide-react";
 import CommentList from "./CommentList";
 import { ParagraphComment } from "./types";
 import CommentForm from "./CommentForm";
+import CommentComposerDialog from "./CommentComposerDialog";
 
 type CommentableParagraphProps = ComponentPropsWithoutRef<"p"> & {
   paragraphId: string;
@@ -68,9 +69,9 @@ function CommentableParagraph({
                         bg-gray-50
                         p-4 text-sm
                         text-gray-600
-                        dark:border-gray-700
-                        dark:bg-gray-900
-                        dark:text-gray-300
+                        dark:border-[#2b2b2b]
+                        dark:bg-[#111111]
+                        dark:text-zinc-300
                     "
         >
           <CommentList
@@ -79,20 +80,28 @@ function CommentableParagraph({
             onReply={setReplyTarget}
             refreshKey={commentsVersion}
           />
-          <div className="border-t border-gray-200 pt-4 dark:border-gray-700">
+          <div className="border-t border-gray-200 pt-4 dark:border-[#2b2b2b]">
             <CommentForm
               postSlug={postSlug}
               paragraphId={paragraphId}
-              replyTarget={replyTarget}
-              onCancelReply={() => {
-                setReplyTarget(null);
-              }}
+              replyTarget={null}
               onPublished={() => {
                 setCommentsVersion((current) => current + 1);
               }}
             />
           </div>
         </div>
+      )}
+      {open && replyTarget && (
+        <CommentComposerDialog
+          postSlug={postSlug}
+          paragraphId={paragraphId}
+          replyTarget={replyTarget}
+          onClose={() => setReplyTarget(null)}
+          onPublished={() => {
+            setCommentsVersion((current) => current + 1);
+          }}
+        />
       )}
     </div>
   );

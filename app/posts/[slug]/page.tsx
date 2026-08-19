@@ -8,17 +8,14 @@ type PostPageProps = {
   }>;
 };
 
-export default async function PostPage({
-  params,
-}: PostPageProps) {
+export default async function PostPage({ params }: PostPageProps) {
   const { slug } = await params;
 
-  const { default: Post } = await import(
-    `@/content/posts/${slug}.mdx`
-  );
+  const { default: Post } = await import(`@/content/posts/${slug}.mdx`);
 
   return (
-    <article className="
+    <article
+      className="
       prose prose-sm prose-slate
       mx-auto w-full min-w-0 max-w-3xl
       px-4 py-8
@@ -36,13 +33,20 @@ export default async function PostPage({
       [&_pre]:max-w-full
       [&_pre]:overflow-x-auto
 
+      [&_pre]:rounded-xl
+      [&_pre]:border
+      [&_pre]:border-slate-200
+      dark:[&_pre]:border-[#303030]
+      dark:[&_pre]:bg-[#0d0d0d]
+
       [&_table]:block
       [&_table]:max-w-full
       [&_table]:overflow-x-auto
 
       [&_img]:h-auto
       [&_img]:max-w-full
-    ">
+    "
+    >
       <ArticleCommentsProvider postSlug={slug}>
         <Post />
       </ArticleCommentsProvider>
@@ -51,19 +55,12 @@ export default async function PostPage({
 }
 
 export async function generateStaticParams() {
-  const postsDirectory = path.join(
-    process.cwd(),
-    "content",
-    "posts",
-  );
+  const postsDirectory = path.join(process.cwd(), "content", "posts");
 
-  const filenames =
-    await readdir(postsDirectory);
+  const filenames = await readdir(postsDirectory);
 
   return filenames
-    .filter((filename) =>
-      filename.endsWith(".mdx"),
-    )
+    .filter((filename) => filename.endsWith(".mdx"))
     .map((filename) => ({
       slug: filename.replace(/\.mdx$/, ""),
     }));
