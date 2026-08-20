@@ -50,6 +50,16 @@ export default function MarkdownContent({ content }: MarkdownContentProps) {
         [&_pre_code]:bg-transparent
         [&_pre_code]:p-0
         [&_pre_code]:text-inherit
+
+        [&_ul]:my-2
+        [&_ul]:list-disc
+        [&_ul]:pl-6
+
+        [&_ol]:my-2
+        [&_ol]:list-decimal
+        [&_ol]:pl-6
+
+        [&_li]:my-1
         "
     >
       <ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml>

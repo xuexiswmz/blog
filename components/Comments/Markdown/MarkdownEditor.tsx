@@ -1,6 +1,14 @@
 "use client";
 
-import { Bold, Code, Code2, Italic, TextQuote } from "lucide-react";
+import {
+  Bold,
+  Code,
+  Code2,
+  Italic,
+  TextQuote,
+  List,
+  ListOrdered,
+} from "lucide-react";
 import { useRef, useState } from "react";
 import MarkdownContent from "./MarkdownContent";
 
@@ -23,6 +31,8 @@ type SelectionEdit = {
   selectionStart: number;
   selectionEnd: number;
 };
+
+type ListType = "ordered" | "unordered";
 
 export default function MarkdownEditor({
   id,
@@ -158,6 +168,41 @@ export default function MarkdownEditor({
     });
   }
 
+  function insertList(listType: ListType) {
+    applySelectionEdit(({ selectedText, beforeText, afterText }) => {
+      const sourceText = selectedText || "列表项";
+
+      const listText = sourceText
+        .split("\n")
+        .map((line, index) => {
+          const prefix = listType === "ordered" ? `${index + 1}.` : "- ";
+          return prefix + line;
+        })
+        .join("\n");
+
+      const leadingNewLine =
+        beforeText && !beforeText.endsWith("\n") ? "\n" : "";
+
+      const trailingNewLine =
+        afterText && !afterText.startsWith("\n") ? "\n" : "";
+
+      const listStart = leadingNewLine.length;
+
+      const firstPrefixLength =
+        listType === "ordered" ? "1. ".length : "- ".length;
+
+      return {
+        replacement: leadingNewLine + listText + trailingNewLine,
+        selectionStart: selectedText
+          ? listStart
+          : listStart + firstPrefixLength,
+        selectionEnd: selectedText
+          ? listStart + listText.length
+          : listStart + firstPrefixLength + sourceText.length,
+      };
+    });
+  }
+
   return (
     <div className=" overflow-hidden rounded-2xl border border-slate-200 bg-white focus-within:border-sky-500 dark:border-[#333333] dark:bg-[#181818]">
       {/* 输入框 */}
@@ -237,6 +282,30 @@ export default function MarkdownEditor({
                 className="rounded-full p-2 text-sky-500 transition-colors hover:bg-sky-500/10"
               >
                 <TextQuote className="size-5" />
+              </button>
+
+              <button
+                type="button"
+                aria-label="插入无序列表"
+                title="无序列表"
+                onClick={() => {
+                  insertList("unordered");
+                }}
+                className=" rounded-full p-2 text-sky-500 transition-colors hover:bg-sky-500/10"
+              >
+                <List className="size-5" />
+              </button>
+
+              <button
+                type="button"
+                aria-label="插入有序列表"
+                title="有序列表"
+                onClick={() => {
+                  insertList("ordered");
+                }}
+                className=" rounded-full p-2 text-sky-500 transition-colors hover:bg-sky-500/10"
+              >
+                <ListOrdered className="size-5" />
               </button>
             </>
           )}
