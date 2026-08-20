@@ -1,6 +1,6 @@
 import type { MDXComponents } from "mdx/types";
 import { ComponentPropsWithoutRef } from "react";
-import CommentableParagraph from "./components/Comments/CommentableParagraph";
+import CommentableParagraph from "./components/Comments/Article/CommentableParagraph";
 
 type ParagraphProps = ComponentPropsWithoutRef<"p"> & {
   "data-paragraph-id"?: string

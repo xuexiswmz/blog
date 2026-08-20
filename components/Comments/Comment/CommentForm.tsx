@@ -3,7 +3,7 @@
 import { type SubmitEvent, useId, useState } from "react";
 import { type CommentSubmitResponse, type ParagraphComment } from "./types";
 import { toast } from "sonner";
-import MarkdownEditor from "./Markdown/MarkdownEditor";
+import MarkdownEditor from "../Markdown/MarkdownEditor";
 
 type CommentsFormProps = {
   postSlug: string;

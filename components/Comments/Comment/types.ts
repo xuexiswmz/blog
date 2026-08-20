@@ -35,3 +35,8 @@ export type CommentSubmitResponse = {
 export type CommentCountsResponse = {
   counts: Record<string, number>;
 };
+
+export type ParagraphTextSelection = {
+  paragraphId: string;
+  text: string;
+};

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { type ParagraphComment } from "./types";
 import { X } from "lucide-react";
-import MarkdownContent from "./Markdown/MarkdownContent";
+import MarkdownContent from "../Markdown/MarkdownContent";
 import CommentForm from "./CommentForm";
 
 type CommentComposerDialogProps = {

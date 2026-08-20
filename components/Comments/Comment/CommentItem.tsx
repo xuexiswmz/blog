@@ -1,7 +1,7 @@
 "use client";
 
 import { MessageCircle } from "lucide-react";
-import MarkdownContent from "./Markdown/MarkdownContent";
+import MarkdownContent from "../Markdown/MarkdownContent";
 import { ParagraphComment } from "./types";
 
 type CommentItemProps = {

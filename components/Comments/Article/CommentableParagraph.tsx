@@ -2,7 +2,7 @@
 import { ComponentPropsWithoutRef, useState } from "react";
 import { useArticleComments } from "./ArticleCommentsProvider";
 import { MessageCircle } from "lucide-react";
-import CommentDrawer from "./CommentDrawer";
+import CommentDrawer from "../Comment/CommentDrawer";
 
 type CommentableParagraphProps = ComponentPropsWithoutRef<"p"> & {
   paragraphId: string;
