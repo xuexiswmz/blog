@@ -31,3 +31,7 @@ export type CommentSubmitResponse = {
     status: "published" | "pending" | "rejected";
   };
 };
+
+export type CommentCountsResponse = {
+  counts: Record<string, number>;
+};

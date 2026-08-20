@@ -11,6 +11,7 @@ type CommentDrawerProps = {
   postSlug: string;
   paragraphId: string;
   onClose: () => void;
+  onPublished: () => Promise<void>;
 };
 
 type ComposerState =
@@ -23,6 +24,7 @@ export default function CommentDrawer({
   postSlug,
   paragraphId,
   onClose,
+  onPublished,
 }: CommentDrawerProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [commentsVersion, setCommentsVersion] = useState(0);
@@ -47,6 +49,7 @@ export default function CommentDrawer({
 
   function handlePublished() {
     setCommentsVersion((current) => current + 1);
+    void onPublished();
   }
 
   return (
@@ -66,9 +69,7 @@ export default function CommentDrawer({
         }}
         className="not-prose fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none bg-transparent p-0 backdrop:bg-black/45"
       >
-        <aside
-          className="comment-drawer-panel ml-auto flex h-dvh w-full max-w-xl flex-col border-l border-slate-200 bg-white text-slate-950 shadow-2xl dark:border-[#303030] dark:bg-[#111111] dark:text-slate-100"
-        >
+        <aside className="comment-drawer-panel ml-auto flex h-dvh w-full max-w-xl flex-col border-l border-slate-200 bg-white text-slate-950 shadow-2xl dark:border-[#303030] dark:bg-[#111111] dark:text-slate-100">
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 px-4 dark:border-[#303030]">
             <div className="flex items-start gap-1.5">
               <h2

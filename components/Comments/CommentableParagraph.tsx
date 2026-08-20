@@ -14,10 +14,12 @@ function CommentableParagraph({
   className,
   ...paragraphProps
 }: CommentableParagraphProps) {
-  const { postSlug } = useArticleComments();
+  const { postSlug, commentCounts, refreshCommentCounts } =
+    useArticleComments();
   const [open, setOpen] = useState(false);
 
   const panelId = `comments-${paragraphId}`;
+  const commentCount = commentCounts[paragraphId] ?? 0;
 
   return (
     <div className="my-[1.25em] grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2">
@@ -28,28 +30,44 @@ function CommentableParagraph({
       >
         {children}
       </p>
-      <button
-        type="button"
-        aria-label="查看段评"
-        aria-expanded={open}
-        aria-controls={panelId}
-        onClick={() => {
-          setOpen(true);
-        }}
-        className="
-                    not-prose
-                    mt-1
-                    inline-flex size-8
-                    items-center justify-center
-                    rounded-full text-gray-400
-                    transition-colors
-                    hover:bg-gray-100 hover:text-blue-600
-                    dark:text-gray-500 dark:hover:bg-gray-500
-                    dark:hover:text-blue-400
-                "
-      >
-        <MessageCircle aria-hidden="true" className="size-4" />
-      </button>
+
+      {commentCount > 0 && (
+        <button
+          type="button"
+          aria-label="查看段评"
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => {
+            setOpen(true);
+          }}
+          className="
+            not-prose
+            relative mt-1
+            inline-flex size-9
+            items-center justify-center
+            rounded-full
+            text-slate-400
+            transition-colors
+            hover:bg-slate-100
+            hover:text-sky-500
+            dark:text-slate-500
+            dark:hover:bg-[#242424]
+            dark:hover:text-sky-400
+          "
+        >
+          <MessageCircle
+            aria-hidden="true"
+            className="size-4"
+            strokeWidth={1.5}
+          />
+          <span
+            aria-hidden="true"
+            className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold pointer-events-none"
+          >
+            {commentCount > 99 ? "99+" : commentCount}
+          </span>
+        </button>
+      )}
 
       {open && (
         <CommentDrawer
@@ -59,6 +77,7 @@ function CommentableParagraph({
           onClose={() => {
             setOpen(false);
           }}
+          onPublished={refreshCommentCounts}
         />
       )}
     </div>
