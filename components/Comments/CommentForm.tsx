@@ -129,13 +129,15 @@ function CommentForm({
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={!canSubmit}
-        className=" rounded-md bg-blue-600 px-4 py-2 text-sm text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {submitting ? "提交中" : replyTarget ? "提交回复" : "提交评论"}
-      </button>
+      <div className="flex justify-end">
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {submitting ? "提交中" : replyTarget ? "提交回复" : "提交评论"}
+        </button>
+      </div>
     </form>
   );
 }

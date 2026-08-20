@@ -2,10 +2,7 @@
 import { ComponentPropsWithoutRef, useState } from "react";
 import { useArticleComments } from "./ArticleCommentsProvider";
 import { MessageCircle } from "lucide-react";
-import CommentList from "./CommentList";
-import { ParagraphComment } from "./types";
-import CommentForm from "./CommentForm";
-import CommentComposerDialog from "./CommentComposerDialog";
+import CommentDrawer from "./CommentDrawer";
 
 type CommentableParagraphProps = ComponentPropsWithoutRef<"p"> & {
   paragraphId: string;
@@ -20,11 +17,7 @@ function CommentableParagraph({
   const { postSlug } = useArticleComments();
   const [open, setOpen] = useState(false);
 
-  const [replyTarget, setReplyTarget] = useState<ParagraphComment | null>(null);
-
   const panelId = `comments-${paragraphId}`;
-
-  const [commentsVersion, setCommentsVersion] = useState(0);
 
   return (
     <div className="my-[1.25em] grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2">
@@ -41,7 +34,7 @@ function CommentableParagraph({
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => {
-          setOpen((current) => !current);
+          setOpen(true);
         }}
         className="
                     not-prose
@@ -59,47 +52,12 @@ function CommentableParagraph({
       </button>
 
       {open && (
-        <div
+        <CommentDrawer
           id={panelId}
-          className="
-                        not-prose
-                        col-span-2
-                        mt-3 rounded-lg border
-                        border-gray-200
-                        bg-gray-50
-                        p-4 text-sm
-                        text-gray-600
-                        dark:border-[#2b2b2b]
-                        dark:bg-[#111111]
-                        dark:text-zinc-300
-                    "
-        >
-          <CommentList
-            postSlug={postSlug}
-            paragraphId={paragraphId}
-            onReply={setReplyTarget}
-            refreshKey={commentsVersion}
-          />
-          <div className="border-t border-gray-200 pt-4 dark:border-[#2b2b2b]">
-            <CommentForm
-              postSlug={postSlug}
-              paragraphId={paragraphId}
-              replyTarget={null}
-              onPublished={() => {
-                setCommentsVersion((current) => current + 1);
-              }}
-            />
-          </div>
-        </div>
-      )}
-      {open && replyTarget && (
-        <CommentComposerDialog
           postSlug={postSlug}
           paragraphId={paragraphId}
-          replyTarget={replyTarget}
-          onClose={() => setReplyTarget(null)}
-          onPublished={() => {
-            setCommentsVersion((current) => current + 1);
+          onClose={() => {
+            setOpen(false);
           }}
         />
       )}

@@ -8,6 +8,7 @@ type CommentListProps = {
   postSlug: string;
   paragraphId: string;
   onReply?: (comment: ParagraphComment) => void;
+  onCountChange?: (count: number) => void;
   refreshKey: number;
 };
 
@@ -15,6 +16,7 @@ function CommentList({
   postSlug,
   paragraphId,
   onReply,
+  onCountChange,
   refreshKey,
 }: CommentListProps) {
   const [data, setData] = useState<CommentListResponse>({
@@ -45,12 +47,15 @@ function CommentList({
           },
         );
 
-        const result = await response.json();
+        const result = (await response.json()) as CommentListResponse & {
+          message?: string;
+        };
 
         if (!response.ok) {
           throw new Error(result.message ?? "获取评论失败");
         }
         setData(result);
+        onCountChange?.(result.count);
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {
           return;
@@ -69,7 +74,7 @@ function CommentList({
     return () => {
       controller.abort();
     };
-  }, [postSlug, paragraphId, refreshKey]);
+  }, [postSlug, paragraphId, refreshKey, onCountChange]);
 
   if (loading) {
     return <p className="text-sm text-gray-500">正在加载评论...</p>;
@@ -84,30 +89,24 @@ function CommentList({
   }
 
   return (
-    <div className="">
-      <div className="text-xs text-slate-500 border-slate-200 px-4 py-3 border-b dark:border-slate-800 dark:text-slate-400">
-        共 {data.count} 条评论
-      </div>
+    <div className="divide-y divide-slate-200 dark:divide-slate-800">
+      {data.comments.map((comment) => (
+        <section key={comment.id}>
+          <CommentItem comment={comment} onReply={onReply} />
 
-      <div className="divide-y divide-slate-200 dark:divide-slate-800">
-        {data.comments.map((comment) => (
-          <section key={comment.id}>
-            <CommentItem comment={comment} onReply={onReply} />
-
-            {comment.replies.length > 0 && (
-              <div className=" ml-9 border-l border-slate-200 divide-y divide-slate-200 dark:border-slate-800 dark:divide-slate-800">
-                {comment.replies.map((reply) => (
-                  <CommentItem
-                    key={reply.id}
-                    comment={reply}
-                    onReply={onReply}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-        ))}
-      </div>
+          {comment.replies.length > 0 && (
+            <div className="ml-9 divide-y divide-slate-200 border-l border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+              {comment.replies.map((reply) => (
+                <CommentItem
+                  key={reply.id}
+                  comment={reply}
+                  onReply={onReply}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      ))}
     </div>
   );
 }

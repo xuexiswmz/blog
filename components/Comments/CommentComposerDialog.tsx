@@ -9,10 +9,12 @@ import CommentForm from "./CommentForm";
 type CommentComposerDialogProps = {
   postSlug: string;
   paragraphId: string;
-  replyTarget: ParagraphComment;
   onClose: () => void;
   onPublished: () => void;
-};
+} & (
+  | { mode: "comment"; replyTarget?: never }
+  | { mode: "reply"; replyTarget: ParagraphComment }
+);
 
 export default function CommentComposerDialog({
   postSlug,
@@ -20,8 +22,10 @@ export default function CommentComposerDialog({
   replyTarget,
   onClose,
   onPublished,
+  mode,
 }: CommentComposerDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const activeReplyTarget = mode === "reply" ? replyTarget : null;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -37,8 +41,9 @@ export default function CommentComposerDialog({
     };
   }, []);
 
-  const avatarText =
-    Array.from(replyTarget.username.trim())[0]?.toUpperCase() ?? "?";
+  const avatarText = activeReplyTarget
+    ? (Array.from(activeReplyTarget.username.trim())[0]?.toUpperCase() ?? "?")
+    : null;
 
   return (
     <dialog
@@ -53,7 +58,7 @@ export default function CommentComposerDialog({
           onClose();
         }
       }}
-      className=" m-auto w-[min(640px, calc(100%-2rem))] rounded-2xl bg-white p-0 text-slate-950 shadow-2xl backdrop:bg-black/50 dark:bg-[#111111] dark:text-slate-100"
+      className="not-prose scrollbar-hide m-auto max-h-[calc(100dvh-2rem)] w-[min(640px,calc(100%-2rem))] overflow-y-auto rounded-2xl bg-white p-0 text-slate-950 shadow-2xl backdrop:bg-black/50 dark:bg-[#111111] dark:text-slate-100"
     >
       <div className="flex min-h-14 items-center justify-between px-4">
         <button
@@ -66,39 +71,51 @@ export default function CommentComposerDialog({
         </button>
 
         <h2 id="reply-dialog-title" className="font-semibold">
-          回复
+          {mode === "reply" ? "回复" : "添加段评"}
         </h2>
 
         <div className="size-9" />
       </div>
 
       <div className="px-5 pb-5">
-        <div className=" flex gap-3">
-          <div
-            aria-hidden="true"
-            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-200 font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-200"
-          >
-            {avatarText}
-          </div>
-          <div className="min-w-0 flex-1">
-            <span className="font-semibold">{replyTarget.username}</span>
-
-            <div className=" mt-1 max-h-36 overflow-y-auto text-sm">
-              <MarkdownContent content={replyTarget.content} />
+        {activeReplyTarget && (
+          <div className=" flex gap-3">
+            <div
+              aria-hidden="true"
+              className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-200 font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-200"
+            >
+              {avatarText}
             </div>
+            <div className="min-w-0 flex-1">
+              <span className="font-semibold">
+                {activeReplyTarget.username}
+              </span>
 
-            <p className="mt-3 text-sm text-slate-500">
-              回复给{" "}
-              <span className="text-sky-500">@{replyTarget.username}</span>
-            </p>
+              <div className="scrollbar-hide mt-1 max-h-36 overflow-y-auto text-sm">
+                <MarkdownContent content={activeReplyTarget.content} />
+              </div>
+
+              <p className="mt-3 text-sm text-slate-500">
+                回复给{" "}
+                <span className="text-sky-500">
+                  @{activeReplyTarget.username}
+                </span>
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="mt-5 border-t border-slate-500 pt-5 dark:border-slate-800">
+        <div
+          className={
+            activeReplyTarget
+              ? "mt-4 border-t border-slate-200 pt-4 dark:border-[#303030]"
+              : ""
+          }
+        >
           <CommentForm
             postSlug={postSlug}
             paragraphId={paragraphId}
-            replyTarget={replyTarget}
+            replyTarget={activeReplyTarget}
             onPublished={onPublished}
             onSubmitted={onClose}
           />

@@ -166,16 +166,16 @@ export default function MarkdownEditor({
           id={id}
           ref={textareaRef}
           value={value}
-          rows={5}
+          rows={3}
           maxLength={maxLength}
           placeholder={placeholder}
           onChange={(event) => {
             onChange(event.target.value);
           }}
-          className="min-h-32 w-full resize-y bg-transparent px-4 py-2 text-base text-slate-900 outline-none placeholder:text-slate-400 dark:text-slate-100 dark:placeholder:text-slate-400"
+          className="scrollbar-hide min-h-24 w-full resize-y bg-transparent px-4 py-2 text-base text-slate-900 outline-none placeholder:text-slate-400 dark:text-slate-100 dark:placeholder:text-slate-400"
         />
       ) : (
-        <div className="min-h-32 px-4 py-2">
+        <div className="min-h-24 px-4 py-2">
           {value.trim() ? (
             <MarkdownContent content={value} />
           ) : (
