@@ -17,7 +17,7 @@ export default function ParagraphCommentTrigger({
     return null;
   }
 
-  const disaplyedCount = commentCount > 99 ? "99+" : commentCount;
+  const displayedCount = commentCount > 99 ? "99+" : commentCount;
 
   return (
     <button
@@ -41,12 +41,12 @@ export default function ParagraphCommentTrigger({
             dark:hover:text-sky-400
           "
     >
-      <MessageCircle aria-hidden="true" className="size-4" strokeWidth={1.5} />
+      <MessageCircle aria-hidden="true" className="size-5" strokeWidth={1.5} />
       <span
         aria-hidden="true"
-        className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold pointer-events-none"
+        className="absolute inset-0 flex items-center justify-center text-[8px] font-semibold pointer-events-none"
       >
-        {disaplyedCount}
+        {displayedCount}
       </span>
     </button>
   );
