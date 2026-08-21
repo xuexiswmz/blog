@@ -1,6 +1,6 @@
 "use client";
 import { ComponentPropsWithoutRef, useState } from "react";
-import { useArticleComments } from "./ArticleCommentsProvider";
+import { useArticleComments } from "./ArticleCommentsContext";
 import { MessageCircle } from "lucide-react";
 import CommentDrawer from "../Comment/CommentDrawer";
 
