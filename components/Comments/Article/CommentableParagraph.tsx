@@ -1,8 +1,8 @@
 "use client";
 import { ComponentPropsWithoutRef, useState } from "react";
 import { useArticleComments } from "./ArticleCommentsContext";
-import { MessageCircle } from "lucide-react";
 import CommentDrawer from "../Comment/CommentDrawer";
+import ParagraphCommentTrigger from "./paragraphCommentTrigger";
 
 type CommentableParagraphProps = ComponentPropsWithoutRef<"p"> & {
   paragraphId: string;
@@ -16,9 +16,9 @@ function CommentableParagraph({
 }: CommentableParagraphProps) {
   const { postSlug, commentCounts, refreshCommentCounts } =
     useArticleComments();
-  const [open, setOpen] = useState(false);
 
-  const panelId = `comments-${paragraphId}`;
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerId = `comments-${paragraphId}`;
   const commentCount = commentCounts[paragraphId] ?? 0;
 
   return (
@@ -31,51 +31,22 @@ function CommentableParagraph({
         {children}
       </p>
 
-      {commentCount > 0 && (
-        <button
-          type="button"
-          aria-label="查看段评"
-          aria-expanded={open}
-          aria-controls={panelId}
-          onClick={() => {
-            setOpen(true);
-          }}
-          className="
-            not-prose
-            relative mt-1
-            inline-flex size-9
-            items-center justify-center
-            rounded-full
-            text-slate-400
-            transition-colors
-            hover:bg-slate-100
-            hover:text-sky-500
-            dark:text-slate-500
-            dark:hover:bg-[#242424]
-            dark:hover:text-sky-400
-          "
-        >
-          <MessageCircle
-            aria-hidden="true"
-            className="size-4"
-            strokeWidth={1.5}
-          />
-          <span
-            aria-hidden="true"
-            className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold pointer-events-none"
-          >
-            {commentCount > 99 ? "99+" : commentCount}
-          </span>
-        </button>
-      )}
+      <ParagraphCommentTrigger
+        commentCount={commentCount}
+        expanded={drawerOpen}
+        controls={drawerId}
+        onOpen={() => {
+          setDrawerOpen(true);
+        }}
+      />
 
-      {open && (
+      {drawerOpen && (
         <CommentDrawer
-          id={panelId}
+          id={drawerId}
           postSlug={postSlug}
           paragraphId={paragraphId}
           onClose={() => {
-            setOpen(false);
+            setDrawerOpen(false);
           }}
           onPublished={refreshCommentCounts}
         />
