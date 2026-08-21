@@ -142,7 +142,7 @@ export async function PATCH(request: Request) {
                 moderation_reason = concat_ws(
                     '；',
                     nullif(moderation_reason, ''),
-                    ${humanReason}
+                    ${humanReason}::text
                 ),
                 moderated_at = now()
             where id = ${commentId}::uuid
