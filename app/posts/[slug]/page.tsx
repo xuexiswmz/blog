@@ -1,4 +1,4 @@
-import ArticleCommentsProvider from "@/components/Comments/Article/ArticleCommentsProvider";
+import ArticleCommentsProvider from "@/components/Comments/Article/providers/ArticleCommentsProvider";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 

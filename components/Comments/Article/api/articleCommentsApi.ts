@@ -1,4 +1,4 @@
-import { CommentCountsResponse } from "../Comment/types";
+import { CommentCountsResponse } from "../../Comment/types";
 
 /**
  * 获取一篇文章中各个段落的评论数量。

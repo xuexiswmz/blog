@@ -1,4 +1,4 @@
-import { type PendingComment } from "./types";
+import { PendingComment } from "../types/commentModeration";
 
 const commentDateFormatter = new Intl.DateTimeFormat("zh-CN", {
   year: "numeric",

@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect } from "react";
-import { type PendingComment, type ReviewCommentHandler } from "./types";
+import {
+  type PendingComment,
+  type ReviewCommentHandler,
+} from "../types/commentModeration";
 import Link from "next/link";
-import CommentActions from "./Actions";
+import CommentActions from "./CommentActions";
 import {
   formatCommentDate,
   getCommentType,
   getModerationStatus,
-} from "./utils";
+} from "../utils/commentModeration";
 
 type CommentDetailDialogProps = {
   comment: PendingComment | null;

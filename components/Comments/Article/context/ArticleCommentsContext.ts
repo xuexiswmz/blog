@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import type { ParagraphTextSelection } from "../Comment/types";
+import type { ParagraphTextSelection } from "../../Comment/types";
 
 /**
  * 一篇文章内所有可评论段落共享的数据。

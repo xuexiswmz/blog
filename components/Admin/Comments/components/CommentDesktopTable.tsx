@@ -1,10 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import CommentActions from "./Actions";
-import { type PendingComment, type ReviewCommentHandler } from "./types";
-import Content from "./Content";
-import { formatCommentDate, getModerationStatus } from "./utils";
+import {
+  PendingComment,
+  ReviewCommentHandler,
+} from "../types/commentModeration";
+import {
+  formatCommentDate,
+  getModerationStatus,
+} from "../utils/commentModeration";
+import CommentContent from "./CommentContent";
+import CommentActions from "./CommentActions";
 
 type CommentDesktopTableProps = {
   comments: PendingComment[];
@@ -75,7 +81,7 @@ export default function CommentDesktopTable({
                 </td>
 
                 <td className="px-4 py-4">
-                  <Content content={comment.content} />
+                  <CommentContent content={comment.content} />
                 </td>
 
                 <td className="px-4 py-4">

@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import CommentDetailDialog from "./DetailDialog";
-import CommentDesktopTable from "./DesktopTable";
-import CommentMobileList from "./MobileList";
-import useCommentModeration from "./hooks/useCommentModeration";
+import useCommentModeration from "../hooks/useCommentModeration";
+import CommentDesktopTable from "./CommentDesktopTable";
+import CommentMobileList from "./CommentMobileList";
+import CommentDetailDialog from "./CommentDetailDialog";
 
 export default function CommentModerationList() {
   const { comments, loading, error, reviewingId, reviewComment } =

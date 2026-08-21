@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { requestCommentCounts } from "../articleCommentsApi";
+import { requestCommentCounts } from "../api/articleCommentsApi";
 
 /**
  * 管理一篇文章的段评数量。

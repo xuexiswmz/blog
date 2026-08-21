@@ -1,6 +1,6 @@
 "use client";
 
-import { ReviewCommentHandler } from "./types";
+import { ReviewCommentHandler } from "../types/commentModeration";
 
 type CommentActionsProps = {
   commentId: string;

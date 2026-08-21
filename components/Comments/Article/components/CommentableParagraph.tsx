@@ -1,7 +1,7 @@
 "use client";
 import { ComponentPropsWithoutRef, useState } from "react";
-import { useArticleComments } from "./ArticleCommentsContext";
-import CommentDrawer from "../Comment/CommentDrawer";
+import { useArticleComments } from "../context/ArticleCommentsContext";
+import CommentDrawer from "../../Comment/CommentDrawer";
 import ParagraphCommentTrigger from "./paragraphCommentTrigger";
 
 type CommentableParagraphProps = ComponentPropsWithoutRef<"p"> & {

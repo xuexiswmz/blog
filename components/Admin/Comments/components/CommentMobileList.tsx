@@ -1,8 +1,11 @@
 "use client";
 
-import CommentActions from "./Actions";
-import Content from "./Content";
-import { type PendingComment, type ReviewCommentHandler } from "./types";
+import CommentActions from "./CommentActions";
+import Content from "./CommentContent";
+import {
+  type PendingComment,
+  type ReviewCommentHandler,
+} from "../types/commentModeration";
 
 type CommentMobileListProps = {
   comments: PendingComment[];

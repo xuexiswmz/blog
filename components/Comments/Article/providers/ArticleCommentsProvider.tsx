@@ -1,9 +1,9 @@
 "use client";
 
 import { type ReactNode, useMemo } from "react";
-import { ArticleCommentsContext } from "./ArticleCommentsContext";
-import { useParagraphTextSelection } from "./hooks/useParagraphTextSelection";
-import { useArticleCommentCounts } from "./hooks/useArticleCommentCounts";
+import { ArticleCommentsContext } from "../context/ArticleCommentsContext";
+import { useParagraphTextSelection } from "../hooks/useParagraphTextSelection";
+import { useArticleCommentCounts } from "../hooks/useArticleCommentCounts";
 
 type ArticleCommentsProviderProps = {
   postSlug: string;

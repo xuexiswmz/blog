@@ -25,9 +25,7 @@ export default function ParagraphCommentTrigger({
       aria-label="查看段评"
       aria-expanded={expanded}
       aria-controls={controls}
-      onClick={() => {
-        onOpen;
-      }}
+      onClick={onOpen}
       className="
             not-prose
             relative mt-1
@@ -48,7 +46,7 @@ export default function ParagraphCommentTrigger({
         aria-hidden="true"
         className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold pointer-events-none"
       >
-        {commentCount > 99 ? "99+" : commentCount}
+        {disaplyedCount}
       </span>
     </button>
   );
