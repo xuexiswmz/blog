@@ -1,13 +1,29 @@
 "use client";
-
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import {
-  type CommentsResponse,
-  type PendingComment,
-  type ReviewAction,
-} from "../types";
+  CommentModerationApiError,
+  requestCommentReview,
+  requestPendingComments,
+} from "../api/commentModerationApi";
+import { PendingComment, ReviewAction } from "../types/commentModeration";
+import { useEffect, useState } from "react";
 
+function isUnauthError(error: unknown) {
+  return error instanceof CommentModerationApiError && error.status === 401;
+}
+
+/**
+ * 管理评论审核页面的数据和交互状态。
+ *
+ * 负责：
+ * - 加载待审核评论
+ * - 保存加载和错误状态
+ * - 提交人工审核结果
+ * - 审核成功后更新本地列表
+ * - 登录失效时跳转登录页面
+ *
+ * 实际网络请求由 commentModerationApi.ts 负责。
+ */
 export default function useCommentModeration() {
   const router = useRouter();
   const [comments, setComments] = useState<PendingComment[]>([]);
@@ -16,46 +32,34 @@ export default function useCommentModeration() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
 
     async function loadComments() {
       try {
-        const response = await fetch("/api/admin/comments", {
-          cache: "no-store",
-        });
-        const data = (await response
-          .json()
-          .catch(() => null)) as CommentsResponse | null;
+        const data = await requestPendingComments(controller.signal);
+        setComments(data.comments);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
 
-        if (response.status === 401) {
+        if (isUnauthError(error)) {
           router.replace("/admin/login");
           return;
         }
 
-        if (!response.ok) {
-          throw new Error(data?.message ?? "读取待审核评论失败");
-        }
-
-        if (!cancelled && data) {
-          setComments(data.comments);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setError(
-            error instanceof Error ? error.message : "读取待审核评论失败",
-          );
-        }
+        setError(error instanceof Error ? error.message : "读取待审核评论失败");
       } finally {
-        if (!cancelled) {
+        // 已取消的旧请求不再修改当前页面的加载状态。
+        if (!controller.signal.aborted) {
           setLoading(false);
         }
       }
     }
-
     void loadComments();
-
     return () => {
-      cancelled = true;
+      // 组件卸载时终止未完成的请求
+      controller.abort();
     };
   }, [router]);
 
@@ -67,32 +71,15 @@ export default function useCommentModeration() {
     setError("");
 
     try {
-      const response = await fetch("/api/admin/comments", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          commentId,
-          action,
-        }),
-      });
-      const data = (await response.json().catch(() => null)) as {
-        message?: string;
-      } | null;
-      if (response.status === 401) {
-        router.replace("/admin/login");
-        return;
-      }
-      if (!response.ok) {
-        throw new Error(data?.message ?? "审核评论失败");
-      }
+      await requestCommentReview(commentId, action);
 
       setComments((currentComments) =>
         currentComments.filter((comment) => comment.id !== commentId),
       );
     } catch (error) {
-      setError(error instanceof Error ? error.message : "审核评论失败");
+      if (isUnauthError(error)) {
+        router.replace("/admin/login");
+      }
     } finally {
       setReviewingId(null);
     }
