@@ -12,8 +12,8 @@ type CommentComposerDialogProps = {
   onClose: () => void;
   onPublished: () => void;
 } & (
-  | { mode: "comment"; replyTarget?: never }
-  | { mode: "reply"; replyTarget: ParagraphComment }
+  | { mode: "comment"; replyTarget?: never; selectedText?: string }
+  | { mode: "reply"; replyTarget: ParagraphComment; selectedText?: string }
 );
 
 export default function CommentComposerDialog({
@@ -23,9 +23,13 @@ export default function CommentComposerDialog({
   onClose,
   onPublished,
   mode,
+  selectedText,
 }: CommentComposerDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const activeReplyTarget = mode === "reply" ? replyTarget : null;
+
+  const activeSelectedText =
+    mode === "comment" ? selectedText?.trim() : undefined;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -78,6 +82,18 @@ export default function CommentComposerDialog({
       </div>
 
       <div className="px-5 pb-5">
+        {activeSelectedText && (
+          <div className="mb-4 rounded-xl bg-slate-50 p-3 dark:bg-[#181818]">
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              选中的内容
+            </p>
+
+            <blockquote className="scrollbar-hide mt-2 max-h-24 overflow-y-auto border-l-2 border-sky-400 pl-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
+              {activeSelectedText}
+            </blockquote>
+          </div>
+        )}
+
         {activeReplyTarget && (
           <div className=" flex gap-3">
             <div

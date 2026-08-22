@@ -39,4 +39,9 @@ export type CommentCountsResponse = {
 export type ParagraphTextSelection = {
   paragraphId: string;
   text: string;
+  position: {
+    x: number;
+    y: number;
+    placement: "top" | "bottom";
+  };
 };

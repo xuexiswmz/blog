@@ -3,6 +3,7 @@ import { ComponentPropsWithoutRef, useState } from "react";
 import { useArticleComments } from "../context/ArticleCommentsContext";
 import CommentDrawer from "../../Comment/CommentDrawer";
 import ParagraphCommentTrigger from "./paragraphCommentTrigger";
+import CommentComposerDialog from "../../Comment/CommentComposerDialog";
 
 type CommentableParagraphProps = ComponentPropsWithoutRef<"p"> & {
   paragraphId: string;
@@ -14,12 +15,38 @@ function CommentableParagraph({
   className,
   ...paragraphProps
 }: CommentableParagraphProps) {
-  const { postSlug, commentCounts, refreshCommentCounts } =
+  const { postSlug, commentCounts, refreshCommentCounts, paragraphSelection } =
     useArticleComments();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [selectedText, setSelectedText] = useState("");
+
   const drawerId = `comments-${paragraphId}`;
   const commentCount = commentCounts[paragraphId] ?? 0;
+
+  const activeSelection =
+    paragraphSelection?.paragraphId === paragraphId ? paragraphSelection : null;
+
+  // 打开评论弹窗前保存当前选中的文字
+  function openCommentComposer() {
+    if (!activeSelection) {
+      return;
+    }
+
+    setSelectedText(activeSelection.text);
+    setComposerOpen(true);
+
+    // 弹窗打开后清除页面选区，selectionchange 会关闭 Tooltip。
+    window.getSelection()?.removeAllRanges();
+  }
+
+  // 刷新文章中的评论数量，打开抽屉展示刚发布的评论
+  function handleCommentPublished() {
+    void refreshCommentCounts();
+    setDrawerOpen(true);
+  }
 
   return (
     <div className="my-[1.25em] grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2">
@@ -33,9 +60,11 @@ function CommentableParagraph({
 
       <ParagraphCommentTrigger
         commentCount={commentCount}
+        selection={activeSelection}
         expanded={drawerOpen}
         controls={drawerId}
-        onOpen={() => {
+        onAddComment={openCommentComposer}
+        onOpenComments={() => {
           setDrawerOpen(true);
         }}
       />
@@ -49,6 +78,19 @@ function CommentableParagraph({
             setDrawerOpen(false);
           }}
           onPublished={refreshCommentCounts}
+        />
+      )}
+
+      {composerOpen && (
+        <CommentComposerDialog
+          mode="comment"
+          postSlug={postSlug}
+          paragraphId={paragraphId}
+          selectedText={selectedText}
+          onClose={() => {
+            setComposerOpen(false);
+          }}
+          onPublished={handleCommentPublished}
         />
       )}
     </div>
