@@ -37,7 +37,7 @@ export default function CommentComposerDialog({
       return;
     }
 
-    dialog.showModal();
+    dialog.show();
     return () => {
       if (dialog.open) {
         dialog.close();
@@ -62,79 +62,81 @@ export default function CommentComposerDialog({
           onClose();
         }
       }}
-      className="not-prose scrollbar-hide m-auto max-h-[calc(100dvh-2rem)] w-[min(640px,calc(100%-2rem))] overflow-y-auto rounded-2xl bg-white p-0 text-slate-950 shadow-2xl backdrop:bg-black/50 dark:bg-[#111111] dark:text-slate-100"
+      className="not-prose fixed inset-0 z-60 m-0 h-dvh max-h-none w-screen max-w-none overflow-hidden border-0 bg-black/50 p-4 open:flex open:items-center open:justify-center"
     >
-      <div className="flex min-h-14 items-center justify-between px-4">
-        <button
-          type="button"
-          aria-label="关闭回复窗口"
-          onClick={onClose}
-          className="rounded-full p-2 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
-        >
-          <X className="size-5" />
-        </button>
+      <div className=" scrollbar-hide max-h-[calc(100dvh-2rem)] w-full max-w-160 overflow-y-auto rounded-2xl bg-white text-slate-950 shadow-2xl dark:bg-[#111111] dark:text-slate-100">
+        <div className="flex min-h-14 items-center justify-between px-4">
+          <button
+            type="button"
+            aria-label="关闭回复窗口"
+            onClick={onClose}
+            className="rounded-full p-2 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            <X className="size-5" />
+          </button>
 
-        <h2 id="reply-dialog-title" className="font-semibold">
-          {mode === "reply" ? "回复" : "添加段评"}
-        </h2>
+          <h2 id="reply-dialog-title" className="font-semibold">
+            {mode === "reply" ? "回复" : "添加段评"}
+          </h2>
 
-        <div className="size-9" />
-      </div>
+          <div className="size-9" />
+        </div>
 
-      <div className="px-5 pb-5">
-        {activeSelectedText && (
-          <div className="mb-4 rounded-xl bg-slate-50 p-3 dark:bg-[#181818]">
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              选中的内容
-            </p>
-
-            <blockquote className="scrollbar-hide mt-2 max-h-24 overflow-y-auto border-l-2 border-sky-400 pl-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
-              {activeSelectedText}
-            </blockquote>
-          </div>
-        )}
-
-        {activeReplyTarget && (
-          <div className=" flex gap-3">
-            <div
-              aria-hidden="true"
-              className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-200 font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-200"
-            >
-              {avatarText}
-            </div>
-            <div className="min-w-0 flex-1">
-              <span className="font-semibold">
-                {activeReplyTarget.username}
-              </span>
-
-              <div className="scrollbar-hide mt-1 max-h-36 overflow-y-auto text-sm">
-                <MarkdownContent content={activeReplyTarget.content} />
-              </div>
-
-              <p className="mt-3 text-sm text-slate-500">
-                回复给{" "}
-                <span className="text-sky-500">
-                  @{activeReplyTarget.username}
-                </span>
+        <div className="px-5 pb-5">
+          {activeSelectedText && (
+            <div className="mb-4 rounded-xl bg-slate-50 p-3 dark:bg-[#181818]">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                选中的内容
               </p>
-            </div>
-          </div>
-        )}
 
-        <div
-          className={
-            activeReplyTarget
-              ? "mt-4 border-t border-slate-200 pt-4 dark:border-[#303030]"
-              : ""
-          }
-        >
-          <CommentForm
-            postSlug={postSlug}
-            paragraphId={paragraphId}
-            replyTarget={activeReplyTarget}
-            onPublished={onPublished}
-            onSubmitted={onClose}
-          />
+              <blockquote className="scrollbar-hide mt-2 max-h-24 overflow-y-auto border-l-2 border-sky-400 pl-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
+                {activeSelectedText}
+              </blockquote>
+            </div>
+          )}
+
+          {activeReplyTarget && (
+            <div className=" flex gap-3">
+              <div
+                aria-hidden="true"
+                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-200 font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-200"
+              >
+                {avatarText}
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="font-semibold">
+                  {activeReplyTarget.username}
+                </span>
+
+                <div className="scrollbar-hide mt-1 max-h-36 overflow-y-auto text-sm">
+                  <MarkdownContent content={activeReplyTarget.content} />
+                </div>
+
+                <p className="mt-3 text-sm text-slate-500">
+                  回复给{" "}
+                  <span className="text-sky-500">
+                    @{activeReplyTarget.username}
+                  </span>
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div
+            className={
+              activeReplyTarget
+                ? "mt-4 border-t border-slate-200 pt-4 dark:border-[#303030]"
+                : ""
+            }
+          >
+            <CommentForm
+              postSlug={postSlug}
+              paragraphId={paragraphId}
+              replyTarget={activeReplyTarget}
+              onPublished={onPublished}
+              onSubmitted={onClose}
+            />
+          </div>
         </div>
       </div>
     </dialog>

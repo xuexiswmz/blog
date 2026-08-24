@@ -38,7 +38,7 @@ export default function CommentDrawer({
       return;
     }
 
-    dialog.showModal();
+    dialog.show();
 
     return () => {
       if (dialog.open) {
@@ -67,7 +67,7 @@ export default function CommentDrawer({
             onClose();
           }
         }}
-        className="not-prose fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none overflow-hidden border-0 bg-transparent p-0 backdrop:bg-black/45"
+        className="not-prose fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none overflow-hidden border-0 p-0 bg-black/45"
       >
         <aside className="comment-drawer-panel absolute inset-y-0 right-0 h-full flex  w-full max-w-xl flex-col border-l border-slate-200 bg-white text-slate-950 shadow-2xl dark:border-[#303030] dark:bg-[#111111] dark:text-slate-100">
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 px-4 dark:border-[#303030]">
