@@ -7,6 +7,8 @@ import { ParagraphComment } from "./types";
 type CommentItemProps = {
   comment: ParagraphComment;
   onReply?: (comment: ParagraphComment) => void;
+  onDelete?: (commentId: string) => void;
+  deleting?: boolean;
 };
 
 const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
@@ -17,7 +19,12 @@ const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
   minute: "2-digit",
 });
 
-export default function CommentItem({ comment, onReply }: CommentItemProps) {
+export default function CommentItem({
+  comment,
+  onReply,
+  onDelete,
+  deleting = false,
+}: CommentItemProps) {
   const avatarText =
     Array.from(comment.username.trim())[0]?.toUpperCase() ?? "?";
 
@@ -55,19 +62,32 @@ export default function CommentItem({ comment, onReply }: CommentItemProps) {
           <MarkdownContent content={comment.content} />
         </div>
 
-        {!comment.deleted && onReply && (
-          <div className="mt-1 flex items-center">
-            <button
-              type="button"
-              aria-label={`回复 ${comment.username}`}
-              onClick={() => onReply(comment)}
-              className="group inline-flex items-center gap-1 text-sm text-slate-500 transition-colors hover:text-sky-500 dark:text-slate-400"
-            >
-              <span className="rounded-full p-2 transition-colors group-hover:bg-sky-500/10">
-                <MessageCircle className="size-4" />
-              </span>
-              <span>回复</span>
-            </button>
+        {!comment.deleted && (
+          <div className="mt-1 flex items-center gap-3">
+            {onReply && (
+              <button
+                type="button"
+                aria-label={`回复 ${comment.username}`}
+                onClick={() => onReply(comment)}
+                className="group inline-flex items-center gap-1 text-sm text-slate-500 transition-colors hover:text-sky-500 dark:text-slate-400"
+              >
+                <span className="rounded-full p-2 transition-colors group-hover:bg-sky-500/10">
+                  <MessageCircle className="size-4" />
+                </span>
+                <span>回复</span>
+              </button>
+            )}
+
+            {comment.canDelete && onDelete && (
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => onDelete(comment.id)}
+                className="text-sm text-slate-500 transition-colors hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-400"
+              >
+                {deleting ? "删除中" : "删除"}
+              </button>
+            )}
           </div>
         )}
       </div>

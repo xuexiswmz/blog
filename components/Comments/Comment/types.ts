@@ -12,6 +12,7 @@ export type ParagraphComment = {
 
   deleted: boolean;
   replies: ParagraphComment[];
+  canDelete: boolean;
 };
 
 export type CommentListResponse = {

@@ -1,6 +1,6 @@
 import { moderateComment } from "@/lib/ai/moderate-comment";
 import { sql } from "@/lib/db";
-import { getOrCreateVisitorId } from "@/lib/visitor";
+import { getOrCreateVisitorId, readVisitorID } from "@/lib/visitor";
 
 type RouteContext = {
   params: Promise<{
@@ -22,6 +22,7 @@ type CommentDto = {
 
   deleted: boolean;
   replies: CommentDto[];
+  canDelete: boolean;
 };
 
 const SLUG_PATTERN = /^[a-z0-9-]+$/;
@@ -38,6 +39,7 @@ export async function GET(request: Request, context: RouteContext) {
   try {
     const { slug } = await context.params;
     const url = new URL(request.url);
+    const visitorId = await readVisitorID();
 
     const blockId = url.searchParams.get("blockId")?.trim() ?? "";
 
@@ -71,6 +73,7 @@ export async function GET(request: Request, context: RouteContext) {
                 comment.reply_to_id,
                 comment.created_at, 
                 comment.deleted_at,
+                comment.visitor_id,
                 reply_target.username as reply_to_username,
                 reply_target.content as reply_to_content,
                 reply_target.deleted_at as reply_to_deleted_at
@@ -104,6 +107,11 @@ export async function GET(request: Request, context: RouteContext) {
             : null,
         deleted,
         replies: [],
+        canDelete:
+          !deleted &&
+          visitorId !== null &&
+          row.visitor_id !== null &&
+          String(row.visitor_id) === visitorId,
       };
     });
 
@@ -117,7 +125,7 @@ export async function GET(request: Request, context: RouteContext) {
 
     // 回复缩进一层，保留具体回复对象
     for (const comment of comments) {
-      if (!comment.rootId) {
+      if (!comment.rootId || comment.deleted) {
         continue;
       }
 
@@ -125,16 +133,22 @@ export async function GET(request: Request, context: RouteContext) {
       rootComment?.replies.push(comment);
     }
 
-    const count = rootComments.reduce(
+    const visibleRootComments = rootComments.filter((comment) => {
+      if (!comment.deleted) {
+        return true;
+      }
+
+      return comment.replies.length > 0;
+    });
+
+    const count = visibleRootComments.reduce(
       (total, comment) =>
-        total +
-        (comment.deleted ? 0 : 1) +
-        comment.replies.filter((reply) => !reply.deleted).length,
+        total + (comment.deleted ? 0 : 1) + comment.replies.length,
       0,
     );
 
     return Response.json({
-      comments: rootComments,
+      comments: visibleRootComments,
       count,
     });
   } catch (error) {
