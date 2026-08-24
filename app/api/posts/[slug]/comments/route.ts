@@ -80,7 +80,7 @@ export async function GET(request: Request, context: RouteContext) {
 
             where comment.post_slug = ${slug} and comment.block_id = ${blockId} and comment.status = 'published'
 
-            order by comment.created_at asc
+            order by comment.created_at desc, comment.id desc
         `;
 
     const comments: CommentDto[] = rows.map((row) => {
