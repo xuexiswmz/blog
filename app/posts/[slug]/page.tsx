@@ -37,7 +37,6 @@ export default async function PostPage({ params }: PostPageProps) {
       [&_pre]:border
       [&_pre]:border-slate-200
       dark:[&_pre]:border-[#303030]
-      dark:[&_pre]:bg-[#0d0d0d]
 
       [&_table]:block
       [&_table]:max-w-full

@@ -9,12 +9,24 @@ const nextConfig: NextConfig = {
 const remarkParagraphIdPath = path.resolve(
   process.cwd(),
   "plugins",
-  "remark-paragraph-id.mjs"
-)
+  "remark-paragraph-id.mjs",
+);
 
 const withMDX = createMDX({
   options: {
-    remarkPlugins: ["remark-frontmatter","remark-gfm", remarkParagraphIdPath],
+    remarkPlugins: ["remark-frontmatter", "remark-gfm", remarkParagraphIdPath],
+    rehypePlugins: [
+      [
+        "@shikijs/rehype",
+        {
+          themes: {
+            light: "vitesse-light",
+            dark: "vitesse-dark",
+          },
+          defaultColor: false,
+        },
+      ],
+    ],
   },
 });
 
