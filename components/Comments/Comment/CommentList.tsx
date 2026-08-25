@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CommentListResponse, ParagraphComment } from "./types";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import CommentItem from "./CommentItem";
 import { toast } from "sonner";
 
@@ -30,6 +31,10 @@ function CommentList({
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [collapsedRootIds, setCollapsedRootIds] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -126,32 +131,62 @@ function CommentList({
     }
   }
 
+  function toggleReplies(rootCommentId: string) {
+    setCollapsedRootIds((current) => {
+      const next = new Set(current);
+
+      if (next.has(rootCommentId)) {
+        next.delete(rootCommentId);
+      } else {
+        next.add(rootCommentId);
+      }
+
+      return next;
+    });
+  }
+
   return (
     <div className="divide-y divide-slate-200 dark:divide-slate-800">
-      {data.comments.map((comment) => (
-        <section key={comment.id}>
-          <CommentItem
-            comment={comment}
-            onReply={onReply}
-            onDelete={handleDelete}
-            deleting={deletingId === comment.id}
-          />
+      {data.comments.map((comment) => {
+        const replyCount = comment.replies.length;
+        const hasReplies = replyCount > 0;
+        const repliesCollapsed = collapsedRootIds.has(comment.id);
+        const repliesId = `replies-${comment.id}`;
 
-          {comment.replies.length > 0 && (
-            <div className="ml-9 divide-y divide-slate-200 border-l border-slate-200 dark:divide-slate-800 dark:border-slate-800">
-              {comment.replies.map((reply) => (
-                <CommentItem
-                  key={reply.id}
-                  comment={reply}
-                  onReply={onReply}
-                  onDelete={handleDelete}
-                  deleting={deletingId === reply.id}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-      ))}
+        return (
+          <section key={comment.id}>
+            <CommentItem
+              comment={comment}
+              onReply={onReply}
+              onDelete={handleDelete}
+              deleting={deletingId === comment.id}
+              replyCount={replyCount}
+              repliesCollapsed={repliesCollapsed}
+              repliesId={repliesId}
+              onToggleReplies={() => {
+                toggleReplies(comment.id);
+              }}
+            />
+
+            {hasReplies && !repliesCollapsed && (
+              <div
+                id={repliesId}
+                className="ml-9 divide-y divide-slate-200 border-l border-slate-200 dark:divide-slate-800 dark:border-slate-800"
+              >
+                {comment.replies.map((reply) => (
+                  <CommentItem
+                    key={reply.id}
+                    comment={reply}
+                    onReply={onReply}
+                    onDelete={handleDelete}
+                    deleting={deletingId === reply.id}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      })}
     </div>
   );
 }
