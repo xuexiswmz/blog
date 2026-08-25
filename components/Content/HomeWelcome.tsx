@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { HomeAnimationProvider } from "./HomeAnimationContext";
 
 type HomeWelcomeProps = {
   children: ReactNode;
@@ -119,7 +120,9 @@ export default function HomeWelcome({ children }: HomeWelcomeProps) {
        * 首页内容始终挂载在动画遮罩下方。
        * 即使动画异常，也不会出现首页内容没有渲染的白屏。
        */}
-      {children}
+      <HomeAnimationProvider ready={phase !== "writing"}>
+        {children}
+      </HomeAnimationProvider>
 
       {phase !== "hidden" && (
         <div

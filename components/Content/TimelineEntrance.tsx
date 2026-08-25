@@ -7,9 +7,10 @@ import {
 } from "animejs"
 import {
   type ReactNode,
-  useEffect,
+  useLayoutEffect,
   useRef
 } from "react"
+import { useHomeAnimationReady } from "./HomeAnimationContext"
 
 type TimelineEntranceProps = {
   children: ReactNode
@@ -19,8 +20,9 @@ export default function TimelineEntrance({
   children
 }: TimelineEntranceProps) {
   const root = useRef<HTMLDivElement>(null)
+  const homeAnimationReady = useHomeAnimationReady()
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const rootElement = root.current
 
     if (!rootElement) {
@@ -41,18 +43,27 @@ export default function TimelineEntrance({
         return
     }
 
+    const entries =
+      rootElement.querySelectorAll<HTMLElement>(
+        ".timeline-entry"
+      )
+
+    if (entries.length === 0) {
+      return
+    }
+
+    if (!homeAnimationReady) {
+      set(entries, {
+        opacity: 0,
+        y: 24
+      })
+
+      return
+    }
+
     const scope = createScope({
         root
     }).add(() => {
-        const entries =
-        rootElement.querySelectorAll<HTMLElement>(
-            ".timeline-entry"
-        )
-
-        if (entries.length === 0) {
-        return
-        }
-
         set(entries, {
         opacity: 0,
         y: 24
@@ -96,7 +107,7 @@ export default function TimelineEntrance({
     return () => {
         scope.revert()
     }
-  }, [])
+  }, [homeAnimationReady])
 
   return (
     <div ref={root} className="w-full">
