@@ -27,19 +27,19 @@ const TimeLine = async () => {
               "
             >
               {/* 年份 */}
-              <h2 className="py-4 w-full text-right pr-2 text-xl font-bold text-gray-900 dark:text-gray-100">
+              <h2 className="flex w-full items-center justify-end py-4 pr-2 text-xl font-bold leading-none text-slate-900 dark:text-slate-300/90">
                 {group.year}
               </h2>
 
               {/* 年份节点 */}
-              <div className="relative flex justify-center py-4">
-                <span className="absolute bottom-0 top-1/2 w-px bg-gray-200 dark:bg-gray-700" />
+              <div className="relative flex items-center justify-center py-4">
+                <span className="absolute bottom-0 top-1/2 w-px bg-slate-200 dark:bg-slate-700/70" />
 
-                <span className="relative mt-1 size-3 rounded-full border-2 border-blue-600 bg-white dark:bg-gray-950" />
+                <span className="relative size-3 rounded-full border-2 border-blue-400 bg-background" />
               </div>
 
               {/* 文章数量 */}
-              <p className="py-4 text-sm text-gray-600 dark:text-gray-400">
+              <p className="flex items-center py-4 text-sm text-slate-600 dark:text-slate-400">
                 {group.posts.length} 篇文章
               </p>
 
@@ -51,20 +51,19 @@ const TimeLine = async () => {
                 return (
                   <Fragment key={`/posts/${post.slug}`}>
                     {/* 日期 */}
-                    <time className=" w-full py-5 text-right pr-2 text-xs text-gray-500 dark:text-gray-500">
+                    <time className="w-full py-5 pr-2 text-right text-xs text-slate-500 dark:text-slate-500">
                       {post.date.slice(5)}
                     </time>
 
                     {/* 普通节点 */}
                     <div className="relative flex justify-center py-5">
-                      <span className="absolute inset-y-0 w-px bg-gray-200 dark:bg-gray-700" />
+                      <span className="absolute inset-y-0 w-px bg-slate-200 dark:bg-slate-700/70" />
 
                       <span
                         className="
                           relative mt-1.5 size-1
-                          rounded-full bg-blue-600
-                          ring-4 ring-white
-                          dark:ring-gray-950
+                          rounded-full bg-blue-400
+                          ring-4 ring-background
                         "
                       />
                     </div>
@@ -81,15 +80,15 @@ const TimeLine = async () => {
                         <div className='min-w-0 flex-1'>
                             <h3 className='
                                 text-sm font-medium
-                                text-gray-800
+                                text-slate-800
                                 transition-colors
-                                group-hover:text-blue-600
-                                dark:text-gray-200
-                                dark:group-hover:text-blue-400
+                                group-hover:text-blue-500
+                                dark:text-slate-300/90
+                                dark:group-hover:text-blue-300
                                 '>
                                 {post.title}
                             </h3>
-                            <p className="mt-2 line-clamp-2 text-xs leading-5 text-gray-500 dark:text-gray-400">
+                            <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
                                 {post.description}
                             </p>
                         </div>
