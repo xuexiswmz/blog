@@ -136,7 +136,7 @@ export default function HomeWelcome({ children }: HomeWelcomeProps) {
             }
           }}
           className={`
-            fixed inset-0 z-[100]
+            fixed inset-0 z-100
             flex items-center justify-center
             overflow-hidden
 
@@ -170,16 +170,16 @@ export default function HomeWelcome({ children }: HomeWelcomeProps) {
               className="
                 h-auto
                 w-[58vw]
-                max-w-[620px]
+                max-w-155
                 overflow-visible
 
                 text-[#2997ff]
                 opacity-80
-                [filter:drop-shadow(0_0_12px_rgba(41,151,255,0.16))]
+                filter-[drop-shadow(0_0_12px_rgba(41,151,255,0.16))]
 
                 dark:text-[#64b5ff]
                 dark:opacity-90
-                dark:[filter:drop-shadow(0_0_18px_rgba(59,130,246,0.3))]
+                dark:filter-[drop-shadow(0_0_18px_rgba(59,130,246,0.3))]
               "
               onComplete={handleWelcomeComplete}
             />
