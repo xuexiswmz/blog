@@ -81,31 +81,36 @@ html[data-theme="dark"] .shiki span {
 
 /* 画线颜色 */
 ::highlight(text-annotation-solid-amber),
-::highlight(text-annotation-double-amber),
+::highlight(text-annotation-double-inner-amber),
+::highlight(text-annotation-double-outer-amber),
 ::highlight(text-annotation-wavy-amber) {
   text-decoration-color: #f59e0b;
 }
 
 ::highlight(text-annotation-solid-rose),
-::highlight(text-annotation-double-rose),
+::highlight(text-annotation-double-inner-rose),
+::highlight(text-annotation-double-outer-rose),
 ::highlight(text-annotation-wavy-rose) {
   text-decoration-color: #f43f5e;
 }
 
 ::highlight(text-annotation-solid-sky),
-::highlight(text-annotation-double-sky),
+::highlight(text-annotation-double-inner-sky),
+::highlight(text-annotation-double-outer-sky),
 ::highlight(text-annotation-wavy-sky) {
   text-decoration-color: #0ea5e9;
 }
 
 ::highlight(text-annotation-solid-emerald),
-::highlight(text-annotation-double-emerald),
+::highlight(text-annotation-double-inner-emerald),
+::highlight(text-annotation-double-outer-emerald),
 ::highlight(text-annotation-wavy-emerald) {
   text-decoration-color: #10b981;
 }
 
 ::highlight(text-annotation-solid-violet),
-::highlight(text-annotation-double-violet),
+::highlight(text-annotation-double-inner-violet),
+::highlight(text-annotation-double-outer-violet),
 ::highlight(text-annotation-wavy-violet) {
   text-decoration-color: #8b5cf6;
 }
@@ -123,15 +128,37 @@ html[data-theme="dark"] .shiki span {
 }
 
 /* 双直线 */
-::highlight(text-annotation-double-amber),
-::highlight(text-annotation-double-rose),
-::highlight(text-annotation-double-sky),
-::highlight(text-annotation-double-emerald),
-::highlight(text-annotation-double-violet) {
+::highlight(text-annotation-double-inner-amber),
+::highlight(text-annotation-double-outer-amber),
+::highlight(text-annotation-double-inner-rose),
+::highlight(text-annotation-double-outer-rose),
+::highlight(text-annotation-double-inner-sky),
+::highlight(text-annotation-double-outer-sky),
+::highlight(text-annotation-double-inner-emerald),
+::highlight(text-annotation-double-outer-emerald),
+::highlight(text-annotation-double-inner-violet),
+::highlight(text-annotation-double-outer-violet) {
   text-decoration-line: underline;
-  text-decoration-style: double;
-  text-decoration-thickness: 2px;
+  text-decoration-style: solid;
+  text-decoration-thickness: 1px;
+}
+
+/* 靠近文字的第一条线 */
+::highlight(text-annotation-double-inner-amber),
+::highlight(text-annotation-double-inner-rose),
+::highlight(text-annotation-double-inner-sky),
+::highlight(text-annotation-double-inner-emerald),
+::highlight(text-annotation-double-inner-violet) {
   text-underline-offset: 3px;
+}
+
+/* 远离文字的第二条线 */
+::highlight(text-annotation-double-outer-amber),
+::highlight(text-annotation-double-outer-rose),
+::highlight(text-annotation-double-outer-sky),
+::highlight(text-annotation-double-outer-emerald),
+::highlight(text-annotation-double-outer-violet) {
+  text-underline-offset: 5px;
 }
 
 /* 波浪线 */

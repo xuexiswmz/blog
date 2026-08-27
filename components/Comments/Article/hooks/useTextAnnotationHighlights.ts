@@ -1,13 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import type {
-  TextAnnotation,
-  TextAnnotationColor,
-  TextAnnotationLineStyle,
-} from "../../Comment/types";
-
-const LINE_STYLES: TextAnnotationLineStyle[] = ["solid", "double", "wavy"];
+import type { TextAnnotation, TextAnnotationColor } from "../../Comment/types";
 
 const COLORS: TextAnnotationColor[] = [
   "amber",
@@ -17,9 +11,23 @@ const COLORS: TextAnnotationColor[] = [
   "violet",
 ];
 
-const HIGHLIGHT_NAMES = LINE_STYLES.flatMap((lineStyle) =>
-  COLORS.map((color) => `text-annotation-${lineStyle}-${color}`),
-);
+const HIGHLIGHT_NAMES = COLORS.flatMap((color) => [
+  `text-annotation-solid-${color}`,
+  `text-annotation-double-inner-${color}`,
+  `text-annotation-double-outer-${color}`,
+  `text-annotation-wavy-${color}`,
+]);
+
+function getAnnotationHighlightNames(annotation: TextAnnotation) {
+  if (annotation.lineStyle === "double") {
+    return [
+      `text-annotation-double-inner-${annotation.color}`,
+      `text-annotation-double-outer-${annotation.color}`,
+    ];
+  }
+
+  return [`text-annotation-${annotation.lineStyle}-${annotation.color}`];
+}
 
 function findTextPoint(root: HTMLElement, targetOffset: number) {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -97,12 +105,15 @@ export function useTextAnnotationHighlights(annotations: TextAnnotation[]) {
         continue;
       }
 
-      const highlightName = `text-annotation-${annotation.lineStyle}-${annotation.color}`;
+      const highlightNames = getAnnotationHighlightNames(annotation);
 
-      const ranges = rangesByHighlight.get(highlightName) ?? [];
+      for (const highlightName of highlightNames) {
+        const ranges = rangesByHighlight.get(highlightName) ?? [];
 
-      ranges.push(range);
-      rangesByHighlight.set(highlightName, ranges);
+        // 双线的两层分别保存 Range，避免相互影响。
+        ranges.push(range.cloneRange());
+        rangesByHighlight.set(highlightName, ranges);
+      }
     }
 
     for (const [highlightName, ranges] of rangesByHighlight) {
