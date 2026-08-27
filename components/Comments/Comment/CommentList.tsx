@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { CommentListResponse, ParagraphComment } from "./types";
-import { ChevronDown, ChevronUp } from "lucide-react";
 import CommentItem from "./CommentItem";
 import { toast } from "sonner";
 

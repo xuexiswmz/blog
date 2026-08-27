@@ -40,9 +40,37 @@ export type CommentCountsResponse = {
 export type ParagraphTextSelection = {
   paragraphId: string;
   text: string;
+  startOffset: number;
+  endOffset: number;
   position: {
     x: number;
     y: number;
     placement: "top" | "bottom";
   };
 };
+
+export type TextAnnotationLineStyle = "solid" | "double" | "wavy";
+
+export type TextAnnotationColor =
+  | "amber"
+  | "rose"
+  | "sky"
+  | "emerald"
+  | "violet";
+
+export type TextAnnotation = {
+  id: string;
+  postSlug: string;
+  paragraphId: string;
+  startOffset: number;
+  endOffset: number;
+  selectedText: string;
+  lineStyle: TextAnnotationLineStyle;
+  color: TextAnnotationColor;
+  createdAt: string;
+};
+
+export type NewTextAnnotation = Omit<
+  TextAnnotation,
+  "id" | "postSlug" | "createdAt"
+>;

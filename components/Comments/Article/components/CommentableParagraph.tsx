@@ -4,6 +4,10 @@ import { useArticleComments } from "../context/ArticleCommentsContext";
 import CommentDrawer from "../../Comment/CommentDrawer";
 import ParagraphCommentTrigger from "./paragraphCommentTrigger";
 import CommentComposerDialog from "../../Comment/CommentComposerDialog";
+import {
+  TextAnnotationColor,
+  TextAnnotationLineStyle,
+} from "../../Comment/types";
 
 type CommentableParagraphProps = ComponentPropsWithoutRef<"p"> & {
   paragraphId: string;
@@ -15,8 +19,13 @@ function CommentableParagraph({
   className,
   ...paragraphProps
 }: CommentableParagraphProps) {
-  const { postSlug, commentCounts, refreshCommentCounts, paragraphSelection } =
-    useArticleComments();
+  const {
+    postSlug,
+    commentCounts,
+    refreshCommentCounts,
+    paragraphSelection,
+    addTextAnnotation,
+  } = useArticleComments();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -48,6 +57,26 @@ function CommentableParagraph({
     setDrawerOpen(true);
   }
 
+  function handleAddAnnotation(
+    lineStyle: TextAnnotationLineStyle,
+    color: TextAnnotationColor,
+  ) {
+    if (!activeSelection) {
+      return;
+    }
+
+    addTextAnnotation({
+      paragraphId,
+      startOffset: activeSelection.startOffset,
+      endOffset: activeSelection.endOffset,
+      selectedText: activeSelection.text,
+      lineStyle,
+      color,
+    });
+
+    window.getSelection()?.removeAllRanges();
+  }
+
   return (
     <div className="my-[1.25em] grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2">
       <p
@@ -64,6 +93,7 @@ function CommentableParagraph({
         expanded={drawerOpen}
         controls={drawerId}
         onAddComment={openCommentComposer}
+        onAddAnnotation={handleAddAnnotation}
         onOpenComments={() => {
           setDrawerOpen(true);
         }}

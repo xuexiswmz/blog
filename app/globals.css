@@ -78,3 +78,70 @@ html[data-theme="dark"] .shiki span {
   font-weight: var(--shiki-dark-font-weight) !important;
   text-decoration: var(--shiki-dark-text-decoration) !important;
 }
+
+/* 画线颜色 */
+::highlight(text-annotation-solid-amber),
+::highlight(text-annotation-double-amber),
+::highlight(text-annotation-wavy-amber) {
+  text-decoration-color: #f59e0b;
+}
+
+::highlight(text-annotation-solid-rose),
+::highlight(text-annotation-double-rose),
+::highlight(text-annotation-wavy-rose) {
+  text-decoration-color: #f43f5e;
+}
+
+::highlight(text-annotation-solid-sky),
+::highlight(text-annotation-double-sky),
+::highlight(text-annotation-wavy-sky) {
+  text-decoration-color: #0ea5e9;
+}
+
+::highlight(text-annotation-solid-emerald),
+::highlight(text-annotation-double-emerald),
+::highlight(text-annotation-wavy-emerald) {
+  text-decoration-color: #10b981;
+}
+
+::highlight(text-annotation-solid-violet),
+::highlight(text-annotation-double-violet),
+::highlight(text-annotation-wavy-violet) {
+  text-decoration-color: #8b5cf6;
+}
+
+/* 直线 */
+::highlight(text-annotation-solid-amber),
+::highlight(text-annotation-solid-rose),
+::highlight(text-annotation-solid-sky),
+::highlight(text-annotation-solid-emerald),
+::highlight(text-annotation-solid-violet) {
+  text-decoration-line: underline;
+  text-decoration-style: solid;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+/* 双直线 */
+::highlight(text-annotation-double-amber),
+::highlight(text-annotation-double-rose),
+::highlight(text-annotation-double-sky),
+::highlight(text-annotation-double-emerald),
+::highlight(text-annotation-double-violet) {
+  text-decoration-line: underline;
+  text-decoration-style: double;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+/* 波浪线 */
+::highlight(text-annotation-wavy-amber),
+::highlight(text-annotation-wavy-rose),
+::highlight(text-annotation-wavy-sky),
+::highlight(text-annotation-wavy-emerald),
+::highlight(text-annotation-wavy-violet) {
+  text-decoration-line: underline;
+  text-decoration-style: wavy;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+}

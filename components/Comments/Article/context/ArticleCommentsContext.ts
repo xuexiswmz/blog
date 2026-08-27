@@ -1,7 +1,10 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import type { ParagraphTextSelection } from "../../Comment/types";
+import type {
+  NewTextAnnotation,
+  ParagraphTextSelection,
+} from "../../Comment/types";
 
 /**
  * 一篇文章内所有可评论段落共享的数据。
@@ -14,6 +17,7 @@ export type ArticleCommentsContextValue = {
   commentCounts: Record<string, number>;
   refreshCommentCounts: () => Promise<void>;
   paragraphSelection: ParagraphTextSelection | null;
+  addTextAnnotation: (annotation: NewTextAnnotation) => void;
 };
 
 /**

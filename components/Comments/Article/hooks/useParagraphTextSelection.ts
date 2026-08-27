@@ -38,27 +38,28 @@ function getTooltipPosition(range: Range) {
   };
 }
 
-function normalizeText(text: string) {
-  return text.replace(/\s+/g, " ").trim();
+function findSelectedParagraph(range: Range) {
+  const startParagraph = findCommentableParagraph(range.startContainer);
+  const endParagraph = findCommentableParagraph(range.endContainer);
+
+  if (!startParagraph || startParagraph !== endParagraph) {
+    return null;
+  }
+
+  return startParagraph;
 }
 
-function findSelectedParagraph(range: Range, selectedText: string) {
-  const paragraph =
-    findCommentableParagraph(range.startContainer) ??
-    findCommentableParagraph(range.endContainer);
+function getParagraphOffset(
+  paragraph: HTMLElement,
+  container: Node,
+  offset: number,
+) {
+  const prefixRange = document.createRange();
 
-  if (!paragraph) {
-    return null;
-  }
+  prefixRange.selectNodeContents(paragraph);
+  prefixRange.setEnd(container, offset);
 
-  const paragraphText = normalizeText(paragraph.textContent ?? "");
-  const normalizedSelection = normalizeText(selectedText);
-
-  if (!paragraphText.includes(normalizedSelection)) {
-    return null;
-  }
-
-  return paragraph;
+  return prefixRange.toString().length;
 }
 
 export function useParagraphTextSelection() {
@@ -75,22 +76,34 @@ export function useParagraphTextSelection() {
         return;
       }
 
-      const selectedText = selection.toString().trim();
+      const selectedText = selection.toString();
 
       // 只选择空格或换行时，不显示添加段评入口。
-      if (!selectedText) {
+      if (!selectedText.trim()) {
         setParagraphSelection(null);
         return;
       }
 
       const range = selection.getRangeAt(0);
-      const paragraph = findSelectedParagraph(range, selectedText);
+      const paragraph = findSelectedParagraph(range);
       const paragraphId = paragraph?.dataset.paragraphId;
 
-      if (!paragraphId) {
+      if (!paragraphId || !paragraph) {
         setParagraphSelection(null);
         return;
       }
+
+      const startOffset = getParagraphOffset(
+        paragraph,
+        range.startContainer,
+        range.startOffset,
+      );
+
+      const endOffset = getParagraphOffset(
+        paragraph,
+        range.endContainer,
+        range.endOffset,
+      );
 
       const position = getTooltipPosition(range);
 
@@ -100,6 +113,8 @@ export function useParagraphTextSelection() {
         if (
           currentSelection?.paragraphId === paragraphId &&
           currentSelection.text === selectedText &&
+          currentSelection.startOffset === startOffset &&
+          currentSelection.endOffset === endOffset &&
           currentSelection.position.x === position.x &&
           currentSelection.position.y === position.y &&
           currentSelection.position.placement === position.placement
@@ -110,6 +125,8 @@ export function useParagraphTextSelection() {
         return {
           paragraphId,
           text: selectedText,
+          startOffset,
+          endOffset,
           position,
         };
       });

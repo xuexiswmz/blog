@@ -1,5 +1,4 @@
-import { neon, neonConfig } from "@neondatabase/serverless"
-
+import { neon } from "@neondatabase/serverless";
 
 // Tailscale IPv6 DNS或者路由劫持导致数据库连接失败，连接失败的时候使用下面的代码强制走IPv4连接数据库
 // import https from "node:https"
@@ -39,12 +38,10 @@ import { neon, neonConfig } from "@neondatabase/serverless"
 //     })
 // }
 
-const databaseUrl = process.env.DATABASE_URL
+const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
-    throw new Error(
-        "缺少 DATABASE_URL"
-    )
+  throw new Error("缺少 DATABASE_URL");
 }
 
-export const sql = neon(databaseUrl)
+export const sql = neon(databaseUrl);

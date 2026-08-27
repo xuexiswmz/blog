@@ -46,7 +46,7 @@ export default async function PostPage({ params }: PostPageProps) {
       [&_img]:max-w-full
     "
     >
-      <ArticleCommentsProvider postSlug={slug}>
+      <ArticleCommentsProvider postSlug={slug} key={slug}>
         <Post />
       </ArticleCommentsProvider>
     </article>

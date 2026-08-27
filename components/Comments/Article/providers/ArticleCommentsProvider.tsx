@@ -4,6 +4,8 @@ import { type ReactNode, useMemo } from "react";
 import { ArticleCommentsContext } from "../context/ArticleCommentsContext";
 import { useParagraphTextSelection } from "../hooks/useParagraphTextSelection";
 import { useArticleCommentCounts } from "../hooks/useArticleCommentCounts";
+import { useTextAnnotations } from "../hooks/useTextAnnotations";
+import { useTextAnnotationHighlights } from "../hooks/useTextAnnotationHighlights";
 
 type ArticleCommentsProviderProps = {
   postSlug: string;
@@ -29,6 +31,10 @@ function ArticleCommentsProvider({
   const { commentCounts, refreshCommentCounts } =
     useArticleCommentCounts(postSlug);
 
+  const { annotations, addTextAnnotation } = useTextAnnotations(postSlug);
+
+  useTextAnnotationHighlights(annotations);
+
   // 保持 Context value 的对象引用稳定。
   // 只有依赖数据真正发生变化时才创建新对象，避免 Provider 因其他原因渲染时通知所有段落组件更新。
   const contextValue = useMemo(
@@ -37,8 +43,15 @@ function ArticleCommentsProvider({
       commentCounts,
       refreshCommentCounts,
       paragraphSelection,
+      addTextAnnotation,
     }),
-    [postSlug, commentCounts, refreshCommentCounts, paragraphSelection],
+    [
+      postSlug,
+      commentCounts,
+      refreshCommentCounts,
+      paragraphSelection,
+      addTextAnnotation,
+    ],
   );
 
   return (
