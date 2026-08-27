@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mergeAnnotationRanges } from "./mergeAnnotationRanges";
 
+
 describe("mergeAnnotationRanges", () => {
   it("没有重叠时保留新选区范围", () => {
     const result = mergeAnnotationRanges(
