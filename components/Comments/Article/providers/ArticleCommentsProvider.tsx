@@ -6,6 +6,7 @@ import { useParagraphTextSelection } from "../hooks/useParagraphTextSelection";
 import { useArticleCommentCounts } from "../hooks/useArticleCommentCounts";
 import { useTextAnnotations } from "../hooks/useTextAnnotations";
 import { useTextAnnotationHighlights } from "../hooks/useTextAnnotationHighlights";
+import { authClient } from "@/lib/auth-client";
 
 type ArticleCommentsProviderProps = {
   postSlug: string;
@@ -25,6 +26,8 @@ function ArticleCommentsProvider({
   postSlug,
   children,
 }: ArticleCommentsProviderProps) {
+  const { data: session } = authClient.useSession();
+
   // 管理用户当前选择的段落文字。
   const paragraphSelection = useParagraphTextSelection();
   // 管理整篇文章各个段落的评论数量。
@@ -43,6 +46,7 @@ function ArticleCommentsProvider({
       commentCounts,
       refreshCommentCounts,
       paragraphSelection,
+      canManageTextAnnotations: Boolean(session),
       addTextAnnotation,
     }),
     [
@@ -50,6 +54,7 @@ function ArticleCommentsProvider({
       commentCounts,
       refreshCommentCounts,
       paragraphSelection,
+      session,
       addTextAnnotation,
     ],
   );

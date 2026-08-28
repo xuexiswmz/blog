@@ -74,3 +74,14 @@ export type NewTextAnnotation = Omit<
   TextAnnotation,
   "id" | "postSlug" | "createdAt"
 >;
+
+export type TextAnnotationsResponse = {
+  annotations: TextAnnotation[];
+  message?: string;
+};
+
+export type CreateTextAnnotationResponse = {
+  annotation: TextAnnotation;
+  replacedIds: string[];
+  message?: string;
+};

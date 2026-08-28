@@ -12,6 +12,7 @@ import type {
 type SelectionCommentTooltipProps = {
   position: ParagraphTextSelection["position"];
   onAddComment: () => void;
+  canManageTextAnnotations: boolean;
   onAddAnnotation: (
     lineStyle: TextAnnotationLineStyle,
     color: TextAnnotationColor,
@@ -42,6 +43,7 @@ const LINE_STYLES: Array<{
 export default function SelectionCommentTooltip({
   position,
   onAddComment,
+  canManageTextAnnotations,
   onAddAnnotation,
 }: SelectionCommentTooltipProps) {
   const [selectedColor, setSelectedColor] =
@@ -103,51 +105,55 @@ export default function SelectionCommentTooltip({
         />
       </button>
 
-      <span className="mx-1 h-5 w-px shrink-0 bg-slate-200 dark:bg-slate-700" />
+      {canManageTextAnnotations && (
+        <>
+          <span className="mx-1 h-5 w-px shrink-0 bg-slate-200 dark:bg-slate-700" />
 
-      {COLORS.map((color) => (
-        <button
-          key={color.name}
-          type="button"
-          aria-label={`选择${color.label}`}
-          title={color.label}
-          onClick={() => {
-            setSelectedColor(color.name);
-          }}
-          style={{ backgroundColor: color.value }}
-          className={`
-            size-5 shrink-0 rounded-full
-            ring-offset-2
-            ring-offset-white
-            dark:ring-offset-[#181818]
-            ${
-              selectedColor === color.name
-                ? "ring-2 ring-slate-700 dark:ring-slate-200"
-                : ""
-            }
-          `}
-        />
-      ))}
+          {COLORS.map((color) => (
+            <button
+              key={color.name}
+              type="button"
+              aria-label={`选择${color.label}`}
+              title={color.label}
+              onClick={() => {
+                setSelectedColor(color.name);
+              }}
+              style={{ backgroundColor: color.value }}
+              className={`
+                size-5 shrink-0 rounded-full
+                ring-offset-2
+                ring-offset-white
+                dark:ring-offset-[#181818]
+                ${
+                  selectedColor === color.name
+                    ? "ring-2 ring-slate-700 dark:ring-slate-200"
+                    : ""
+                }
+              `}
+            />
+          ))}
 
-      <span className="mx-1 h-5 w-px shrink-0 bg-slate-200 dark:bg-slate-700" />
+          <span className="mx-1 h-5 w-px shrink-0 bg-slate-200 dark:bg-slate-700" />
 
-      {LINE_STYLES.map((lineStyle) => (
-        <button
-          key={lineStyle.name}
-          type="button"
-          onClick={() => {
-            onAddAnnotation(lineStyle.name, selectedColor);
-          }}
-          className="
-            shrink-0 rounded-lg
-            px-2 py-1.5
-            hover:bg-slate-100
-            dark:hover:bg-[#242424]
-          "
-        >
-          {lineStyle.label}
-        </button>
-      ))}
+          {LINE_STYLES.map((lineStyle) => (
+            <button
+              key={lineStyle.name}
+              type="button"
+              onClick={() => {
+                onAddAnnotation(lineStyle.name, selectedColor);
+              }}
+              className="
+                shrink-0 rounded-lg
+                px-2 py-1.5
+                hover:bg-slate-100
+                dark:hover:bg-[#242424]
+              "
+            >
+              {lineStyle.label}
+            </button>
+          ))}
+        </>
+      )}
     </div>,
     document.body,
   );

@@ -4,6 +4,7 @@ import { useArticleComments } from "../context/ArticleCommentsContext";
 import CommentDrawer from "../../Comment/CommentDrawer";
 import ParagraphCommentTrigger from "./paragraphCommentTrigger";
 import CommentComposerDialog from "../../Comment/CommentComposerDialog";
+import { toast } from "sonner";
 import {
   TextAnnotationColor,
   TextAnnotationLineStyle,
@@ -24,6 +25,7 @@ function CommentableParagraph({
     commentCounts,
     refreshCommentCounts,
     paragraphSelection,
+    canManageTextAnnotations,
     addTextAnnotation,
   } = useArticleComments();
 
@@ -57,7 +59,7 @@ function CommentableParagraph({
     setDrawerOpen(true);
   }
 
-  function handleAddAnnotation(
+  async function handleAddAnnotation(
     lineStyle: TextAnnotationLineStyle,
     color: TextAnnotationColor,
   ) {
@@ -65,16 +67,20 @@ function CommentableParagraph({
       return;
     }
 
-    addTextAnnotation({
-      paragraphId,
-      startOffset: activeSelection.startOffset,
-      endOffset: activeSelection.endOffset,
-      selectedText: activeSelection.text,
-      lineStyle,
-      color,
-    });
+    try {
+      await addTextAnnotation({
+        paragraphId,
+        startOffset: activeSelection.startOffset,
+        endOffset: activeSelection.endOffset,
+        selectedText: activeSelection.text,
+        lineStyle,
+        color,
+      });
 
-    window.getSelection()?.removeAllRanges();
+      window.getSelection()?.removeAllRanges();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "添加画线失败");
+    }
   }
 
   return (
@@ -93,6 +99,7 @@ function CommentableParagraph({
         expanded={drawerOpen}
         controls={drawerId}
         onAddComment={openCommentComposer}
+        canManageTextAnnotations={canManageTextAnnotations}
         onAddAnnotation={handleAddAnnotation}
         onOpenComments={() => {
           setDrawerOpen(true);

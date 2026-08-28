@@ -17,7 +17,8 @@ export type ArticleCommentsContextValue = {
   commentCounts: Record<string, number>;
   refreshCommentCounts: () => Promise<void>;
   paragraphSelection: ParagraphTextSelection | null;
-  addTextAnnotation: (annotation: NewTextAnnotation) => void;
+  canManageTextAnnotations: boolean;
+  addTextAnnotation: (annotation: NewTextAnnotation) => Promise<void>;
 };
 
 /**

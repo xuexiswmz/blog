@@ -1,62 +1,95 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import type { NewTextAnnotation, TextAnnotation } from "../../Comment/types";
+import {
+  createTextAnnotation,
+  requestTextAnnotations,
+} from "../api/textAnnotationsApi";
+import { buildTextAnnotationInput } from "../utils/buildTextAnnotationInput";
 
-function readAnnotations(storageKey: string) {
-  try {
-    const value = localStorage.getItem(storageKey);
-
-    if (!value) {
-      return [];
+function sortAnnotations(annotations: TextAnnotation[]) {
+  return [...annotations].sort((left, right) => {
+    if (left.paragraphId !== right.paragraphId) {
+      return left.paragraphId.localeCompare(right.paragraphId);
     }
 
-    const parsed: unknown = JSON.parse(value);
-
-    return Array.isArray(parsed) ? (parsed as TextAnnotation[]) : [];
-  } catch {
-    return [];
-  }
+    return left.startOffset - right.startOffset;
+  });
 }
 
 export function useTextAnnotations(postSlug: string) {
-  const storageKey = useMemo(() => `text-annotations:${postSlug}`, [postSlug]);
+  const [annotations, setAnnotations] = useState<TextAnnotation[]>([]);
+  const annotationsRef = useRef<TextAnnotation[]>([]);
 
-  const [annotations, setAnnotations] = useState<TextAnnotation[]>(() => {
-    if (typeof window === "undefined") {
-      return [];
-    }
-    return readAnnotations(storageKey);
-  });
+  const replaceAnnotations = useCallback(
+    (nextAnnotations: TextAnnotation[]) => {
+      const sortedAnnotations = sortAnnotations(nextAnnotations);
 
-  const addTextAnnotation = useCallback(
-    (input: NewTextAnnotation) => {
-      const annotation: TextAnnotation = {
-        ...input,
-        id: crypto.randomUUID(),
-        postSlug,
-        createdAt: new Date().toISOString(),
-      };
+      annotationsRef.current = sortedAnnotations;
+      setAnnotations(sortedAnnotations);
+    },
+    [],
+  );
 
-      setAnnotations((currentAnnotations) => {
-        // 同一个选区重新画线时，替换旧颜色和线型。
-        const annotationsWithoutSameRange = currentAnnotations.filter(
-          (currentAnnotation) =>
-            !(
-              currentAnnotation.paragraphId === input.paragraphId &&
-              currentAnnotation.startOffset === input.startOffset &&
-              currentAnnotation.endOffset === input.endOffset
-            ),
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadAnnotations() {
+      try {
+        const loadedAnnotations = await requestTextAnnotations(
+          postSlug,
+          controller.signal,
         );
 
-        const nextAnnotations = [...annotationsWithoutSameRange, annotation];
+        replaceAnnotations(loadedAnnotations);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
 
-        localStorage.setItem(storageKey, JSON.stringify(nextAnnotations));
+        console.error("获取文章画线失败", error);
+        toast.error(
+          error instanceof Error ? error.message : "获取文章画线失败",
+        );
+      }
+    }
 
-        return nextAnnotations;
-      });
+    void loadAnnotations();
+
+    return () => {
+      controller.abort();
+    };
+  }, [postSlug, replaceAnnotations]);
+
+  const addTextAnnotation = useCallback(
+    async (input: NewTextAnnotation) => {
+      const paragraph = document.querySelector<HTMLElement>(
+        `[data-paragraph-id="${CSS.escape(input.paragraphId)}"]`,
+      );
+
+      if (!paragraph) {
+        throw new Error("找不到需要画线的段落");
+      }
+
+      const requestInput = buildTextAnnotationInput(
+        annotationsRef.current,
+        input,
+        paragraph.textContent ?? "",
+      );
+
+      const result = await createTextAnnotation(postSlug, requestInput);
+      const replacedIds = new Set(result.replacedIds);
+
+      replaceAnnotations([
+        ...annotationsRef.current.filter(
+          (annotation) => !replacedIds.has(annotation.id),
+        ),
+        result.annotation,
+      ]);
     },
-    [postSlug, storageKey],
+    [postSlug, replaceAnnotations],
   );
 
   return {

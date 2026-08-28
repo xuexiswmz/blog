@@ -13,6 +13,7 @@ type ParagraphCommentTriggerProps = {
   controls: string;
   onAddComment: () => void;
   onOpenComments: () => void;
+  canManageTextAnnotations: boolean;
   onAddAnnotation: (
     lineStyle: TextAnnotationLineStyle,
     color: TextAnnotationColor,
@@ -33,6 +34,7 @@ export default function ParagraphCommentTrigger({
   controls,
   onAddComment,
   onOpenComments,
+  canManageTextAnnotations,
   onAddAnnotation,
 }: ParagraphCommentTriggerProps) {
   if (commentCount === 0 && !selection) {
@@ -89,6 +91,7 @@ export default function ParagraphCommentTrigger({
         <SelectionCommentTooltip
           position={selection.position}
           onAddComment={onAddComment}
+          canManageTextAnnotations={canManageTextAnnotations}
           onAddAnnotation={onAddAnnotation}
         />
       )}
