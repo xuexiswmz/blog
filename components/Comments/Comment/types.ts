@@ -85,3 +85,21 @@ export type CreateTextAnnotationResponse = {
   replacedIds: string[];
   message?: string;
 };
+
+export type UpdateTextAnnotation = Pick<TextAnnotation, "lineStyle" | "color">;
+
+export type UpdateTextAnnotationResponse = {
+  annotation: TextAnnotation;
+  message?: string;
+};
+
+export type DeleteTextAnnotationResponse = {
+  message?: string;
+};
+
+export type TextAnnotationTooltipPosition = ParagraphTextSelection["position"];
+
+export type ActiveTextAnnotation = {
+  annotation: TextAnnotation;
+  position: TextAnnotationTooltipPosition;
+};

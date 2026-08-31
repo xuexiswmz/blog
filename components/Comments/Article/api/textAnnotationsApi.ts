@@ -1,12 +1,19 @@
 import type {
   CreateTextAnnotationResponse,
+  DeleteTextAnnotationResponse,
   NewTextAnnotation,
   TextAnnotation,
   TextAnnotationsResponse,
+  UpdateTextAnnotation,
+  UpdateTextAnnotationResponse,
 } from "../../Comment/types";
 
 function getTextAnnotationsUrl(postSlug: string) {
   return `/api/posts/${encodeURIComponent(postSlug)}/text-annotations`;
+}
+
+function getTextAnnotationUrl(postSlug: string, annotationId: string) {
+  return `${getTextAnnotationsUrl(postSlug)}/${encodeURIComponent(annotationId)}`;
 }
 
 export async function requestTextAnnotations(
@@ -47,4 +54,41 @@ export async function createTextAnnotation(
   }
 
   return result;
+}
+
+export async function updateTextAnnotation(
+  postSlug: string,
+  annotationId: string,
+  input: UpdateTextAnnotation,
+) {
+  const response = await fetch(getTextAnnotationUrl(postSlug, annotationId), {
+    method: "PATCH",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+
+  const result = (await response.json()) as UpdateTextAnnotationResponse;
+
+  if (!response.ok) {
+    throw new Error(result.message ?? "修改文章画线失败");
+  }
+
+  return result.annotation;
+}
+
+export async function deleteTextAnnotation(
+  postSlug: string,
+  annotationId: string,
+): Promise<void> {
+  const response = await fetch(getTextAnnotationUrl(postSlug, annotationId), {
+    method: "DELETE",
+  });
+
+  const result = (await response.json()) as DeleteTextAnnotationResponse;
+
+  if (!response.ok) {
+    throw new Error(result.message ?? "删除文章画线失败");
+  }
 }
