@@ -2,12 +2,22 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { NewTextAnnotation, TextAnnotation } from "../../Comment/types";
+import type {
+  NewTextAnnotation,
+  TextAnnotation,
+  UpdateTextAnnotation,
+} from "../../Comment/types";
 import {
   createTextAnnotation,
   requestTextAnnotations,
+  deleteTextAnnotation as deleteTextAnnotationRequest,
+  updateTextAnnotation as updateTextAnnotationRequest,
 } from "../api/textAnnotationsApi";
 import { buildTextAnnotationInput } from "../utils/buildTextAnnotationInput";
+import {
+  removeTextAnnotation,
+  replaceTextAnnotation,
+} from "../utils/textAnnotationCollection";
 
 function sortAnnotations(annotations: TextAnnotation[]) {
   return [...annotations].sort((left, right) => {
@@ -92,8 +102,36 @@ export function useTextAnnotations(postSlug: string) {
     [postSlug, replaceAnnotations],
   );
 
+  const updateTextAnnotation = useCallback(
+    async (annotationId: string, input: UpdateTextAnnotation) => {
+      const updatedAnnotation = await updateTextAnnotationRequest(
+        postSlug,
+        annotationId,
+        input,
+      );
+
+      replaceAnnotations(
+        replaceTextAnnotation(annotationsRef.current, updatedAnnotation),
+      );
+    },
+    [postSlug, replaceAnnotations],
+  );
+
+  const deleteTextAnnotation = useCallback(
+    async (annotationId: string) => {
+      await deleteTextAnnotationRequest(postSlug, annotationId);
+
+      replaceAnnotations(
+        removeTextAnnotation(annotationsRef.current, annotationId),
+      );
+    },
+    [postSlug, replaceAnnotations],
+  );
+
   return {
     annotations,
     addTextAnnotation,
+    updateTextAnnotation,
+    deleteTextAnnotation,
   };
 }
