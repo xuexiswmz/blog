@@ -8,6 +8,7 @@ import type {
   TextAnnotationColor,
   TextAnnotationLineStyle,
 } from "../../Comment/types";
+import TextAnnotationControls from "./TextAnnotationControls";
 
 type SelectionCommentTooltipProps = {
   position: ParagraphTextSelection["position"];
@@ -18,27 +19,6 @@ type SelectionCommentTooltipProps = {
     color: TextAnnotationColor,
   ) => void;
 };
-
-const COLORS: Array<{
-  name: TextAnnotationColor;
-  label: string;
-  value: string;
-}> = [
-  { name: "amber", label: "黄色", value: "#f59e0b" },
-  { name: "rose", label: "红色", value: "#f43f5e" },
-  { name: "sky", label: "蓝色", value: "#0ea5e9" },
-  { name: "emerald", label: "绿色", value: "#10b981" },
-  { name: "violet", label: "紫色", value: "#8b5cf6" },
-];
-
-const LINE_STYLES: Array<{
-  name: TextAnnotationLineStyle;
-  label: string;
-}> = [
-  { name: "solid", label: "直线" },
-  { name: "double", label: "双线" },
-  { name: "wavy", label: "波浪" },
-];
 
 export default function SelectionCommentTooltip({
   position,
@@ -109,49 +89,13 @@ export default function SelectionCommentTooltip({
         <>
           <span className="mx-1 h-5 w-px shrink-0 bg-slate-200 dark:bg-slate-700" />
 
-          {COLORS.map((color) => (
-            <button
-              key={color.name}
-              type="button"
-              aria-label={`选择${color.label}`}
-              title={color.label}
-              onClick={() => {
-                setSelectedColor(color.name);
-              }}
-              style={{ backgroundColor: color.value }}
-              className={`
-                size-5 shrink-0 rounded-full
-                ring-offset-2
-                ring-offset-white
-                dark:ring-offset-[#181818]
-                ${
-                  selectedColor === color.name
-                    ? "ring-2 ring-slate-700 dark:ring-slate-200"
-                    : ""
-                }
-              `}
-            />
-          ))}
-
-          <span className="mx-1 h-5 w-px shrink-0 bg-slate-200 dark:bg-slate-700" />
-
-          {LINE_STYLES.map((lineStyle) => (
-            <button
-              key={lineStyle.name}
-              type="button"
-              onClick={() => {
-                onAddAnnotation(lineStyle.name, selectedColor);
-              }}
-              className="
-                shrink-0 rounded-lg
-                px-2 py-1.5
-                hover:bg-slate-100
-                dark:hover:bg-[#242424]
-              "
-            >
-              {lineStyle.label}
-            </button>
-          ))}
+          <TextAnnotationControls
+            selectedColor={selectedColor}
+            onColorSelect={setSelectedColor}
+            onLineStyleSelect={(lineStyle) => {
+              onAddAnnotation(lineStyle, selectedColor);
+            }}
+          />
         </>
       )}
     </div>,
