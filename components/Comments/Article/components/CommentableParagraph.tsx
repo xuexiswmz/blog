@@ -1,14 +1,18 @@
 "use client";
-import { ComponentPropsWithoutRef, useState } from "react";
-import { useArticleComments } from "../context/ArticleCommentsContext";
-import CommentDrawer from "../../Comment/CommentDrawer";
-import ParagraphCommentTrigger from "./paragraphCommentTrigger";
-import CommentComposerDialog from "../../Comment/CommentComposerDialog";
+
+import { type ComponentPropsWithoutRef, useState } from "react";
 import { toast } from "sonner";
-import {
+import CommentComposerDialog from "../../Comment/CommentComposerDialog";
+import CommentDrawer from "../../Comment/CommentDrawer";
+import type {
   TextAnnotationColor,
   TextAnnotationLineStyle,
+  UpdateTextAnnotation,
 } from "../../Comment/types";
+import { useArticleComments } from "../context/ArticleCommentsContext";
+import { getTextAnnotationTooltipActions } from "../utils/textAnnotationTooltipActions";
+import ExistingTextAnnotationTooltip from "./ExistingTextAnnotationTooltip";
+import ParagraphCommentTrigger from "./paragraphCommentTrigger";
 
 type CommentableParagraphProps = ComponentPropsWithoutRef<"p"> & {
   paragraphId: string;
@@ -25,8 +29,12 @@ function CommentableParagraph({
     commentCounts,
     refreshCommentCounts,
     paragraphSelection,
+    activeTextAnnotation,
     canManageTextAnnotations,
     addTextAnnotation,
+    updateTextAnnotation,
+    deleteTextAnnotation,
+    closeActiveTextAnnotation,
   } = useArticleComments();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -40,8 +48,17 @@ function CommentableParagraph({
   const activeSelection =
     paragraphSelection?.paragraphId === paragraphId ? paragraphSelection : null;
 
-  // 打开评论弹窗前保存当前选中的文字
-  function openCommentComposer() {
+  const activeAnnotation =
+    activeTextAnnotation?.annotation.paragraphId === paragraphId
+      ? activeTextAnnotation
+      : null;
+
+  const annotationTooltipActions = getTextAnnotationTooltipActions(
+    commentCount,
+    canManageTextAnnotations,
+  );
+
+  function openSelectionCommentComposer() {
     if (!activeSelection) {
       return;
     }
@@ -49,11 +66,21 @@ function CommentableParagraph({
     setSelectedText(activeSelection.text);
     setComposerOpen(true);
 
-    // 弹窗打开后清除页面选区，selectionchange 会关闭 Tooltip。
     window.getSelection()?.removeAllRanges();
   }
 
-  // 刷新文章中的评论数量，打开抽屉展示刚发布的评论
+  function openAnnotationCommentComposer() {
+    if (!activeAnnotation) {
+      return;
+    }
+
+    setSelectedText(activeAnnotation.annotation.selectedText);
+
+    setComposerOpen(true);
+
+    closeActiveTextAnnotation();
+  }
+
   function handleCommentPublished() {
     void refreshCommentCounts();
     setDrawerOpen(true);
@@ -83,8 +110,46 @@ function CommentableParagraph({
     }
   }
 
+  async function handleUpdateAnnotation(input: UpdateTextAnnotation) {
+    if (!activeAnnotation) {
+      return;
+    }
+
+    try {
+      await updateTextAnnotation(activeAnnotation.annotation.id, input);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "修改画线失败");
+
+      throw error;
+    }
+  }
+
+  async function handleDeleteAnnotation() {
+    if (!activeAnnotation) {
+      return;
+    }
+
+    try {
+      await deleteTextAnnotation(activeAnnotation.annotation.id);
+
+      closeActiveTextAnnotation();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "删除画线失败");
+
+      throw error;
+    }
+  }
+
   return (
-    <div className="my-[1.25em] grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2">
+    <div
+      className="
+        my-[1.25em]
+        grid
+        grid-cols-[minmax(0,1fr)_auto]
+        items-start
+        gap-x-2
+      "
+    >
       <p
         {...paragraphProps}
         data-paragraph-id={paragraphId}
@@ -98,13 +163,26 @@ function CommentableParagraph({
         selection={activeSelection}
         expanded={drawerOpen}
         controls={drawerId}
-        onAddComment={openCommentComposer}
+        onAddComment={openSelectionCommentComposer}
         canManageTextAnnotations={canManageTextAnnotations}
         onAddAnnotation={handleAddAnnotation}
         onOpenComments={() => {
           setDrawerOpen(true);
         }}
       />
+
+      {activeAnnotation && annotationTooltipActions.shouldRender && (
+        <ExistingTextAnnotationTooltip
+          activeTextAnnotation={activeAnnotation}
+          showAddComment={annotationTooltipActions.showAddComment}
+          canManageTextAnnotations={
+            annotationTooltipActions.showManageAnnotation
+          }
+          onAddComment={openAnnotationCommentComposer}
+          onUpdate={handleUpdateAnnotation}
+          onDelete={handleDeleteAnnotation}
+        />
+      )}
 
       {drawerOpen && (
         <CommentDrawer

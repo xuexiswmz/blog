@@ -2,8 +2,10 @@
 
 import { createContext, useContext } from "react";
 import type {
+  ActiveTextAnnotation,
   NewTextAnnotation,
   ParagraphTextSelection,
+  UpdateTextAnnotation,
 } from "../../Comment/types";
 
 /**
@@ -19,6 +21,14 @@ export type ArticleCommentsContextValue = {
   paragraphSelection: ParagraphTextSelection | null;
   canManageTextAnnotations: boolean;
   addTextAnnotation: (annotation: NewTextAnnotation) => Promise<void>;
+
+  activeTextAnnotation: ActiveTextAnnotation | null;
+  updateTextAnnotation: (
+    annotationId: string,
+    input: UpdateTextAnnotation,
+  ) => Promise<void>;
+  deleteTextAnnotation: (annotationId: string) => Promise<void>;
+  closeActiveTextAnnotation: () => void;
 };
 
 /**

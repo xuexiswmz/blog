@@ -1,12 +1,13 @@
 "use client";
 
 import { type ReactNode, useMemo } from "react";
-import { ArticleCommentsContext } from "../context/ArticleCommentsContext";
-import { useParagraphTextSelection } from "../hooks/useParagraphTextSelection";
-import { useArticleCommentCounts } from "../hooks/useArticleCommentCounts";
-import { useTextAnnotations } from "../hooks/useTextAnnotations";
-import { useTextAnnotationHighlights } from "../hooks/useTextAnnotationHighlights";
 import { authClient } from "@/lib/auth-client";
+import { ArticleCommentsContext } from "../context/ArticleCommentsContext";
+import { useActiveTextAnnotation } from "../hooks/useActiveTextAnnotation";
+import { useArticleCommentCounts } from "../hooks/useArticleCommentCounts";
+import { useParagraphTextSelection } from "../hooks/useParagraphTextSelection";
+import { useTextAnnotationHighlights } from "../hooks/useTextAnnotationHighlights";
+import { useTextAnnotations } from "../hooks/useTextAnnotations";
 
 type ArticleCommentsProviderProps = {
   postSlug: string;
@@ -30,11 +31,19 @@ function ArticleCommentsProvider({
 
   // 管理用户当前选择的段落文字。
   const paragraphSelection = useParagraphTextSelection();
-  // 管理整篇文章各个段落的评论数量。
+
   const { commentCounts, refreshCommentCounts } =
     useArticleCommentCounts(postSlug);
 
-  const { annotations, addTextAnnotation } = useTextAnnotations(postSlug);
+  const {
+    annotations,
+    addTextAnnotation,
+    updateTextAnnotation,
+    deleteTextAnnotation,
+  } = useTextAnnotations(postSlug);
+
+  const { activeTextAnnotation, closeActiveTextAnnotation } =
+    useActiveTextAnnotation(annotations);
 
   useTextAnnotationHighlights(annotations);
 
@@ -46,16 +55,24 @@ function ArticleCommentsProvider({
       commentCounts,
       refreshCommentCounts,
       paragraphSelection,
+      activeTextAnnotation,
+      closeActiveTextAnnotation,
       canManageTextAnnotations: Boolean(session),
       addTextAnnotation,
+      updateTextAnnotation,
+      deleteTextAnnotation,
     }),
     [
       postSlug,
       commentCounts,
       refreshCommentCounts,
       paragraphSelection,
+      activeTextAnnotation,
+      closeActiveTextAnnotation,
       session,
       addTextAnnotation,
+      updateTextAnnotation,
+      deleteTextAnnotation,
     ],
   );
 
