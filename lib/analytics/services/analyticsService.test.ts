@@ -1,10 +1,37 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/posts", () => ({
+  getPostTitleMap: vi.fn(),
+}));
+
+vi.mock("../repositories/articleVisitRepository", () => ({
+  getRecentVisitorRows: vi.fn(),
+  getVisitorCount: vi.fn(),
+  getVisitorPageRows: vi.fn(),
+  getVisitorPostRows: vi.fn(),
+  getVisitorSummary: vi.fn(),
+}));
+
+import { getPostTitleMap } from "@/lib/posts";
+import {
+  getRecentVisitorRows,
+  getVisitorCount,
+  getVisitorPageRows,
+  getVisitorPostRows,
+  getVisitorSummary,
+} from "../repositories/articleVisitRepository";
 import {
   buildAnalyticsOverview,
   buildAnalyticsVisitorDetail,
   buildAnalyticsVisitorPage,
+  getAnalyticsVisitorDetail,
+  getAnalyticsVisitors,
   getVisitorDisplayId,
 } from "./analyticsService";
+
+beforeEach(() => {
+  vi.resetAllMocks();
+});
 
 describe("buildAnalyticsOverview", () => {
   it("fills missing days and maps known post titles", () => {
@@ -188,5 +215,70 @@ describe("visitor analytics builders", () => {
         lastVisitedAt: visits[1].visitedAt,
       },
     ]);
+  });
+});
+
+describe("visitor analytics orchestrators", () => {
+  it("normalizes Date-valued repository timestamps to ISO strings", async () => {
+    const firstVisitedAt = new Date("2026-09-01T00:00:00.000Z");
+    const lastVisitedAt = new Date("2026-09-05T00:00:00.000Z");
+    const recentVisitedAt = new Date("2026-09-05T01:00:00.000Z");
+    const visitorId = "11111111-1111-4111-8111-111111111111";
+    const range = {
+      key: "7d" as const,
+      start: new Date("2026-08-29T16:00:00.000Z"),
+      end: new Date("2026-09-05T08:00:00.000Z"),
+      timezone: "Asia/Shanghai" as const,
+    };
+
+    vi.mocked(getPostTitleMap).mockResolvedValue(
+      new Map([["css-grid", "CSS Grid"]]),
+    );
+    vi.mocked(getVisitorCount).mockResolvedValue(1);
+    vi.mocked(getVisitorPageRows).mockResolvedValue([
+      {
+        visitor_id: visitorId,
+        first_visited_at: firstVisitedAt,
+        last_visited_at: lastVisitedAt,
+        page_views: 2,
+        visited_posts: 1,
+        favorite_post_slug: "css-grid",
+        favorite_post_views: 2,
+      },
+    ]);
+    vi.mocked(getVisitorSummary).mockResolvedValue({
+      first_visited_at: firstVisitedAt,
+      last_visited_at: lastVisitedAt,
+      page_views: 2,
+      visited_posts: 1,
+    });
+    vi.mocked(getVisitorPostRows).mockResolvedValue([
+      {
+        post_slug: "css-grid",
+        page_views: 2,
+        last_visited_at: lastVisitedAt,
+      },
+    ]);
+    vi.mocked(getRecentVisitorRows).mockResolvedValue([
+      { post_slug: "css-grid", visited_at: recentVisitedAt },
+    ]);
+
+    const page = await getAnalyticsVisitors(range, 1, 20);
+    const detail = await getAnalyticsVisitorDetail(range, visitorId);
+
+    expect(page.visitors[0]).toMatchObject({
+      firstVisitedAt: "2026-09-01T00:00:00.000Z",
+      lastVisitedAt: "2026-09-05T00:00:00.000Z",
+    });
+    expect(detail).toMatchObject({
+      firstVisitedAt: "2026-09-01T00:00:00.000Z",
+      lastVisitedAt: "2026-09-05T00:00:00.000Z",
+      posts: [
+        { lastVisitedAt: "2026-09-05T00:00:00.000Z" },
+      ],
+      recentVisits: [
+        { visitedAt: "2026-09-05T01:00:00.000Z" },
+      ],
+    });
   });
 });

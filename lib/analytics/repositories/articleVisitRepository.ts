@@ -4,8 +4,8 @@ import { sql } from "@/lib/db";
 
 export type VisitorPageRow = {
   visitor_id: string;
-  first_visited_at: string;
-  last_visited_at: string;
+  first_visited_at: Date;
+  last_visited_at: Date;
   page_views: number | string;
   visited_posts: number | string;
   favorite_post_slug: string | null;
@@ -13,8 +13,8 @@ export type VisitorPageRow = {
 };
 
 export type VisitorSummaryRow = {
-  first_visited_at: string;
-  last_visited_at: string;
+  first_visited_at: Date;
+  last_visited_at: Date;
   page_views: number | string;
   visited_posts: number | string;
 };
@@ -22,12 +22,12 @@ export type VisitorSummaryRow = {
 export type VisitorPostRow = {
   post_slug: string;
   page_views: number | string;
-  last_visited_at: string;
+  last_visited_at: Date;
 };
 
 export type RecentVisitRow = {
   post_slug: string;
-  visited_at: string;
+  visited_at: Date;
 };
 
 export async function recordArticleVisit(

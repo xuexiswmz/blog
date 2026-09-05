@@ -235,8 +235,8 @@ export async function getAnalyticsVisitors(
     total,
     visitorRows: visitorRows.map((row) => ({
       visitorId: row.visitor_id,
-      firstVisitedAt: row.first_visited_at,
-      lastVisitedAt: row.last_visited_at,
+      firstVisitedAt: row.first_visited_at.toISOString(),
+      lastVisitedAt: row.last_visited_at.toISOString(),
       pageViews: Number(row.page_views),
       visitedPosts: Number(row.visited_posts),
       favoritePostSlug: row.favorite_post_slug,
@@ -271,19 +271,19 @@ export async function getAnalyticsVisitorDetail(
   return buildAnalyticsVisitorDetail({
     visitorId,
     summary: {
-      firstVisitedAt: summary.first_visited_at,
-      lastVisitedAt: summary.last_visited_at,
+      firstVisitedAt: summary.first_visited_at.toISOString(),
+      lastVisitedAt: summary.last_visited_at.toISOString(),
       pageViews: Number(summary.page_views),
       visitedPosts: Number(summary.visited_posts),
     },
     postRows: postRows.map((row) => ({
       postSlug: row.post_slug,
       pageViews: Number(row.page_views),
-      lastVisitedAt: row.last_visited_at,
+      lastVisitedAt: row.last_visited_at.toISOString(),
     })),
     recentVisitRows: recentVisitRows.map((row) => ({
       postSlug: row.post_slug,
-      visitedAt: row.visited_at,
+      visitedAt: row.visited_at.toISOString(),
     })),
     postTitles,
   });
