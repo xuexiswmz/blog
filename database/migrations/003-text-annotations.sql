@@ -1,6 +1,6 @@
 create extension if not exists btree_gist;
 
-create table text_annotations (
+create table if not exists text_annotations (
   id uuid primary key default gen_random_uuid(),
 
   post_slug text not null,
@@ -54,7 +54,7 @@ create table text_annotations (
     )
 );
 
-create index text_annotations_post_idx
+create index if not exists text_annotations_post_idx
 on text_annotations (
   post_slug,
   paragraph_id,

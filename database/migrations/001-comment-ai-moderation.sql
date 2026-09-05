@@ -1,5 +1,3 @@
-begin;
-
 -- AI 作者和审核记录
 alter table paragraph_comments
   add column if not exists author_type text not null default 'guest',
@@ -102,5 +100,3 @@ on paragraph_comments (
 )
 where status = 'published'
   and deleted_at is null;
-
-commit;
