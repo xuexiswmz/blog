@@ -1,4 +1,5 @@
 import ArticleCommentsProvider from "@/components/Comments/Article/providers/ArticleCommentsProvider";
+import ArticleVisitTracker from "@/components/Analytics/ArticleVisitTracker";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 
@@ -47,6 +48,7 @@ export default async function PostPage({ params }: PostPageProps) {
     "
     >
       <ArticleCommentsProvider postSlug={slug} key={slug}>
+        <ArticleVisitTracker postSlug={slug} />
         <Post />
       </ArticleCommentsProvider>
     </article>

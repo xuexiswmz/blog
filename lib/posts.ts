@@ -1,5 +1,5 @@
 import matter from "gray-matter";
-import { readdir, readFile } from "node:fs/promises";
+import { access, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 export type PostSummary = {
@@ -22,6 +22,15 @@ const postsDirectory = path.join(
   "content",
   "posts",
 );
+
+export async function postExists(slug: string): Promise<boolean> {
+  try {
+    await access(path.join(postsDirectory, `${slug}.mdx`));
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export async function getPostArchives():Promise<PostArchive[]> {
     const filenames = await readdir(postsDirectory)
