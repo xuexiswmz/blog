@@ -58,6 +58,13 @@ describe("migrate CLI", () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("database/better-auth-schema.sql");
   });
+
+  it("discovers the article visit migration", async () => {
+    const migrateModule = await import("./migrate.mjs");
+    const names = await migrateModule.discoverMigrationNames(process.cwd());
+
+    expect(names).toContain("database/migrations/004-article-visits.sql");
+  });
 });
 
 class FakeMigrationClient {
