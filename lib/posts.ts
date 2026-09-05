@@ -32,9 +32,8 @@ export async function postExists(slug: string): Promise<boolean> {
   }
 }
 
-export async function getPostArchives():Promise<PostArchive[]> {
-    const filenames = await readdir(postsDirectory)
-
+async function readPostSummaries(): Promise<PostSummary[]> {
+    const filenames = await readdir(postsDirectory);
     const posts = await Promise.all(
         filenames
             .filter((filename)=>filename.endsWith(".mdx"))
@@ -68,8 +67,18 @@ export async function getPostArchives():Promise<PostArchive[]> {
                         : [],
                 }
             })
-    )
-    posts.sort((a,b) => b.date.localeCompare(a.date))
+    );
+
+    return posts.sort((a,b) => b.date.localeCompare(a.date));
+}
+
+export async function getPostTitleMap(): Promise<Map<string, string>> {
+    const posts = await readPostSummaries();
+    return new Map(posts.map((post) => [post.slug, post.title]));
+}
+
+export async function getPostArchives():Promise<PostArchive[]> {
+    const posts = await readPostSummaries();
 
     const groups = new Map<string, PostSummary[]>()
 
