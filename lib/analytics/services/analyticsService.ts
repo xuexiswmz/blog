@@ -5,6 +5,8 @@ import type {
   AnalyticsPostMetric,
   AnalyticsRange,
   AnalyticsTrendPoint,
+  AnalyticsVisitorDetail,
+  AnalyticsVisitorPage,
 } from "../types";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -34,6 +36,42 @@ type TopPostRow = {
   post_slug: string;
   unique_visitors: number | string;
   page_views: number | string;
+};
+
+type BuildVisitorPageInput = {
+  page: number;
+  pageSize: number;
+  total: number;
+  visitorRows: Array<{
+    visitorId: string;
+    firstVisitedAt: string;
+    lastVisitedAt: string;
+    pageViews: number;
+    visitedPosts: number;
+    favoritePostSlug: string | null;
+    favoritePostViews: number | null;
+  }>;
+  postTitles: Map<string, string>;
+};
+
+type BuildVisitorDetailInput = {
+  visitorId: string;
+  summary: {
+    firstVisitedAt: string;
+    lastVisitedAt: string;
+    pageViews: number;
+    visitedPosts: number;
+  };
+  postRows: Array<{
+    postSlug: string;
+    pageViews: number;
+    lastVisitedAt: string;
+  }>;
+  recentVisitRows: Array<{
+    postSlug: string;
+    visitedAt: string;
+  }>;
+  postTitles: Map<string, string>;
 };
 
 function enumerateDateStrings(startDate: string, endDate: string): string[] {
@@ -114,6 +152,138 @@ export async function getAnalyticsOverview(
       postSlug: row.post_slug,
       uniqueVisitors: Number(row.unique_visitors),
       pageViews: Number(row.page_views),
+    })),
+    postTitles,
+  });
+}
+
+export function getVisitorDisplayId(visitorId: string): string {
+  return `访客 ${visitorId.slice(0, 8)}`;
+}
+
+export function buildAnalyticsVisitorPage(
+  input: BuildVisitorPageInput,
+): AnalyticsVisitorPage {
+  return {
+    visitors: input.visitorRows.map((row) => ({
+      visitorId: row.visitorId,
+      displayId: getVisitorDisplayId(row.visitorId),
+      firstVisitedAt: row.firstVisitedAt,
+      lastVisitedAt: row.lastVisitedAt,
+      pageViews: row.pageViews,
+      visitedPosts: row.visitedPosts,
+      favoritePost:
+        row.favoritePostSlug === null || row.favoritePostViews === null
+          ? null
+          : {
+              postSlug: row.favoritePostSlug,
+              title: input.postTitles.get(row.favoritePostSlug) ?? null,
+              pageViews: row.favoritePostViews,
+            },
+    })),
+    pagination: {
+      page: input.page,
+      pageSize: input.pageSize,
+      total: input.total,
+      totalPages: input.total === 0 ? 0 : Math.ceil(input.total / input.pageSize),
+    },
+  };
+}
+
+export function buildAnalyticsVisitorDetail(
+  input: BuildVisitorDetailInput,
+): AnalyticsVisitorDetail {
+  return {
+    visitorId: input.visitorId,
+    displayId: getVisitorDisplayId(input.visitorId),
+    firstVisitedAt: input.summary.firstVisitedAt,
+    lastVisitedAt: input.summary.lastVisitedAt,
+    pageViews: input.summary.pageViews,
+    visitedPosts: input.summary.visitedPosts,
+    posts: input.postRows.map((row) => ({
+      postSlug: row.postSlug,
+      title: input.postTitles.get(row.postSlug) ?? null,
+      pageViews: row.pageViews,
+      lastVisitedAt: row.lastVisitedAt,
+    })),
+    recentVisits: input.recentVisitRows.slice(0, 100).map((row) => ({
+      postSlug: row.postSlug,
+      title: input.postTitles.get(row.postSlug) ?? null,
+      visitedAt: row.visitedAt,
+    })),
+  };
+}
+
+export async function getAnalyticsVisitors(
+  range: AnalyticsRange,
+  page: number,
+  pageSize: number,
+): Promise<AnalyticsVisitorPage> {
+  const { getVisitorCount, getVisitorPageRows } = await import(
+    "../repositories/articleVisitRepository"
+  );
+  const offset = (page - 1) * pageSize;
+  const [total, visitorRows, postTitles] = await Promise.all([
+    getVisitorCount(range),
+    getVisitorPageRows(range, pageSize, offset),
+    getPostTitleMap(),
+  ]);
+
+  return buildAnalyticsVisitorPage({
+    page,
+    pageSize,
+    total,
+    visitorRows: visitorRows.map((row) => ({
+      visitorId: row.visitor_id,
+      firstVisitedAt: row.first_visited_at,
+      lastVisitedAt: row.last_visited_at,
+      pageViews: Number(row.page_views),
+      visitedPosts: Number(row.visited_posts),
+      favoritePostSlug: row.favorite_post_slug,
+      favoritePostViews:
+        row.favorite_post_views === null
+          ? null
+          : Number(row.favorite_post_views),
+    })),
+    postTitles,
+  });
+}
+
+export async function getAnalyticsVisitorDetail(
+  range: AnalyticsRange,
+  visitorId: string,
+): Promise<AnalyticsVisitorDetail | null> {
+  const {
+    getRecentVisitorRows,
+    getVisitorPostRows,
+    getVisitorSummary,
+  } = await import("../repositories/articleVisitRepository");
+  const summary = await getVisitorSummary(range, visitorId);
+
+  if (summary === null) return null;
+
+  const [postRows, recentVisitRows, postTitles] = await Promise.all([
+    getVisitorPostRows(range, visitorId),
+    getRecentVisitorRows(range, visitorId, 100),
+    getPostTitleMap(),
+  ]);
+
+  return buildAnalyticsVisitorDetail({
+    visitorId,
+    summary: {
+      firstVisitedAt: summary.first_visited_at,
+      lastVisitedAt: summary.last_visited_at,
+      pageViews: Number(summary.page_views),
+      visitedPosts: Number(summary.visited_posts),
+    },
+    postRows: postRows.map((row) => ({
+      postSlug: row.post_slug,
+      pageViews: Number(row.page_views),
+      lastVisitedAt: row.last_visited_at,
+    })),
+    recentVisitRows: recentVisitRows.map((row) => ({
+      postSlug: row.post_slug,
+      visitedAt: row.visited_at,
     })),
     postTitles,
   });
