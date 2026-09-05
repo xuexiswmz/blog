@@ -141,15 +141,19 @@ function ChartTooltipContent({
     const key = `${labelKey || item.dataKey || item.name || "value"}`;
     const itemConfig = getPayloadConfigFromPayload(config, item, key);
     const value =
-      !labelFormatter || label === undefined
-        ? itemConfig?.label || label
-        : labelFormatter(label, payload);
+      !labelKey && typeof label === "string"
+        ? config[label]?.label ?? label
+        : itemConfig?.label;
 
     if (!value) {
       return null;
     }
 
-    return <div className={cn("font-medium", labelClassName)}>{value}</div>;
+    return (
+      <div className={cn("font-medium", labelClassName)}>
+        {labelFormatter ? labelFormatter(value, payload) : value}
+      </div>
+    );
   }, [config, hideLabel, label, labelClassName, labelFormatter, labelKey, payload]);
 
   if (!active || !payload?.length) {
@@ -190,7 +194,7 @@ function ChartTooltipContent({
                   ) : (
                     !hideIndicator && (
                       <div
-                        className={cn("shrink-0 rounded-[2px] border-[--color-border] bg-[--color-bg]", {
+                        className={cn("shrink-0 rounded-[2px] border-(--color-border) bg-(--color-bg)", {
                           "h-2.5 w-2.5": indicator === "dot",
                           "w-1": indicator === "line",
                           "w-0 border-[1.5px] border-dashed bg-transparent":
