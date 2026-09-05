@@ -19,18 +19,6 @@ vi.mock("@/lib/posts", () => ({
   ]),
 }));
 
-vi.mock("@/lib/likes", () => ({
-  getLikeSummaries: vi.fn().mockResolvedValue(
-    new Map([
-      ["responsive-layout", { count: 3, liked: false }],
-    ]),
-  ),
-}));
-
-vi.mock("@/lib/visitor", () => ({
-  readVisitorID: vi.fn().mockResolvedValue(null),
-}));
-
 vi.mock("./TimelineEntrance", () => ({
   default: ({ children }: { children: ReactNode }) => children,
 }));
@@ -48,12 +36,11 @@ describe("TimeLine layout", () => {
     expect(markup).not.toContain("py-5");
   });
 
-  it("keeps the like action inline with each archive row", async () => {
+  it("does not render article like actions", async () => {
     const markup = renderToStaticMarkup(await TimeLine());
 
-    expect(markup).toContain("shrink-0");
-    expect(markup).not.toContain("mt-3 inline-flex");
-    expect(markup).toContain(">3</span>");
+    expect(markup).not.toContain('aria-label="点赞"');
+    expect(markup).not.toContain('aria-label="取消点赞"');
   });
 
   it("renders the timeline panel without an outer border", async () => {

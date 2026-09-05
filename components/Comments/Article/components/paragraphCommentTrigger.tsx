@@ -87,7 +87,7 @@ export default function ParagraphCommentTrigger({
         </button>
       )}
 
-      {selection && (
+      {commentCount === 0 && selection && (
         <SelectionCommentTooltip
           position={selection.position}
           onAddComment={onAddComment}
