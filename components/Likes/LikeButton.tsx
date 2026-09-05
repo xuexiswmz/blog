@@ -73,13 +73,14 @@ export default function LikeButton({
       disabled={pending}
       onClick={handleLike}
       className="
-        mt-3 inline-flex items-center gap-1.5
-        text-xs text-gray-500
+        inline-flex shrink-0 items-center gap-1.5
+        rounded-md px-2 py-1 text-xs text-slate-500
         transition-colors
-        hover:text-red-500
+        hover:bg-slate-100 hover:text-red-500
         disabled:cursor-wait
         disabled:opacity-60
-        dark:text-gray-400
+        dark:text-slate-400
+        dark:hover:bg-white/6
         dark:hover:text-red-400
       "
     >

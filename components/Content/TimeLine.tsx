@@ -15,7 +15,7 @@ const TimeLine = async () => {
   ])
   const likeSummaries = await getLikeSummaries(visitorId)
   return (
-    <main className='flex flex-1 min-w-0 p-5 h-full min-h-0 overflow-y-auto overscroll-contain scrollbar-hide'>
+    <main className='scrollbar-hide h-full min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain rounded-md bg-white/70 px-[clamp(0.75rem,1.5vw,1.5rem)] py-[clamp(0.5rem,1vh,0.75rem)] backdrop-blur-xl dark:bg-background'>
         <TimelineEntrance>
           {archives.map((group) => (
             <section
@@ -27,19 +27,19 @@ const TimeLine = async () => {
               "
             >
               {/* 年份 */}
-              <h2 className="flex w-full items-center justify-end py-4 pr-2 text-xl font-bold leading-none text-slate-900 dark:text-slate-300/90">
+              <h2 className="flex w-full items-center justify-end py-3 pr-2 text-lg font-bold leading-none text-slate-950 dark:text-slate-200">
                 {group.year}
               </h2>
 
               {/* 年份节点 */}
-              <div className="relative flex items-center justify-center py-4">
+              <div className="relative flex items-center justify-center py-3">
                 <span className="absolute bottom-0 top-1/2 w-px bg-slate-200 dark:bg-slate-700/70" />
 
                 <span className="relative size-3 rounded-full border-2 border-blue-400 bg-background" />
               </div>
 
               {/* 文章数量 */}
-              <p className="flex items-center py-4 text-sm text-slate-600 dark:text-slate-400">
+              <p className="flex items-center py-3 text-xs font-medium text-slate-600 dark:text-slate-400">
                 {group.posts.length} 篇文章
               </p>
 
@@ -51,17 +51,17 @@ const TimeLine = async () => {
                 return (
                   <Fragment key={`/posts/${post.slug}`}>
                     {/* 日期 */}
-                    <time className="w-full py-5 pr-2 text-right text-xs text-slate-500 dark:text-slate-500">
+                    <time className="flex w-full items-center justify-end py-3 pr-2 text-right text-xs text-slate-500 dark:text-slate-400">
                       {post.date.slice(5)}
                     </time>
 
                     {/* 普通节点 */}
-                    <div className="relative flex justify-center py-5">
+                    <div className="relative flex items-center justify-center py-3">
                       <span className="absolute inset-y-0 w-px bg-slate-200 dark:bg-slate-700/70" />
 
                       <span
                         className="
-                          relative mt-1.5 size-1
+                          relative size-1
                           rounded-full bg-blue-400
                           ring-4 ring-background
                         "
@@ -69,26 +69,26 @@ const TimeLine = async () => {
                     </div>
 
                     {/* 文章标题 */}
-                    <div className=' timeline-entry py-5'>
+                    <div className='timeline-entry flex min-w-0 items-center gap-3 py-3'>
                       <Link
                         href={`/posts/${post.slug}`}
                         className="
-                          group flex justify-center
-                          items-center gap-4 py-5
+                          group flex min-w-0 flex-1
+                          items-center gap-3
                         "
                       >
                         <div className='min-w-0 flex-1'>
                             <h3 className='
-                                text-sm font-medium
-                                text-slate-800
+                                truncate text-sm font-semibold
+                                text-slate-900
                                 transition-colors
                                 group-hover:text-blue-500
-                                dark:text-slate-300/90
+                                dark:text-slate-200
                                 dark:group-hover:text-blue-300
                                 '>
                                 {post.title}
                             </h3>
-                            <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                            <p className="mt-1 line-clamp-1 text-xs leading-4 text-slate-500 dark:text-slate-400">
                                 {post.description}
                             </p>
                         </div>
@@ -99,7 +99,7 @@ const TimeLine = async () => {
                               alt={post.imageAlt ?? `${post.title}文章封面`}
                               width={96}
                               height={64}
-                              className=' hidden h-16 w-24 shrink-0 rounded-md object-cover transition-transform group-hover:scale-105 sm:block '
+                              className='hidden h-12 w-18 shrink-0 rounded-md object-cover transition-transform group-hover:scale-105 sm:block'
                             />
                           )
                         }

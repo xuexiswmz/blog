@@ -43,7 +43,7 @@ export default function RootLayout({
       </head>
       <body className="h-dvh overflow-hidden flex flex-col">
         <I18nGate>
-          <div className="mx-auto flex h-full min-h-0 w-[92%] flex-col sm:w-[85%]">
+          <div className="mx-auto flex h-full min-h-0 w-[94%] max-w-[1600px] flex-col sm:w-[90%]">
             <Headers />
             <main className="min-h-0 flex-1 overflow-y-auto scrollbar-hide">
               {children}
