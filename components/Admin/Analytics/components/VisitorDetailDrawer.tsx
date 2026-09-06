@@ -294,7 +294,20 @@ export default function VisitorDetailDrawer({
           onClose={onClose}
           closeButtonRef={closeButtonRef}
         />
-      ) : null}
+      ) : (
+        <aside
+          onClick={(event) => event.stopPropagation()}
+          className="absolute inset-y-0 right-0 flex h-full w-full max-w-2xl flex-col border-l border-gray-200 bg-white text-gray-950 shadow-2xl dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100"
+        >
+          <DrawerHeader
+            onClose={onClose}
+            closeButtonRef={closeButtonRef}
+          />
+          <div className="flex min-h-0 flex-1 items-center justify-center p-5 text-sm text-gray-500 dark:text-gray-400">
+            访客详情暂不可用
+          </div>
+        </aside>
+      )}
     </dialog>
   );
 }

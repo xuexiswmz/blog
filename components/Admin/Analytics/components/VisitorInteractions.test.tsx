@@ -167,6 +167,31 @@ describe("VisitorDetailDrawer", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(document.activeElement).toBe(opener);
   });
+
+  it("keeps a visible close fallback in the empty post-401 state", async () => {
+    const onClose = vi.fn();
+
+    await act(async () => {
+      root.render(
+        <VisitorDetailDrawer
+          detail={null}
+          loading={false}
+          error=""
+          onClose={onClose}
+          onRetry={() => undefined}
+        />,
+      );
+    });
+
+    const closeButton = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="关闭访客详情"]',
+    );
+    expect(closeButton).not.toBeNull();
+    expect(container.textContent).toContain("访客详情暂不可用");
+
+    await act(async () => closeButton?.click());
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("VisitorMonitorView pagination", () => {
