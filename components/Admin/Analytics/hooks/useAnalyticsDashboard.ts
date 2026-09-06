@@ -28,9 +28,11 @@ export default function useAnalyticsDashboard() {
   const [overviewLoading, setOverviewLoading] = useState(true);
   const [overviewError, setOverviewError] = useState("");
   const [page, setCurrentPage] = useState(1);
-  const [visitorPage, setVisitorPage] = useState<AnalyticsVisitorPage | null>(
-    null,
-  );
+  const [visitorPageResult, setVisitorPageResult] = useState<{
+    range: AnalyticsRangeKey;
+    page: number;
+    data: AnalyticsVisitorPage;
+  } | null>(null);
   const [visitorsLoading, setVisitorsLoading] = useState(true);
   const [visitorsError, setVisitorsError] = useState("");
   const [selectedVisitorId, setSelectedVisitorId] = useState<string | null>(null);
@@ -42,6 +44,10 @@ export default function useAnalyticsDashboard() {
   const [visitorsRequestVersion, setVisitorsRequestVersion] = useState(0);
   const [visitorDetailRequestVersion, setVisitorDetailRequestVersion] =
     useState(0);
+  const visitorPage =
+    visitorPageResult?.range === range && visitorPageResult.page === page
+      ? visitorPageResult.data
+      : null;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -93,7 +99,7 @@ export default function useAnalyticsDashboard() {
           controller.signal,
         );
         if (!controller.signal.aborted) {
-          setVisitorPage(data);
+          setVisitorPageResult({ range, page, data });
         }
       } catch (error) {
         if (isAbortError(error) || controller.signal.aborted) return;
@@ -167,6 +173,8 @@ export default function useAnalyticsDashboard() {
   const setRange = useCallback((nextRange: AnalyticsRangeKey) => {
     setCurrentRange(nextRange);
     setCurrentPage(1);
+    setVisitorsLoading(true);
+    setVisitorsError("");
     setSelectedVisitorId(null);
     setVisitorDetail(null);
     setVisitorDetailLoading(false);
@@ -175,6 +183,8 @@ export default function useAnalyticsDashboard() {
 
   const setPage = useCallback((nextPage: number) => {
     setCurrentPage(nextPage);
+    setVisitorsLoading(true);
+    setVisitorsError("");
     setSelectedVisitorId(null);
     setVisitorDetail(null);
     setVisitorDetailLoading(false);

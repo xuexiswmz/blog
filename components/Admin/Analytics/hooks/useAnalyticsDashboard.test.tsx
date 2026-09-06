@@ -152,12 +152,11 @@ afterEach(async () => {
 });
 
 describe("useAnalyticsDashboard", () => {
-  it("keeps the successful visitor page visible while the next page loads", async () => {
+  it("does not expose stale pagination during a failed page transition", async () => {
     await renderHook();
-    const firstPage = getDashboard().visitorPage;
-    let resolveNextPage!: (page: AnalyticsVisitorPage) => void;
-    const nextPagePromise = new Promise<AnalyticsVisitorPage>((resolve) => {
-      resolveNextPage = resolve;
+    let rejectNextPage!: (error: Error) => void;
+    const nextPagePromise = new Promise<AnalyticsVisitorPage>((_resolve, reject) => {
+      rejectNextPage = reject;
     });
     mocks.requestVisitors.mockReturnValueOnce(nextPagePromise);
 
@@ -168,16 +167,14 @@ describe("useAnalyticsDashboard", () => {
 
     expect(getDashboard().page).toBe(2);
     expect(getDashboard().visitorsLoading).toBe(true);
-    expect(getDashboard().visitorPage).toBe(firstPage);
+    expect(getDashboard().visitorPage).toBeNull();
 
     await act(async () => {
-      resolveNextPage({
-        visitors: [],
-        pagination: { page: 2, pageSize: 20, total: 41, totalPages: 3 },
-      });
-      await nextPagePromise;
+      rejectNextPage(new Error("读取访客列表失败"));
+      await nextPagePromise.catch(() => undefined);
     });
-    expect(getDashboard().visitorPage?.pagination.page).toBe(2);
+    expect(getDashboard().visitorPage).toBeNull();
+    expect(getDashboard().visitorsError).toBe("读取访客列表失败");
   });
 
   it("clears visitor selection and detail on page and range changes", async () => {
@@ -230,6 +227,103 @@ describe("useAnalyticsDashboard", () => {
     expect(mocks.requestVisitorDetail).toHaveBeenCalledTimes(1);
     expect(mocks.requestOverview).not.toHaveBeenCalled();
     expect(mocks.requestVisitors).not.toHaveBeenCalled();
+  });
+
+  it("aborts a stale visitor page request and ignores its late result", async () => {
+    await renderHook();
+    let resolvePageTwo!: (page: AnalyticsVisitorPage) => void;
+    let resolvePageThree!: (page: AnalyticsVisitorPage) => void;
+    const pageTwoPromise = new Promise<AnalyticsVisitorPage>((resolve) => {
+      resolvePageTwo = resolve;
+    });
+    const pageThreePromise = new Promise<AnalyticsVisitorPage>((resolve) => {
+      resolvePageThree = resolve;
+    });
+    mocks.requestVisitors.mockClear();
+    mocks.requestVisitors
+      .mockReturnValueOnce(pageTwoPromise)
+      .mockReturnValueOnce(pageThreePromise);
+
+    await act(async () => {
+      getDashboard().setPage(2);
+      await Promise.resolve();
+    });
+    const pageTwoSignal = mocks.requestVisitors.mock.calls[0][3] as AbortSignal;
+    expect(pageTwoSignal.aborted).toBe(false);
+
+    await act(async () => {
+      getDashboard().setPage(3);
+      await Promise.resolve();
+    });
+    expect(pageTwoSignal.aborted).toBe(true);
+
+    await act(async () => {
+      resolvePageThree({
+        visitors: [],
+        pagination: { page: 3, pageSize: 20, total: 41, totalPages: 3 },
+      });
+      await pageThreePromise;
+    });
+    await act(async () => {
+      resolvePageTwo({
+        visitors: [],
+        pagination: { page: 2, pageSize: 20, total: 41, totalPages: 3 },
+      });
+      await pageTwoPromise;
+    });
+
+    expect(getDashboard().visitorPage?.pagination.page).toBe(3);
+  });
+
+  it("aborts a stale detail request and ignores its late result", async () => {
+    await renderHook();
+    let resolveFirstDetail!: (detail: AnalyticsVisitorDetail) => void;
+    let resolveSecondDetail!: (detail: AnalyticsVisitorDetail) => void;
+    const firstDetailPromise = new Promise<AnalyticsVisitorDetail>((resolve) => {
+      resolveFirstDetail = resolve;
+    });
+    const secondDetailPromise = new Promise<AnalyticsVisitorDetail>((resolve) => {
+      resolveSecondDetail = resolve;
+    });
+    mocks.requestVisitorDetail
+      .mockReset()
+      .mockReturnValueOnce(firstDetailPromise)
+      .mockReturnValueOnce(secondDetailPromise);
+
+    await act(async () => {
+      getDashboard().selectVisitor(
+        "11111111-1111-4111-8111-111111111111",
+      );
+      await Promise.resolve();
+    });
+    const firstDetailSignal = mocks.requestVisitorDetail.mock.calls[0][2] as
+      | AbortSignal
+      | undefined;
+    expect(firstDetailSignal?.aborted).toBe(false);
+
+    await act(async () => {
+      getDashboard().selectVisitor(
+        "22222222-2222-4222-8222-222222222222",
+      );
+      await Promise.resolve();
+    });
+    expect(firstDetailSignal?.aborted).toBe(true);
+
+    const secondDetail: AnalyticsVisitorDetail = {
+      ...visitorDetailFixture,
+      visitorId: "22222222-2222-4222-8222-222222222222",
+      displayId: "访客 22222222",
+    };
+    await act(async () => {
+      resolveSecondDetail(secondDetail);
+      await secondDetailPromise;
+    });
+    await act(async () => {
+      resolveFirstDetail(visitorDetailFixture);
+      await firstDetailPromise;
+    });
+
+    expect(getDashboard().visitorDetail).toEqual(secondDetail);
   });
 
   it("redirects to login when the visitor page request returns 401", async () => {

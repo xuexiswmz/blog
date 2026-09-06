@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type Ref } from "react";
 import type { AnalyticsVisitorDetail } from "../types/analytics";
 
 const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
@@ -18,6 +18,7 @@ const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
 type VisitorDetailViewProps = {
   detail: AnalyticsVisitorDetail;
   onClose: () => void;
+  closeButtonRef?: Ref<HTMLButtonElement>;
 };
 
 type VisitorDetailDrawerProps = {
@@ -36,31 +37,59 @@ function getPostLabel(postSlug: string, title: string | null) {
   return title ?? postSlug + "（文章不存在）";
 }
 
+function DrawerHeader({
+  displayId,
+  onClose,
+  closeButtonRef,
+}: {
+  displayId?: string;
+  onClose: () => void;
+  closeButtonRef?: Ref<HTMLButtonElement>;
+}) {
+  return (
+    <header className="flex shrink-0 items-start justify-between gap-4 border-b border-gray-200 p-5 dark:border-gray-800">
+      <div>
+        {displayId ? (
+          <>
+            <p className="text-sm text-gray-500 dark:text-gray-400">访客详情</p>
+            <h2 id="visitor-detail-title" className="mt-1 text-xl font-semibold">
+              {displayId}
+            </h2>
+          </>
+        ) : (
+          <h2 id="visitor-detail-title" className="text-xl font-semibold">
+            访客详情
+          </h2>
+        )}
+      </div>
+      <button
+        ref={closeButtonRef}
+        type="button"
+        aria-label="关闭访客详情"
+        onClick={onClose}
+        className="rounded-full p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+      >
+        <X className="size-5" />
+      </button>
+    </header>
+  );
+}
+
 export function VisitorDetailView({
   detail,
   onClose,
+  closeButtonRef,
 }: VisitorDetailViewProps) {
   return (
     <aside
       onClick={(event) => event.stopPropagation()}
       className="absolute inset-y-0 right-0 flex h-full w-full max-w-2xl flex-col border-l border-gray-200 bg-white text-gray-950 shadow-2xl dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100"
     >
-      <header className="flex shrink-0 items-start justify-between gap-4 border-b border-gray-200 p-5 dark:border-gray-800">
-        <div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">访客详情</p>
-          <h2 id="visitor-detail-title" className="mt-1 text-xl font-semibold">
-            {detail.displayId}
-          </h2>
-        </div>
-        <button
-          type="button"
-          aria-label="关闭访客详情"
-          onClick={onClose}
-          className="rounded-full p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
-          <X className="size-5" />
-        </button>
-      </header>
+      <DrawerHeader
+        displayId={detail.displayId}
+        onClose={onClose}
+        closeButtonRef={closeButtonRef}
+      />
 
       <div className="min-h-0 flex-1 space-y-8 overflow-y-auto p-5">
         <section aria-labelledby="visitor-summary-title">
@@ -182,12 +211,18 @@ export default function VisitorDetailDrawer({
   onRetry,
 }: VisitorDetailDrawerProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
 
-    dialog.show();
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    dialog.showModal();
+    closeButtonRef.current?.focus();
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -199,6 +234,7 @@ export default function VisitorDetailDrawer({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       if (dialog.open) dialog.close();
+      previouslyFocused?.focus();
     };
   }, [onClose]);
 
@@ -220,43 +256,44 @@ export default function VisitorDetailDrawer({
       {loading ? (
         <aside
           onClick={(event) => event.stopPropagation()}
-          className="absolute inset-y-0 right-0 flex h-full w-full max-w-2xl items-center justify-center border-l border-gray-200 bg-white p-5 text-sm text-gray-500 shadow-2xl dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400"
+          className="absolute inset-y-0 right-0 flex h-full w-full max-w-2xl flex-col border-l border-gray-200 bg-white text-gray-950 shadow-2xl dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100"
         >
-          <h2 id="visitor-detail-title" className="sr-only">
-            访客详情
-          </h2>
-          正在加载访客详情...
+          <DrawerHeader
+            onClose={onClose}
+            closeButtonRef={closeButtonRef}
+          />
+          <div className="flex min-h-0 flex-1 items-center justify-center p-5 text-sm text-gray-500 dark:text-gray-400">
+            正在加载访客详情...
+          </div>
         </aside>
       ) : error ? (
         <aside
           onClick={(event) => event.stopPropagation()}
-          className="absolute inset-y-0 right-0 flex h-full w-full max-w-2xl flex-col items-center justify-center border-l border-gray-200 bg-white p-5 text-center shadow-2xl dark:border-gray-800 dark:bg-gray-950"
+          className="absolute inset-y-0 right-0 flex h-full w-full max-w-2xl flex-col border-l border-gray-200 bg-white text-gray-950 shadow-2xl dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100"
         >
-          <h2 id="visitor-detail-title" className="text-lg font-semibold">
-            访客详情
-          </h2>
-          <p role="alert" className="mt-3 text-sm text-red-600 dark:text-red-400">
-            {error}
-          </p>
-          <div className="mt-4 flex gap-3">
+          <DrawerHeader
+            onClose={onClose}
+            closeButtonRef={closeButtonRef}
+          />
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center p-5 text-center">
+            <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+              {error}
+            </p>
             <button
               type="button"
               onClick={onRetry}
-              className="rounded-md bg-gray-900 px-3 py-2 text-sm text-white dark:bg-white dark:text-gray-900"
+              className="mt-4 rounded-md bg-gray-900 px-3 py-2 text-sm text-white dark:bg-white dark:text-gray-900"
             >
               重新加载
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700"
-            >
-              关闭
             </button>
           </div>
         </aside>
       ) : detail ? (
-        <VisitorDetailView detail={detail} onClose={onClose} />
+        <VisitorDetailView
+          detail={detail}
+          onClose={onClose}
+          closeButtonRef={closeButtonRef}
+        />
       ) : null}
     </dialog>
   );

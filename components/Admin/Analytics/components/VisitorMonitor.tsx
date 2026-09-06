@@ -188,30 +188,32 @@ export function VisitorMonitorView({
         </>
       )}
 
-      <footer className="flex items-center justify-between gap-4 border-t border-gray-200 px-5 py-4 dark:border-gray-800">
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          共 {pagination.total.toLocaleString("zh-CN")} 位访客 · 第{" "}
-          {pagination.page} / {Math.max(pagination.totalPages, 1)} 页
-        </p>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            disabled={previousDisabled}
-            onClick={() => onPageChange(pagination.page - 1)}
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700"
-          >
-            上一页
-          </button>
-          <button
-            type="button"
-            disabled={nextDisabled}
-            onClick={() => onPageChange(pagination.page + 1)}
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700"
-          >
-            下一页
-          </button>
-        </div>
-      </footer>
+      {!loading && !error ? (
+        <footer className="flex items-center justify-between gap-4 border-t border-gray-200 px-5 py-4 dark:border-gray-800">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            共 {pagination.total.toLocaleString("zh-CN")} 位访客 · 第{" "}
+            {pagination.page} / {Math.max(pagination.totalPages, 1)} 页
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={previousDisabled}
+              onClick={() => onPageChange(pagination.page - 1)}
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700"
+            >
+              上一页
+            </button>
+            <button
+              type="button"
+              disabled={nextDisabled}
+              onClick={() => onPageChange(pagination.page + 1)}
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700"
+            >
+              下一页
+            </button>
+          </div>
+        </footer>
+      ) : null}
     </section>
   );
 }
