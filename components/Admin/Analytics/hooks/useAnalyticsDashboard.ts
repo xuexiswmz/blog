@@ -84,7 +84,6 @@ export default function useAnalyticsDashboard() {
     async function loadVisitors() {
       setVisitorsLoading(true);
       setVisitorsError("");
-      setVisitorPage(null);
 
       try {
         const data = await requestAnalyticsVisitors(
