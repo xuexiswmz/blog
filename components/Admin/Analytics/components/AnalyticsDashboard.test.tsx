@@ -1,7 +1,9 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import type { AnalyticsOverview } from "../types/analytics";
+import type { AnalyticsOverview, AnalyticsVisitorDetail } from "../types/analytics";
 import { AnalyticsDashboardView } from "./AnalyticsDashboard";
+import { VisitorDetailView } from "./VisitorDetailDrawer";
+import { VisitorMonitorView } from "./VisitorMonitor";
 
 const overviewFixture: AnalyticsOverview = {
   range: {
@@ -37,6 +39,30 @@ const emptyOverviewFixture: AnalyticsOverview = {
   },
   trend: [],
   topPosts: [],
+};
+
+const deletedPostDetailFixture: AnalyticsVisitorDetail = {
+  visitorId: "11111111-1111-4111-8111-111111111111",
+  displayId: "访客 11111111",
+  firstVisitedAt: "2026-09-01T00:00:00.000Z",
+  lastVisitedAt: "2026-09-05T00:00:00.000Z",
+  pageViews: 2,
+  visitedPosts: 1,
+  posts: [
+    {
+      postSlug: "removed-post",
+      title: null,
+      pageViews: 2,
+      lastVisitedAt: "2026-09-05T00:00:00.000Z",
+    },
+  ],
+  recentVisits: [
+    {
+      postSlug: "removed-post",
+      title: null,
+      visitedAt: "2026-09-05T00:00:00.000Z",
+    },
+  ],
 };
 
 const defaultProps = {
@@ -130,5 +156,51 @@ describe("AnalyticsDashboardView", () => {
     expect(markup).toContain("近 180 天");
     expect(markup).toContain("全部时间");
     expect(markup).toContain('<option value="30d" selected="">');
+  });
+});
+
+describe("visitor analytics views", () => {
+  it("renders visitor monitoring data", () => {
+    const markup = renderToStaticMarkup(
+      <VisitorMonitorView
+        visitors={[
+          {
+            visitorId: "11111111-1111-4111-8111-111111111111",
+            displayId: "访客 11111111",
+            firstVisitedAt: "2026-09-01T00:00:00.000Z",
+            lastVisitedAt: "2026-09-05T00:00:00.000Z",
+            pageViews: 5,
+            visitedPosts: 2,
+            favoritePost: {
+              postSlug: "css-grid",
+              title: "CSS Grid",
+              pageViews: 3,
+            },
+          },
+        ]}
+        pagination={{ page: 1, pageSize: 20, total: 1, totalPages: 1 }}
+        loading={false}
+        error=""
+        onSelectVisitor={() => undefined}
+        onPageChange={() => undefined}
+        onRetry={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("访客 11111111");
+    expect(markup).toContain("CSS Grid");
+    expect(markup).toContain("5 次访问");
+  });
+
+  it("labels deleted articles by slug", () => {
+    const markup = renderToStaticMarkup(
+      <VisitorDetailView
+        detail={deletedPostDetailFixture}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("removed-post");
+    expect(markup).toContain("文章不存在");
   });
 });

@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import SignOutButton from '@/components/Admin/SignOutButton'
-import Link from 'next/dist/client/link'
+import Link from 'next/link'
 
 export default async function AdminPage() {
     const session = await auth.api.getSession({
@@ -25,12 +25,18 @@ export default async function AdminPage() {
             { session.user.email }
         </p>
 
-        <div className="mt-6">
+        <div className="mt-6 flex flex-wrap gap-3">
             <Link
                 href="/admin/comments"
                 className="inline-flex rounded-md bg-gray-900 px-4 py-2 text-sm text-white dark:bg-white dark:text-gray-900"
             >
                 评论审核
+            </Link>
+            <Link
+                href="/admin/analytics"
+                className="inline-flex rounded-md bg-gray-900 px-4 py-2 text-sm text-white dark:bg-white dark:text-gray-900"
+            >
+                访问分析
             </Link>
         </div>
         

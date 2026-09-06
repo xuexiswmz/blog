@@ -6,6 +6,8 @@ import useAnalyticsDashboard from "../hooks/useAnalyticsDashboard";
 import AnalyticsSummaryCards from "./AnalyticsSummaryCards";
 import TopPostsChart from "./TopPostsChart";
 import VisitTrendChart from "./VisitTrendChart";
+import VisitorDetailDrawer from "./VisitorDetailDrawer";
+import { VisitorMonitorView } from "./VisitorMonitor";
 
 const RANGE_OPTIONS: Array<{ value: AnalyticsRangeKey; label: string }> = [
   { value: "7d", label: "近 7 天" },
@@ -107,15 +109,43 @@ export function AnalyticsDashboardView({
 
 export default function AnalyticsDashboard() {
   const dashboard = useAnalyticsDashboard();
+  const pagination = dashboard.visitorPage?.pagination ?? {
+    page: dashboard.page,
+    pageSize: 20,
+    total: 0,
+    totalPages: 0,
+  };
 
   return (
-    <AnalyticsDashboardView
-      range={dashboard.range}
-      overview={dashboard.overview}
-      overviewLoading={dashboard.overviewLoading}
-      overviewError={dashboard.overviewError}
-      onRangeChange={dashboard.setRange}
-      onRetryOverview={dashboard.retryOverview}
-    />
+    <>
+      <AnalyticsDashboardView
+        range={dashboard.range}
+        overview={dashboard.overview}
+        overviewLoading={dashboard.overviewLoading}
+        overviewError={dashboard.overviewError}
+        onRangeChange={dashboard.setRange}
+        onRetryOverview={dashboard.retryOverview}
+      >
+        <VisitorMonitorView
+          visitors={dashboard.visitorPage?.visitors ?? []}
+          pagination={pagination}
+          loading={dashboard.visitorsLoading}
+          error={dashboard.visitorsError}
+          onSelectVisitor={dashboard.selectVisitor}
+          onPageChange={dashboard.setPage}
+          onRetry={dashboard.retryVisitors}
+        />
+      </AnalyticsDashboardView>
+
+      {dashboard.selectedVisitorId ? (
+        <VisitorDetailDrawer
+          detail={dashboard.visitorDetail}
+          loading={dashboard.visitorDetailLoading}
+          error={dashboard.visitorDetailError}
+          onClose={dashboard.closeVisitor}
+          onRetry={dashboard.retryVisitorDetail}
+        />
+      ) : null}
+    </>
   );
 }
