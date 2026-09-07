@@ -24,7 +24,10 @@ function isAbortError(error: unknown) {
 export default function useAnalyticsDashboard() {
   const router = useRouter();
   const [range, setCurrentRange] = useState<AnalyticsRangeKey>("30d");
-  const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
+  const [overviewResult, setOverviewResult] = useState<{
+    range: AnalyticsRangeKey;
+    data: AnalyticsOverview;
+  } | null>(null);
   const [overviewLoading, setOverviewLoading] = useState(true);
   const [overviewError, setOverviewError] = useState("");
   const [page, setCurrentPage] = useState(1);
@@ -44,6 +47,8 @@ export default function useAnalyticsDashboard() {
   const [visitorsRequestVersion, setVisitorsRequestVersion] = useState(0);
   const [visitorDetailRequestVersion, setVisitorDetailRequestVersion] =
     useState(0);
+  const overview =
+    overviewResult?.range === range ? overviewResult.data : null;
   const visitorPage =
     visitorPageResult?.range === range && visitorPageResult.page === page
       ? visitorPageResult.data
@@ -55,12 +60,12 @@ export default function useAnalyticsDashboard() {
     async function loadOverview() {
       setOverviewLoading(true);
       setOverviewError("");
-      setOverview(null);
+      setOverviewResult(null);
 
       try {
         const data = await requestAnalyticsOverview(range, controller.signal);
         if (!controller.signal.aborted) {
-          setOverview(data);
+          setOverviewResult({ range, data });
         }
       } catch (error) {
         if (isAbortError(error) || controller.signal.aborted) return;
@@ -172,6 +177,9 @@ export default function useAnalyticsDashboard() {
 
   const setRange = useCallback((nextRange: AnalyticsRangeKey) => {
     setCurrentRange(nextRange);
+    setOverviewResult(null);
+    setOverviewLoading(true);
+    setOverviewError("");
     setCurrentPage(1);
     setVisitorsLoading(true);
     setVisitorsError("");

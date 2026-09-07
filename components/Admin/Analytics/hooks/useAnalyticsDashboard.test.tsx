@@ -8,6 +8,7 @@ import {
   type RefObject,
 } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { flushSync } from "react-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   AnalyticsOverview,
@@ -61,6 +62,17 @@ const overviewFixture: AnalyticsOverview = {
   topPosts: [],
 };
 
+function overviewForRange(
+  key: "7d" | "30d" | "90d",
+  pageViews: number,
+): AnalyticsOverview {
+  return {
+    ...overviewFixture,
+    range: { ...overviewFixture.range, key },
+    summary: { ...overviewFixture.summary, pageViews },
+  };
+}
+
 const visitorPageFixture: AnalyticsVisitorPage = {
   visitors: [
     {
@@ -88,6 +100,14 @@ const visitorDetailFixture: AnalyticsVisitorDetail = {
 };
 
 type DashboardState = ReturnType<typeof useAnalyticsDashboard>;
+
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((nextResolve) => {
+    resolve = nextResolve;
+  });
+  return { promise, resolve };
+}
 
 let container: HTMLDivElement;
 let root: Root;
@@ -152,6 +172,47 @@ afterEach(async () => {
 });
 
 describe("useAnalyticsDashboard", () => {
+  it("hides the old overview immediately and ignores a late prior-range result", async () => {
+    await renderHook();
+    expect(getDashboard().overview).toEqual(overviewFixture);
+
+    const sevenDayRequest = createDeferred<AnalyticsOverview>();
+    mocks.requestOverview.mockReturnValueOnce(sevenDayRequest.promise);
+
+    act(() => {
+      flushSync(() => getDashboard().setRange("7d"));
+      expect(getDashboard().range).toBe("7d");
+      expect(getDashboard().overview).toBeNull();
+    });
+
+    await act(async () => {
+      sevenDayRequest.resolve(overviewForRange("7d", 7));
+      await sevenDayRequest.promise;
+    });
+    expect(getDashboard().overview?.range.key).toBe("7d");
+
+    const staleThirtyDayRequest = createDeferred<AnalyticsOverview>();
+    const currentNinetyDayRequest = createDeferred<AnalyticsOverview>();
+    mocks.requestOverview
+      .mockReturnValueOnce(staleThirtyDayRequest.promise)
+      .mockReturnValueOnce(currentNinetyDayRequest.promise);
+
+    await update(() => getDashboard().setRange("30d"));
+    await update(() => getDashboard().setRange("90d"));
+
+    await act(async () => {
+      currentNinetyDayRequest.resolve(overviewForRange("90d", 90));
+      await currentNinetyDayRequest.promise;
+    });
+    await act(async () => {
+      staleThirtyDayRequest.resolve(overviewForRange("30d", 30));
+      await staleThirtyDayRequest.promise;
+    });
+
+    expect(getDashboard().overview?.range.key).toBe("90d");
+    expect(getDashboard().overview?.summary.pageViews).toBe(90);
+  });
+
   it("does not expose stale pagination during a failed page transition", async () => {
     await renderHook();
     let rejectNextPage!: (error: Error) => void;
