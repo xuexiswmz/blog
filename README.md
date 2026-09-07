@@ -1,36 +1,177 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# xuexiswmz 的技术博客
 
-## Getting Started
+一个使用 Next.js 构建的个人技术博客，主要记录 JavaScript、CSS、React 与前端工程实践。文章以 MDX 文件维护，站点同时提供评论、原文划词批注、知识图谱、访问分析和后台管理能力。
 
-First, run the development server:
+## 功能
+
+- 使用 MDX 编写文章，支持 GFM、Front Matter 和 Shiki 代码高亮
+- 按时间归档文章，并根据文章引用关系生成知识图谱
+- 支持浅色与深色主题，以及中英文界面切换
+- 支持文章评论、段落评论和划词批注
+- 使用 DeepSeek 对评论进行 AI 审核
+- 使用 GitHub OAuth 登录后台，并限制指定 GitHub 账号访问
+- 记录文章访问与访客信息，提供访问趋势、热门文章和访客详情
+- 自动生成站点 Metadata、`sitemap.xml` 与 `robots.txt`
+
+## 技术栈
+
+- [Next.js 16](https://nextjs.org/) 与 React 19
+- TypeScript
+- Tailwind CSS 4
+- MDX、gray-matter、remark-gfm 与 Shiki
+- PostgreSQL、`pg` 与 Neon Serverless
+- Better Auth 与 GitHub OAuth
+- Framer Motion、Anime.js、Recharts 与 react-force-graph-2d
+- Vitest 与 ESLint
+
+## 本地开发
+
+### 1. 安装依赖
+
+项目使用 pnpm，并提交了 `pnpm-lock.yaml`：
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. 配置环境变量
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+在项目根目录创建 `.env.local`：
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```dotenv
+# PostgreSQL
+DATABASE_URL=postgresql://user:password@host:5432/database
 
-## Learn More
+# Better Auth
+BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_SECRET=replace-with-a-random-secret
 
-To learn more about Next.js, take a look at the following resources:
+# GitHub OAuth
+AUTH_GITHUB_ID=your-github-oauth-client-id
+AUTH_GITHUB_SECRET=your-github-oauth-client-secret
+ADMIN_GITHUB_ID=your-github-user-id
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# DeepSeek / OpenAI-compatible API
+DEEPSEEK_API_KEY=your-api-key
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-chat
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# 站点公开地址；开发环境未配置时默认为 http://localhost:3000
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
 
-## Deploy on Vercel
+其中：
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `ADMIN_GITHUB_ID` 是允许进入管理后台的 GitHub 数字用户 ID。
+- `BETTER_AUTH_URL` 应与当前站点地址一致。
+- `NEXT_PUBLIC_SITE_URL` 用于 canonical URL、站点地图等 SEO 信息，生产环境必须配置。
+- DeepSeek 配置用于后台评论审核接口。
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+还需要在 GitHub OAuth App 中将回调地址配置为：
+
+```text
+http://localhost:3000/api/auth/callback/github
+```
+
+生产环境请将域名替换为实际站点地址。
+
+### 3. 初始化数据库
+
+查看数据库脚本的执行顺序，无需连接数据库：
+
+```bash
+pnpm migrate -- --plan
+```
+
+执行尚未应用的数据库脚本：
+
+```bash
+pnpm migrate
+```
+
+迁移程序会依次处理：
+
+1. `database/better-auth-schema.sql`
+2. `database/schema.sql`
+3. `database/migrations/*.sql`
+
+执行记录和文件校验值保存在 `schema_migrations` 表中。已经执行过的 SQL 文件不能再修改；后续数据库变更应新增带序号的迁移文件。
+
+### 4. 启动开发服务器
+
+```bash
+pnpm dev
+```
+
+访问 [http://localhost:3000](http://localhost:3000)。管理后台入口位于 `/admin`，知识图谱位于 `/graph`。
+
+## 常用命令
+
+| 命令 | 说明 |
+| --- | --- |
+| `pnpm dev` | 启动开发服务器 |
+| `pnpm build` | 创建生产构建 |
+| `pnpm start` | 启动生产服务器 |
+| `pnpm lint` | 运行 ESLint |
+| `pnpm test` | 运行全部测试 |
+| `pnpm test:watch` | 以监听模式运行测试 |
+| `pnpm migrate -- --plan` | 查看数据库脚本执行顺序 |
+| `pnpm migrate` | 应用数据库迁移 |
+
+## 编写文章
+
+文章保存在 `content/posts` 目录，每篇文章对应一个 `.mdx` 文件，文件名会成为文章 URL 中的 slug：
+
+```text
+content/posts/javascript-data-types.mdx
+                     ↓
+/posts/javascript-data-types
+```
+
+文章至少应提供以下 Front Matter：
+
+```mdx
+---
+title: JavaScript 数据类型
+date: "2025-07-21"
+description: "文章摘要"
+tags:
+  - javascript
+  - 数据类型
+---
+
+# JavaScript 数据类型
+
+正文内容……
+```
+
+可选的 `image` 和 `imageAlt` 字段可用于文章图片信息。首页和归档会按照 `date` 从新到旧排列文章。
+
+## 项目结构
+
+```text
+app/                  页面、Metadata 与 API Routes
+components/           页面组件、评论系统和管理后台界面
+content/posts/        MDX 文章
+database/             初始数据库结构与增量迁移
+lib/                  数据库、认证、文章、SEO、AI 和业务服务
+plugins/              MDX remark 插件
+public/               图片、图标与静态样式
+scripts/              数据库迁移等项目脚本
+```
+
+## 构建与部署
+
+部署前请确保生产数据库已经完成迁移，并配置上述环境变量：
+
+```bash
+pnpm migrate
+pnpm build
+pnpm start
+```
+
+项目可以部署到 Vercel 或其他支持 Next.js 和 Node.js 的平台。使用 Vercel 时，可通过 `VERCEL_PROJECT_PRODUCTION_URL` 或 `VERCEL_URL` 推导站点地址，但仍建议显式配置 `NEXT_PUBLIC_SITE_URL`。
+
+## License
+
+本项目未声明开源许可证。除非获得授权，请勿直接复制或分发文章内容。
