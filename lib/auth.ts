@@ -1,5 +1,6 @@
 import { APIError, betterAuth } from "better-auth"
 import { Pool } from "pg"
+import { normalizePgSslMode } from "./postgresSsl"
 
 function requiredEnv(name:string) {
     const value = process.env[name]
@@ -12,7 +13,9 @@ function requiredEnv(name:string) {
 
 const adminGithubId = requiredEnv("ADMIN_GITHUB_ID")
 
-const pool = new Pool({ connectionString: requiredEnv("DATABASE_URL")})
+const pool = new Pool({
+    connectionString: normalizePgSslMode(requiredEnv("DATABASE_URL")),
+})
 
 export const auth = betterAuth({
     appName: "xuexiswmz-blog",
