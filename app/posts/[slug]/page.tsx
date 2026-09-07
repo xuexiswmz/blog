@@ -2,12 +2,25 @@ import ArticleCommentsProvider from "@/components/Comments/Article/providers/Art
 import ArticleVisitTracker from "@/components/Analytics/ArticleVisitTracker";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
+import type { Metadata } from "next";
 
 type PostPageProps = {
   params: Promise<{
     slug: string;
   }>;
 };
+
+export async function generateMetadata({
+  params,
+}: PostPageProps): Promise<Metadata> {
+  const { slug } = await params;
+
+  return {
+    alternates: {
+      canonical: `/posts/${encodeURIComponent(slug)}`,
+    },
+  };
+}
 
 export default async function PostPage({ params }: PostPageProps) {
   const { slug } = await params;

@@ -32,7 +32,7 @@ export async function postExists(slug: string): Promise<boolean> {
   }
 }
 
-async function readPostSummaries(): Promise<PostSummary[]> {
+export async function getPostSummaries(): Promise<PostSummary[]> {
     const filenames = await readdir(postsDirectory);
     const posts = await Promise.all(
         filenames
@@ -73,12 +73,12 @@ async function readPostSummaries(): Promise<PostSummary[]> {
 }
 
 export async function getPostTitleMap(): Promise<Map<string, string>> {
-    const posts = await readPostSummaries();
+    const posts = await getPostSummaries();
     return new Map(posts.map((post) => [post.slug, post.title]));
 }
 
 export async function getPostArchives():Promise<PostArchive[]> {
-    const posts = await readPostSummaries();
+    const posts = await getPostSummaries();
 
     const groups = new Map<string, PostSummary[]>()
 
