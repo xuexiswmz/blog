@@ -65,6 +65,15 @@ describe("migrate CLI", () => {
 
     expect(names).toContain("database/migrations/004-article-visits.sql");
   });
+
+  it("discovers the article categories migration after article visits", async () => {
+    const migrateModule = await import("./migrate.mjs");
+    const names = await migrateModule.discoverMigrationNames(process.cwd());
+
+    expect(names.indexOf("database/migrations/005-article-categories.sql")).toBe(
+      names.indexOf("database/migrations/004-article-visits.sql") + 1,
+    );
+  });
 });
 
 class FakeMigrationClient {
