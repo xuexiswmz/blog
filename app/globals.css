@@ -38,6 +38,10 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+[data-article-content] :is(h2, h3) {
+  scroll-margin-top: 1.5rem;
+}
+
 .scrollbar-hide {
   scrollbar-width: none;
   -ms-overflow-style: none;

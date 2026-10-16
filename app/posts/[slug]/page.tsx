@@ -1,5 +1,6 @@
 import ArticleCommentsProvider from "@/components/Comments/Article/providers/ArticleCommentsProvider";
 import ArticleVisitTracker from "@/components/Analytics/ArticleVisitTracker";
+import ArticleReadingLayout from "@/components/Articles/ArticleReadingLayout";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import type { Metadata } from "next";
@@ -25,46 +26,20 @@ export async function generateMetadata({
 export default async function PostPage({ params }: PostPageProps) {
   const { slug } = await params;
 
-  const { default: Post } = await import(`@/content/posts/${slug}.mdx`);
+  const [{ default: Post }, groups] = await Promise.all([
+    import(`@/content/posts/${slug}.mdx`),
+    import("@/lib/articleCategories/services/articleCategoryService").then(
+      ({ getPublicArticleNavigation }) => getPublicArticleNavigation(),
+    ),
+  ]);
 
   return (
-    <article
-      className="
-      prose prose-sm prose-slate
-      mx-auto w-full min-w-0 max-w-3xl
-      px-4 py-8
-      sm:prose-base sm:px-6 sm:py-12
-      dark:prose-invert
-
-      prose-h1:text-3xl
-      sm:prose-h1:text-4xl
-
-      prose-h2:text-2xl
-      sm:prose-h2:text-3xl
-
-      wrap-anywhere
-
-      [&_pre]:max-w-full
-      [&_pre]:overflow-x-auto
-
-      [&_pre]:rounded-xl
-      [&_pre]:border
-      [&_pre]:border-slate-200
-      dark:[&_pre]:border-[#303030]
-
-      [&_table]:block
-      [&_table]:max-w-full
-      [&_table]:overflow-x-auto
-
-      [&_img]:h-auto
-      [&_img]:max-w-full
-    "
-    >
+    <ArticleReadingLayout groups={groups} currentSlug={slug}>
       <ArticleCommentsProvider postSlug={slug} key={slug}>
         <ArticleVisitTracker postSlug={slug} />
         <Post />
       </ArticleCommentsProvider>
-    </article>
+    </ArticleReadingLayout>
   );
 }
 
@@ -81,3 +56,4 @@ export async function generateStaticParams() {
 }
 
 export const dynamicParams = false;
+export const dynamic = "force-dynamic";
