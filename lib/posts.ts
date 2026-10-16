@@ -69,7 +69,10 @@ export async function getPostSummaries(): Promise<PostSummary[]> {
             })
     );
 
-    return posts.sort((a,b) => b.date.localeCompare(a.date));
+    return posts.sort(
+      (a, b) =>
+        b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug),
+    );
 }
 
 export async function getPostTitleMap(): Promise<Map<string, string>> {
