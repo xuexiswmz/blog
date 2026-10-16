@@ -48,7 +48,8 @@ export function buildArticleNavigation(
     assignedSlugs.add(assignment.postSlug);
   }
 
-  const groups = sortedCategories.map((category, categoryPosition) => {
+  const groups: ArticleNavigationGroup[] = sortedCategories.map(
+    (category, categoryPosition) => {
     const categoryAssignments = [
       ...(assignmentsByCategory.get(category.id) ?? []),
     ].sort(
@@ -57,15 +58,19 @@ export function buildArticleNavigation(
         left.postSlug.localeCompare(right.postSlug),
     );
 
-    return {
-      id: category.id,
-      name: category.name,
-      position: categoryPosition,
-      posts: categoryAssignments.map((assignment, articlePosition) =>
-        toNavigationPost(postBySlug.get(assignment.postSlug)!, articlePosition),
-      ),
-    };
-  });
+      return {
+        id: category.id,
+        name: category.name,
+        position: categoryPosition,
+        posts: categoryAssignments.map((assignment, articlePosition) =>
+          toNavigationPost(
+            postBySlug.get(assignment.postSlug)!,
+            articlePosition,
+          ),
+        ),
+      };
+    },
+  );
 
   const unassignedPosts = posts
     .filter((post) => !assignedSlugs.has(post.slug))
