@@ -79,18 +79,16 @@ afterEach(async () => {
 });
 
 describe("ArticleReadingLayout", () => {
-  it("renders a 1280px three-column layout and two mobile disclosures", () => {
+  it("shows the three-column reader from the large breakpoint", () => {
     const markup = renderToStaticMarkup(
       <ArticleReadingLayout groups={groups} currentSlug="current">
         <h1>Article</h1>
       </ArticleReadingLayout>,
     );
 
-    expect(markup).toContain(
-      "xl:grid-cols-[minmax(13rem,16rem)_minmax(0,50rem)_minmax(12rem,15rem)]",
-    );
-    expect(markup).toContain("hidden xl:block");
-    expect(markup).toContain("xl:hidden");
+    expect(markup).toContain("lg:grid");
+    expect(markup).toContain("hidden lg:block");
+    expect(markup).toContain("lg:hidden");
     expect(markup.match(/<details/g)).toHaveLength(2);
     expect(markup).toContain("data-article-content");
   });

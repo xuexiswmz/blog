@@ -142,8 +142,8 @@ export default function ArticleReadingLayout({
   );
 
   return (
-    <div className="mx-auto w-full max-w-[90rem] px-4 py-6 sm:px-6 sm:py-10 xl:grid xl:grid-cols-[minmax(13rem,16rem)_minmax(0,50rem)_minmax(12rem,15rem)] xl:items-start xl:gap-8 xl:px-8">
-      <div className="mb-6 grid gap-3 xl:hidden">
+    <div className="mx-auto w-full max-w-[90rem] px-4 py-6 sm:px-6 sm:py-10 lg:grid lg:grid-cols-[minmax(10rem,12rem)_minmax(0,1fr)_minmax(10rem,12rem)] lg:items-stretch lg:gap-5 lg:px-0 xl:grid-cols-[minmax(13rem,16rem)_minmax(0,50rem)_minmax(12rem,15rem)] xl:gap-8">
+      <div className="mb-6 grid gap-3 lg:hidden">
         <details className="rounded-xl border border-border bg-background px-4 py-3">
           <summary className="cursor-pointer text-sm font-semibold text-foreground">
             文章导航
@@ -160,8 +160,10 @@ export default function ArticleReadingLayout({
         </details>
       </div>
 
-      <aside className="hidden xl:block xl:sticky xl:top-6 xl:max-h-[calc(100dvh-7rem)] xl:overflow-y-auto xl:pr-2">
-        <ArticleNavigation groups={groups} currentSlug={currentSlug} />
+      <aside className="hidden lg:block lg:self-stretch lg:border-r lg:border-border">
+        <div className="sticky top-6 max-h-[calc(100dvh-7rem)] overflow-y-auto pr-5 xl:pr-7">
+          <ArticleNavigation groups={groups} currentSlug={currentSlug} />
+        </div>
       </aside>
 
       <div className="min-w-0">
@@ -174,8 +176,10 @@ export default function ArticleReadingLayout({
         </article>
       </div>
 
-      <aside className="hidden xl:block xl:sticky xl:top-6 xl:max-h-[calc(100dvh-7rem)] xl:overflow-y-auto xl:pl-2">
-        {toc}
+      <aside className="hidden lg:block lg:self-stretch lg:border-l lg:border-border">
+        <div className="sticky top-6 max-h-[calc(100dvh-7rem)] overflow-y-auto pl-5 xl:pl-7">
+          {toc}
+        </div>
       </aside>
     </div>
   );
