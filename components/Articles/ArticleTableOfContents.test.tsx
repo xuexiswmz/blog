@@ -45,9 +45,25 @@ describe("ArticleTableOfContents", () => {
       'button[data-toc-id="detail"]',
     );
     expect(overview?.className).not.toContain("text-blue");
-    expect(detail?.className).toContain("text-blue-600");
-    expect(detail?.className).toContain("border-l-blue-500");
+    expect(detail?.className).toContain("text-link");
+    expect(detail?.className).toContain("border-l-link");
     expect(detail?.className).toContain("pl-6");
+  });
+
+  it("does not render a second static divider inside the table of contents", async () => {
+    await act(async () => {
+      root.render(
+        <ArticleTableOfContents
+          items={[{ id: "overview", label: "概览", level: 2 }]}
+          activeId="overview"
+          progress={35}
+          onNavigate={() => undefined}
+        />,
+      );
+    });
+
+    const list = container.querySelector("nav[aria-label='本文目录'] ul");
+    expect(list?.className).not.toContain("border-l");
   });
 
   it("calls onNavigate with the selected heading id", async () => {

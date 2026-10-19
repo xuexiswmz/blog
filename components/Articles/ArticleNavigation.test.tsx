@@ -40,8 +40,8 @@ describe("ArticleNavigation", () => {
 
     expect(currentLink?.[1]).toContain("bg-slate-100");
     expect(currentLink?.[1]).toContain("text-slate-950");
-    expect(currentLink?.[1]).toContain("dark:bg-white/10");
-    expect(currentLink?.[1]).toContain("dark:text-white");
+    expect(currentLink?.[1]).toContain("dark:bg-muted");
+    expect(currentLink?.[1]).toContain("dark:text-foreground");
     expect(currentLink?.[1]).not.toContain("blue");
   });
 

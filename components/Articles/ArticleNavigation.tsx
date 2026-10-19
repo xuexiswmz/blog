@@ -26,8 +26,8 @@ export default function ArticleNavigation({
                       aria-current={current ? "page" : undefined}
                       className={`block rounded-lg px-3 py-2 text-sm leading-5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 ${
                         current
-                          ? "bg-slate-100 font-medium text-slate-950 dark:bg-white/10 dark:text-white"
-                          : "text-muted-foreground hover:bg-slate-100/70 hover:text-foreground dark:hover:bg-white/5"
+                          ? "bg-slate-100 font-medium text-slate-950 dark:bg-muted dark:text-foreground"
+                          : "text-muted-foreground hover:bg-slate-100/70 hover:text-foreground dark:hover:bg-muted/70"
                       }`}
                     >
                       {post.title}

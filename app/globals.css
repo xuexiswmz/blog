@@ -9,23 +9,35 @@ html[data-theme="light"] {
   --background: #ffffff;
   --foreground: #171717;
   --border: #e5e7eb;
+  --border-strong: #d1d5db;
   --muted: #f3f4f6;
   --muted-foreground: #6b7280;
+  --link: #2563eb;
+  --code-foreground: #334155;
+  --code-background: #f8fafc;
+  --code-border: #e2e8f0;
 }
 
 html[data-theme="dark"] {
   color-scheme: dark;
-  --background: #0a0a0af0;
-  --foreground: #ededed;
-  --border: #374151;
-  --muted: #262626;
-  --muted-foreground: #a3a3a3;
+  --background: #121212;
+  --foreground: #fffff5ed;
+  --border: #5454547a;
+  --border-strong: #545454a6;
+  --muted: #292e37;
+  --muted-foreground: #fffff5a6;
+  --link: #33adff;
+  --code-foreground: #c9def1;
+  --code-background: #ffffff0f;
+  --code-border: #ffffff0a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-foreground: var(--foreground);
+  --color-link: var(--link);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --font-sans: var(--font-geist-sans);
@@ -40,6 +52,32 @@ body {
 
 [data-article-content] :is(h2, h3) {
   scroll-margin-top: 1.5rem;
+}
+
+html[data-theme="dark"] [data-article-content] {
+  --tw-prose-body: var(--foreground);
+  --tw-prose-headings: var(--foreground);
+  --tw-prose-lead: var(--muted-foreground);
+  --tw-prose-links: var(--link);
+  --tw-prose-bold: var(--foreground);
+  --tw-prose-counters: var(--muted-foreground);
+  --tw-prose-bullets: var(--muted-foreground);
+  --tw-prose-hr: var(--border);
+  --tw-prose-quotes: var(--foreground);
+  --tw-prose-quote-borders: var(--border);
+  --tw-prose-captions: var(--muted-foreground);
+  --tw-prose-code: var(--code-foreground);
+  --tw-prose-pre-code: #e5e7eb;
+  --tw-prose-pre-bg: var(--background);
+  --tw-prose-th-borders: var(--border-strong);
+  --tw-prose-td-borders: var(--border);
+}
+
+html[data-theme="dark"] [data-article-content] :not(pre) > code {
+  border: 1px solid var(--code-border);
+  border-radius: 0.375rem;
+  background: var(--code-background);
+  padding: 0.125rem 0.375rem;
 }
 
 .scrollbar-hide {
@@ -83,10 +121,17 @@ body {
 }
 
 /* Shiki 暗色代码主题 */
-html[data-theme="dark"] .shiki,
+html[data-theme="dark"] .shiki {
+  color: var(--shiki-dark) !important;
+  background-color: var(--background) !important;
+  font-style: var(--shiki-dark-font-style) !important;
+  font-weight: var(--shiki-dark-font-weight) !important;
+  text-decoration: var(--shiki-dark-text-decoration) !important;
+}
+
 html[data-theme="dark"] .shiki span {
   color: var(--shiki-dark) !important;
-  background-color: var(--shiki-dark-bg) !important;
+  background-color: transparent !important;
   font-style: var(--shiki-dark-font-style) !important;
   font-weight: var(--shiki-dark-font-weight) !important;
   text-decoration: var(--shiki-dark-text-decoration) !important;

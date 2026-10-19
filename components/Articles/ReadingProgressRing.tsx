@@ -22,7 +22,7 @@ export default function ReadingProgressRing({ progress }: { progress: number }) 
         fill="none"
         stroke="currentColor"
         strokeWidth="3"
-        className="text-slate-200 dark:text-white/15"
+        className="text-slate-200 dark:text-border"
       />
       <circle
         data-ring-part="progress"
@@ -35,7 +35,7 @@ export default function ReadingProgressRing({ progress }: { progress: number }) 
         strokeLinecap="round"
         strokeDasharray={circumference}
         strokeDashoffset={offset}
-        className="text-blue-500 transition-[stroke-dashoffset] duration-150 motion-reduce:transition-none"
+        className="text-link transition-[stroke-dashoffset] duration-150 motion-reduce:transition-none"
       />
     </svg>
   );

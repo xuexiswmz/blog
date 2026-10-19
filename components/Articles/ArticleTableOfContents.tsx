@@ -20,7 +20,7 @@ export default function ArticleTableOfContents({
       </div>
       {items.length > 0 ? (
         <nav aria-label="本文目录">
-          <ul className="border-l border-border">
+          <ul>
             {items.map((item) => {
               const active = item.id === activeId;
               return (
@@ -34,7 +34,7 @@ export default function ArticleTableOfContents({
                       item.level === 3 ? "pl-6" : "pl-3"
                     } ${
                       active
-                        ? "-ml-px border-l-blue-500 text-blue-600 dark:text-blue-400"
+                        ? "-ml-px border-l-link text-link"
                         : "-ml-px border-l-transparent text-muted-foreground hover:text-foreground"
                     }`}
                   >

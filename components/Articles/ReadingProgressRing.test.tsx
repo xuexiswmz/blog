@@ -12,7 +12,7 @@ describe("ReadingProgressRing", () => {
     expect(markup).toContain('data-ring-part="track"');
     expect(markup).toContain("text-slate-200");
     expect(markup).toContain('data-ring-part="progress"');
-    expect(markup).toContain("text-blue-500");
+    expect(markup).toContain("text-link");
   });
 
   it("clamps progress before calculating the stroke offset", () => {

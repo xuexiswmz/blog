@@ -36,7 +36,7 @@ const articleClassName = `
   [&_pre]:rounded-xl
   [&_pre]:border
   [&_pre]:border-slate-200
-  dark:[&_pre]:border-[#303030]
+  dark:[&_pre]:border-border
 
   [&_table]:block
   [&_table]:max-w-full
@@ -177,7 +177,7 @@ export default function ArticleReadingLayout({
       </div>
 
       <aside className="hidden lg:block lg:self-stretch lg:border-l lg:border-border">
-        <div className="sticky top-6 max-h-[calc(100dvh-7rem)] overflow-y-auto pl-5 xl:pl-7">
+        <div className="sticky top-6 max-h-[calc(100dvh-7rem)] overflow-y-auto">
           {toc}
         </div>
       </aside>
