@@ -24,21 +24,33 @@ function uniqueId(baseId: string, usedIds: Set<string>): string {
 export function collectArticleHeadings(
   article: HTMLElement,
 ): TableOfContentsItem[] {
+  const headings = Array.from(
+    article.querySelectorAll<HTMLHeadingElement>("h2, h3"),
+  );
   const usedIds = new Set<string>();
-  return Array.from(article.querySelectorAll<HTMLHeadingElement>("h2, h3")).map(
-    (heading) => {
+  const authorIds = new Map<HTMLHeadingElement, string>();
+
+  for (const heading of headings) {
+    const baseId = heading.id.trim();
+    if (!baseId) continue;
+    const id = uniqueId(baseId, usedIds);
+    usedIds.add(id);
+    authorIds.set(heading, id);
+    heading.id = id;
+  }
+
+  return headings.map((heading) => {
       const label = (heading.textContent ?? "").replace(/\s+/g, " ").trim();
-      const baseId = heading.id.trim() || slugifyHeading(label);
-      const id = uniqueId(baseId, usedIds);
-      usedIds.add(id);
+      const authorId = authorIds.get(heading);
+      const id = authorId ?? uniqueId(slugifyHeading(label), usedIds);
+      if (!authorId) usedIds.add(id);
       heading.id = id;
       return {
         id,
         label,
         level: heading.tagName === "H3" ? 3 : 2,
       };
-    },
-  );
+    });
 }
 
 export function findActiveHeading(

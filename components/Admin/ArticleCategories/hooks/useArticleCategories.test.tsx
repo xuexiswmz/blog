@@ -207,4 +207,31 @@ describe("useArticleCategories", () => {
     expect(mocks.toastError).toHaveBeenCalledWith("分类中仍有文章");
     expect(mocks.requestArticleCategoryState).toHaveBeenCalledOnce();
   });
+
+  it("rejects overlapping mutations without clearing the active pending state", async () => {
+    let finish!: () => void;
+    mocks.requestCreateArticleCategory.mockImplementation(
+      () => new Promise<void>((resolve) => (finish = resolve)),
+    );
+
+    await renderHook();
+    let first!: Promise<boolean>;
+    let second!: boolean;
+    await act(async () => {
+      first = current().createCategory("CSS");
+      await Promise.resolve();
+      second = await current().moveCategory("react", "down");
+    });
+
+    expect(second).toBe(false);
+    expect(mocks.requestMoveArticleCategory).not.toHaveBeenCalled();
+    expect(current().pendingKey).toBe("category:create");
+    expect(mocks.toastError).toHaveBeenCalledWith("请等待当前操作完成");
+
+    await act(async () => {
+      finish();
+      await first;
+    });
+    expect(current().pendingKey).toBeNull();
+  });
 });

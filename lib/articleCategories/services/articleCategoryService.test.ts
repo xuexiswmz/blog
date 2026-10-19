@@ -188,6 +188,22 @@ describe("articleCategoryService", () => {
     expect(repository.removeArticleCategory).toHaveBeenCalledWith(REACT_ID);
   });
 
+  it("prunes orphan assignments before checking whether a category is empty", async () => {
+    repository.readArticleCategoryConfiguration.mockResolvedValue({
+      categories: [{ id: REACT_ID, name: "React", position: 0 }],
+      assignments: [
+        { postSlug: "deleted-post", categoryId: REACT_ID, position: 0 },
+      ],
+    });
+
+    await deleteArticleCategory(REACT_ID);
+
+    expect(repository.removeArticleCategoryAssignment).toHaveBeenCalledWith(
+      "deleted-post",
+    );
+    expect(repository.removeArticleCategory).toHaveBeenCalledWith(REACT_ID);
+  });
+
   it("removes an assignment when the target category is null", async () => {
     await assignArticleToCategory("react-hooks", null);
 
@@ -217,6 +233,15 @@ describe("articleCategoryService", () => {
     );
   });
 
+  it("accepts safe MDX slugs beyond ASCII kebab case", async () => {
+    await assignArticleToCategory("前端_notes.v2", REACT_ID);
+
+    expect(repository.putArticleCategoryAssignment).toHaveBeenCalledWith(
+      "前端_notes.v2",
+      REACT_ID,
+    );
+  });
+
   it("reports category and article boundary moves", async () => {
     repository.shiftArticleCategory.mockResolvedValueOnce(false);
     await expect(moveArticleCategory(REACT_ID, "up")).rejects.toMatchObject({
@@ -228,6 +253,27 @@ describe("articleCategoryService", () => {
     await expect(
       moveArticleInCategory("react-hooks", "down"),
     ).rejects.toMatchObject({ code: "cannot_move", status: 409 });
+  });
+
+  it("prunes interleaved orphan assignments before moving an article", async () => {
+    repository.readArticleCategoryConfiguration.mockResolvedValue({
+      categories: [{ id: REACT_ID, name: "React", position: 0 }],
+      assignments: [
+        { postSlug: "react-hooks", categoryId: REACT_ID, position: 0 },
+        { postSlug: "deleted-post", categoryId: REACT_ID, position: 1 },
+        { postSlug: "css-grid", categoryId: REACT_ID, position: 2 },
+      ],
+    });
+
+    await moveArticleInCategory("react-hooks", "down");
+
+    expect(repository.removeArticleCategoryAssignment).toHaveBeenCalledWith(
+      "deleted-post",
+    );
+    expect(repository.shiftArticleCategoryAssignment).toHaveBeenCalledWith(
+      "react-hooks",
+      "down",
+    );
   });
 
   it("validates identifiers and move directions before repository access", async () => {

@@ -1,6 +1,7 @@
 import { getPostSummaries, postExists } from "@/lib/posts";
 import { buildArticleNavigation } from "../navigation";
 import type {
+  ArticleCategoryAssignmentRecord,
   ArticleCategoryAdminState,
   ArticleNavigationGroup,
   ArticleNavigationPost,
@@ -42,7 +43,6 @@ export class ArticleCategoryServiceError extends Error {
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const POST_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/i;
 
 function normalizeName(name: string): string {
   const normalized = name.trim();
@@ -67,7 +67,15 @@ function validateCategoryId(categoryId: string): void {
 }
 
 function validateSlug(postSlug: string): void {
-  if (!POST_SLUG_PATTERN.test(postSlug)) {
+  if (
+    !postSlug ||
+    postSlug !== postSlug.trim() ||
+    postSlug === "." ||
+    postSlug === ".." ||
+    postSlug.includes("/") ||
+    postSlug.includes("\\") ||
+    postSlug.includes("\0")
+  ) {
     throw new ArticleCategoryServiceError(
       "invalid_slug",
       400,
@@ -123,6 +131,24 @@ function rethrowRepositoryError(error: unknown): never {
     "文章分类保存失败",
     { cause: error },
   );
+}
+
+async function pruneOrphanAssignments(
+  assignments: ArticleCategoryAssignmentRecord[],
+  posts: Awaited<ReturnType<typeof getPostSummaries>>,
+): Promise<ArticleCategoryAssignmentRecord[]> {
+  const validSlugs = new Set(posts.map((post) => post.slug));
+  const currentAssignments: ArticleCategoryAssignmentRecord[] = [];
+
+  for (const assignment of assignments) {
+    if (validSlugs.has(assignment.postSlug)) {
+      currentAssignments.push(assignment);
+    } else {
+      await removeArticleCategoryAssignment(assignment.postSlug);
+    }
+  }
+
+  return currentAssignments;
 }
 
 function fallbackNavigation(posts: Awaited<ReturnType<typeof getPostSummaries>>): ArticleNavigationGroup[] {
@@ -233,7 +259,10 @@ export async function renameArticleCategory(
 
 export async function deleteArticleCategory(categoryId: string): Promise<void> {
   validateCategoryId(categoryId);
-  const { categories, assignments } = await readArticleCategoryConfiguration();
+  const [posts, { categories, assignments }] = await Promise.all([
+    getPostSummaries(),
+    readArticleCategoryConfiguration(),
+  ]);
   if (!categories.some((category) => category.id === categoryId)) {
     throw new ArticleCategoryServiceError(
       "category_not_found",
@@ -241,17 +270,22 @@ export async function deleteArticleCategory(categoryId: string): Promise<void> {
       "分类不存在",
     );
   }
-  if (assignments.some((assignment) => assignment.categoryId === categoryId)) {
-    throw new ArticleCategoryServiceError(
-      "category_not_empty",
-      409,
-      "分类中仍有文章，请先移动文章",
-    );
-  }
-
   try {
+    const currentAssignments = await pruneOrphanAssignments(assignments, posts);
+    if (
+      currentAssignments.some(
+        (assignment) => assignment.categoryId === categoryId,
+      )
+    ) {
+      throw new ArticleCategoryServiceError(
+        "category_not_empty",
+        409,
+        "分类中仍有文章，请先移动文章",
+      );
+    }
     await removeArticleCategory(categoryId);
   } catch (error) {
+    if (error instanceof ArticleCategoryServiceError) throw error;
     rethrowRepositoryError(error);
   }
 }
@@ -299,13 +333,18 @@ export async function assignArticleToCategory(
   }
 
   try {
+    const [posts, { assignments, categories }] = await Promise.all([
+      getPostSummaries(),
+      readArticleCategoryConfiguration(),
+    ]);
+    await pruneOrphanAssignments(assignments, posts);
+
     if (categoryId === null) {
       await removeArticleCategoryAssignment(postSlug);
       return;
     }
 
     validateCategoryId(categoryId);
-    const { categories } = await readArticleCategoryConfiguration();
     if (!categories.some((category) => category.id === categoryId)) {
       throw new ArticleCategoryServiceError(
         "category_not_found",
@@ -335,6 +374,12 @@ export async function moveArticleInCategory(
   }
 
   try {
+    const [posts, { assignments }] = await Promise.all([
+      getPostSummaries(),
+      readArticleCategoryConfiguration(),
+    ]);
+    await pruneOrphanAssignments(assignments, posts);
+
     if (!(await shiftArticleCategoryAssignment(postSlug, direction))) {
       throw new ArticleCategoryServiceError(
         "cannot_move",

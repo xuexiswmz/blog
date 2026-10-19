@@ -2,7 +2,7 @@
 
 import type { ArticleCategoryAdminState } from "@/lib/articleCategories/types";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   ArticleCategoryApiError,
@@ -26,6 +26,7 @@ export default function useArticleCategories() {
   const [error, setError] = useState("");
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [requestVersion, setRequestVersion] = useState(0);
+  const mutationInFlight = useRef(false);
 
   const handleUnauthorized = useCallback(
     (requestError: unknown): boolean => {
@@ -75,6 +76,11 @@ export default function useArticleCategories() {
       operation: () => Promise<void>,
       successMessage: string,
     ): Promise<boolean> => {
+      if (mutationInFlight.current) {
+        toast.error("请等待当前操作完成");
+        return false;
+      }
+      mutationInFlight.current = true;
       setPendingKey(key);
       setError("");
       try {
@@ -91,6 +97,7 @@ export default function useArticleCategories() {
         );
         return false;
       } finally {
+        mutationInFlight.current = false;
         setPendingKey(null);
       }
     },

@@ -33,6 +33,19 @@ describe("collectArticleHeadings", () => {
     expect(article.querySelectorAll("h2, h3")[3].id).toBe("hello-code-2");
     expect(article.querySelectorAll("h2, h3")[5].id).toBe("custom-anchor-2");
   });
+
+  it("reserves later author-provided ids before generating earlier ids", () => {
+    const article = document.createElement("article");
+    article.innerHTML = `
+      <h2>Existing anchor</h2>
+      <h2 id="existing-anchor">Author anchor</h2>
+    `;
+
+    expect(collectArticleHeadings(article)).toEqual([
+      { id: "existing-anchor-2", label: "Existing anchor", level: 2 },
+      { id: "existing-anchor", label: "Author anchor", level: 2 },
+    ]);
+  });
 });
 
 describe("findActiveHeading", () => {

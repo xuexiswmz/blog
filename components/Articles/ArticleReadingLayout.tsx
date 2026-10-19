@@ -20,6 +20,7 @@ import {
 const articleClassName = `
   prose prose-sm prose-slate
   w-full min-w-0 max-w-none
+  sm:prose-base
   dark:prose-invert
 
   prose-h1:text-3xl
@@ -159,7 +160,7 @@ export default function ArticleReadingLayout({
         </details>
       </div>
 
-      <aside className="hidden xl:block xl:sticky xl:top-6 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto xl:pr-2">
+      <aside className="hidden xl:block xl:sticky xl:top-6 xl:max-h-[calc(100dvh-7rem)] xl:overflow-y-auto xl:pr-2">
         <ArticleNavigation groups={groups} currentSlug={currentSlug} />
       </aside>
 
@@ -173,7 +174,7 @@ export default function ArticleReadingLayout({
         </article>
       </div>
 
-      <aside className="hidden xl:block xl:sticky xl:top-6 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto xl:pl-2">
+      <aside className="hidden xl:block xl:sticky xl:top-6 xl:max-h-[calc(100dvh-7rem)] xl:overflow-y-auto xl:pl-2">
         {toc}
       </aside>
     </div>
