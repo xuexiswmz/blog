@@ -46,4 +46,12 @@ describe("global theme tokens", () => {
     expect(declarations.get("--tw-prose-links")).toBe("var(--link)");
     expect(declarations.get("--tw-prose-pre-bg")).toBe("var(--background)");
   });
+
+  it("does not generate backticks around styled inline code", () => {
+    const declarations = declarationsFor(
+      "[data-article-content] :not(pre) > code::before,\n[data-article-content] :not(pre) > code::after",
+    );
+
+    expect(declarations.get("content")).toBe("none");
+  });
 });
