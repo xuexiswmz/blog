@@ -1,8 +1,8 @@
 import { auth } from "@/lib/auth";
+import { isSafePostSlug } from "@/lib/articleCategories/postSlug";
 
 export const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-export const POST_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/i;
 
 export function jsonResponse(data: unknown, status = 200): Response {
   return Response.json(data, {
@@ -58,7 +58,7 @@ export function serviceErrorResponse(
 export function decodeSlug(value: string): string | null {
   try {
     const slug = decodeURIComponent(value);
-    return POST_SLUG_PATTERN.test(slug) ? slug : null;
+    return isSafePostSlug(slug) ? slug : null;
   } catch {
     return null;
   }

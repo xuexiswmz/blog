@@ -29,11 +29,24 @@ export function collectArticleHeadings(
   );
   const usedIds = new Set<string>();
   const authorIds = new Map<HTMLHeadingElement, string>();
+  const reservedAuthorIds = new Set(
+    headings.map((heading) => heading.id.trim()).filter(Boolean),
+  );
 
   for (const heading of headings) {
     const baseId = heading.id.trim();
     if (!baseId) continue;
-    const id = uniqueId(baseId, usedIds);
+    let id = baseId;
+    if (usedIds.has(id)) {
+      let suffix = 2;
+      while (
+        usedIds.has(`${baseId}-${suffix}`) ||
+        reservedAuthorIds.has(`${baseId}-${suffix}`)
+      ) {
+        suffix += 1;
+      }
+      id = `${baseId}-${suffix}`;
+    }
     usedIds.add(id);
     authorIds.set(heading, id);
     heading.id = id;

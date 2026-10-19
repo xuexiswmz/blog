@@ -181,9 +181,16 @@ describe("admin article category routes", () => {
   });
 
   it("rejects invalid assignment slugs and invalid directions", async () => {
-    const invalidSlug = await PUT(
-      jsonRequest("http://localhost/assignment", "PUT", { categoryId: null }),
-      { params: Promise.resolve({ slug: "..%2Fsecret" }) },
+    const invalidSlugs = await Promise.all(
+      ["..%2Fsecret", "bad%5Cpath", "%00control", "%E0%A4%A"].map(
+        (slug) =>
+          PUT(
+            jsonRequest("http://localhost/assignment", "PUT", {
+              categoryId: null,
+            }),
+            { params: Promise.resolve({ slug }) },
+          ),
+      ),
     );
     const invalidDirection = await PATCH_ASSIGNMENT(
       jsonRequest("http://localhost/assignment", "PATCH", {
@@ -192,10 +199,28 @@ describe("admin article category routes", () => {
       assignmentContext,
     );
 
-    expect(invalidSlug.status).toBe(400);
+    expect(invalidSlugs.map(({ status }) => status)).toEqual([
+      400, 400, 400, 400,
+    ]);
     expect(invalidDirection.status).toBe(400);
     expect(mocks.assignArticleToCategory).not.toHaveBeenCalled();
     expect(mocks.moveArticleInCategory).not.toHaveBeenCalled();
+  });
+
+  it("accepts encoded safe Unicode, underscore, and dotted slugs", async () => {
+    const slug = "前端_notes.v2";
+    const response = await PUT(
+      jsonRequest("http://localhost/assignment", "PUT", {
+        categoryId: CATEGORY_ID,
+      }),
+      { params: Promise.resolve({ slug: encodeURIComponent(slug) }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.assignArticleToCategory).toHaveBeenCalledWith(
+      slug,
+      CATEGORY_ID,
+    );
   });
 
   it("assigns, unassigns, and moves an encoded article slug", async () => {

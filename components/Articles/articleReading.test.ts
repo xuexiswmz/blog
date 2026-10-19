@@ -46,6 +46,21 @@ describe("collectArticleHeadings", () => {
       { id: "existing-anchor", label: "Author anchor", level: 2 },
     ]);
   });
+
+  it("does not let duplicate explicit ids consume another explicit raw id", () => {
+    const article = document.createElement("article");
+    article.innerHTML = `
+      <h2 id="foo">First foo</h2>
+      <h2 id="foo">Duplicate foo</h2>
+      <h2 id="foo-2">Authored foo two</h2>
+    `;
+
+    expect(collectArticleHeadings(article).map(({ id }) => id)).toEqual([
+      "foo",
+      "foo-3",
+      "foo-2",
+    ]);
+  });
 });
 
 describe("findActiveHeading", () => {

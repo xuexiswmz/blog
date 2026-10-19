@@ -1,5 +1,6 @@
 import { getPostSummaries, postExists } from "@/lib/posts";
 import { buildArticleNavigation } from "../navigation";
+import { isSafePostSlug } from "../postSlug";
 import type {
   ArticleCategoryAssignmentRecord,
   ArticleCategoryAdminState,
@@ -67,15 +68,7 @@ function validateCategoryId(categoryId: string): void {
 }
 
 function validateSlug(postSlug: string): void {
-  if (
-    !postSlug ||
-    postSlug !== postSlug.trim() ||
-    postSlug === "." ||
-    postSlug === ".." ||
-    postSlug.includes("/") ||
-    postSlug.includes("\\") ||
-    postSlug.includes("\0")
-  ) {
+  if (!isSafePostSlug(postSlug)) {
     throw new ArticleCategoryServiceError(
       "invalid_slug",
       400,
