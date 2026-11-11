@@ -21,7 +21,7 @@
 - TypeScript
 - Tailwind CSS 4
 - MDX、gray-matter、remark-gfm 与 Shiki
-- PostgreSQL、`pg` 与 Neon Serverless
+- PostgreSQL 与 `pg`
 - Better Auth 与 GitHub OAuth
 - Framer Motion、Anime.js、Recharts 与 react-force-graph-2d
 - Vitest 与 ESLint
@@ -42,7 +42,7 @@ pnpm install
 
 ```dotenv
 # PostgreSQL
-DATABASE_URL=postgresql://user:password@host:5432/database
+DATABASE_URL=postgresql://user:password@localhost:5432/blog
 
 # Better Auth
 BETTER_AUTH_URL=http://localhost:3000
@@ -68,6 +68,32 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 - `BETTER_AUTH_URL` 应与当前站点地址一致。
 - `NEXT_PUBLIC_SITE_URL` 用于 canonical URL、站点地图等 SEO 信息，生产环境必须配置。
 - DeepSeek 配置用于后台评论审核接口。
+
+### 本地数据库
+
+当前开发环境使用项目内 `.local/postgres-data` 的 PostgreSQL 16 集群（端口 5433，用户和数据库均为 `blog`），`.local/` 不会提交到 git。
+
+启动和停止：
+
+```bash
+pnpm db:start
+pnpm db:stop
+```
+
+首次初始化（当前开发机已经完成）：
+
+```bash
+/opt/homebrew/opt/postgresql@16/bin/initdb -D .local/postgres-data -U blog --auth=trust --encoding=UTF8 --no-locale
+/opt/homebrew/opt/postgresql@16/bin/createdb -h 127.0.0.1 -p 5433 -U blog blog
+```
+
+`.env.local` 对应：
+
+```dotenv
+DATABASE_URL="postgresql://blog@127.0.0.1:5433/blog"
+```
+
+也可以使用任意本地 PostgreSQL，只要 `DATABASE_URL` 指向它。
 
 还需要在 GitHub OAuth App 中将回调地址配置为：
 
@@ -106,6 +132,8 @@ pnpm dev
 ```
 
 访问 [http://localhost:3000](http://localhost:3000)。管理后台入口位于 `/admin`，文章分类管理位于 `/admin/categories`，知识图谱位于 `/graph`。
+
+如果本机通过系统代理访问 GitHub（例如公司网络），请在 `.env.local` 中配置 `HTTP_PROXY`、`HTTPS_PROXY` 和 `NO_PROXY`。`pnpm dev` 与 `pnpm start` 已设置 `NODE_USE_ENV_PROXY=1`（Node.js 24+），Node 内置的 `fetch` 会读取这些代理变量，避免 GitHub OAuth 回调连接超时。
 
 ## 常用命令
 

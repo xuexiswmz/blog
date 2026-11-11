@@ -3,9 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "NODE_USE_ENV_PROXY=1 next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "NODE_USE_ENV_PROXY=1 next start",
+    "db:start": "/opt/homebrew/opt/postgresql@16/bin/pg_ctl -D .local/postgres-data -l .local/postgres.log -o \"-p 5433 -k /tmp\" start",
+    "db:stop": "/opt/homebrew/opt/postgresql@16/bin/pg_ctl -D .local/postgres-data stop",
     "migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs",
     "lint": "eslint",
     "test": "vitest run",
