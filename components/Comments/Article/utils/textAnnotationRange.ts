@@ -23,13 +23,14 @@ function findTextPoint(root: HTMLElement, targetOffset: number) {
   return null;
 }
 
-export function createTextAnnotationRange(
+export function createTextRange(
   paragraph: HTMLElement,
-  annotation: TextAnnotation,
+  startOffset: number,
+  endOffset: number,
 ) {
-  const start = findTextPoint(paragraph, annotation.startOffset);
+  const start = findTextPoint(paragraph, startOffset);
 
-  const end = findTextPoint(paragraph, annotation.endOffset);
+  const end = findTextPoint(paragraph, endOffset);
 
   if (!start || !end) {
     return null;
@@ -41,7 +42,20 @@ export function createTextAnnotationRange(
 
   range.setEnd(end.node, end.offset);
 
-  if (range.toString() !== annotation.selectedText) {
+  return range;
+}
+
+export function createTextAnnotationRange(
+  paragraph: HTMLElement,
+  annotation: TextAnnotation,
+) {
+  const range = createTextRange(
+    paragraph,
+    annotation.startOffset,
+    annotation.endOffset,
+  );
+
+  if (!range || range.toString() !== annotation.selectedText) {
     return null;
   }
 
