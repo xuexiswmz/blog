@@ -38,13 +38,24 @@ export default function CommentDrawer({
     void onPublished();
   }
 
+  function keepSheetOpenWhileComposing(event: Event) {
+    if (composer.mode !== "closed") {
+      event.preventDefault();
+    }
+  }
+
+  function handleClose() {
+    setComposer({ mode: "closed" });
+    onClose();
+  }
+
   return (
     <>
       <Sheet
         open={open}
         onOpenChange={(nextOpen) => {
           if (!nextOpen) {
-            onClose();
+            handleClose();
           }
         }}
       >
@@ -54,6 +65,9 @@ export default function CommentDrawer({
           aria-labelledby={`${id}-title`}
           showCloseButton={false}
           className="text-slate-950 dark:text-slate-100"
+          onEscapeKeyDown={keepSheetOpenWhileComposing}
+          onFocusOutside={keepSheetOpenWhileComposing}
+          onPointerDownOutside={keepSheetOpenWhileComposing}
         >
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 px-4 dark:border-[#303030]">
             <div className="flex items-start gap-1.5">
@@ -73,7 +87,7 @@ export default function CommentDrawer({
             <button
               type="button"
               aria-label="关闭段评"
-              onClick={onClose}
+              onClick={handleClose}
               className="rounded-full p-2 transition-colors hover:bg-slate-100 dark:hover:bg-[#242424]"
             >
               <X className="size-5" />
@@ -107,33 +121,33 @@ export default function CommentDrawer({
               写下你的段评
             </button>
           </footer>
+
+          {composer.mode === "comment" && (
+            <CommentComposerDialog
+              mode="comment"
+              postSlug={postSlug}
+              paragraphId={paragraphId}
+              onClose={() => {
+                setComposer({ mode: "closed" });
+              }}
+              onPublished={handleCommentsChanged}
+            />
+          )}
+
+          {composer.mode === "reply" && (
+            <CommentComposerDialog
+              mode="reply"
+              postSlug={postSlug}
+              paragraphId={paragraphId}
+              replyTarget={composer.target}
+              onClose={() => {
+                setComposer({ mode: "closed" });
+              }}
+              onPublished={handleCommentsChanged}
+            />
+          )}
         </SheetContent>
       </Sheet>
-
-      {composer.mode === "comment" && (
-        <CommentComposerDialog
-          mode="comment"
-          postSlug={postSlug}
-          paragraphId={paragraphId}
-          onClose={() => {
-            setComposer({ mode: "closed" });
-          }}
-          onPublished={handleCommentsChanged}
-        />
-      )}
-
-      {composer.mode === "reply" && (
-        <CommentComposerDialog
-          mode="reply"
-          postSlug={postSlug}
-          paragraphId={paragraphId}
-          replyTarget={composer.target}
-          onClose={() => {
-            setComposer({ mode: "closed" });
-          }}
-          onPublished={handleCommentsChanged}
-        />
-      )}
     </>
   );
 }
