@@ -27,6 +27,9 @@ type CommentDto = {
 
 const SLUG_PATTERN = /^[a-z0-9-]+$/;
 
+// 与客户端自动生成的游客用户名保持一致，服务端不再接受任意昵称。
+const GUEST_USERNAME_PATTERN = /^user_[0-9a-z]{8}$/;
+
 const BLOCK_ID_PATTERN = /^p-[0-9a-f]{12}(?:-\d+)?$/;
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -223,12 +226,10 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
-    const usernameLength = [...username].length;
-
-    if (usernameLength < 2 || usernameLength > 20) {
+    if (!GUEST_USERNAME_PATTERN.test(username)) {
       return Response.json(
         {
-          message: "用户名长度必须为 2-20 个字符",
+          message: "用户名格式不合法",
         },
         {
           status: 400,
