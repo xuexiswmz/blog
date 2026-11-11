@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ParagraphComment } from "./types";
+import { useState } from "react";
 import { X } from "lucide-react";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import CommentList from "./CommentList";
 import CommentComposerDialog from "./CommentComposerDialog";
+import type { ParagraphComment } from "./types";
 
 type CommentDrawerProps = {
+  open: boolean;
   id: string;
   postSlug: string;
   paragraphId: string;
@@ -20,32 +22,16 @@ type ComposerState =
   | { mode: "reply"; target: ParagraphComment };
 
 export default function CommentDrawer({
+  open,
   id,
   postSlug,
   paragraphId,
   onClose,
   onPublished,
 }: CommentDrawerProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const [commentsVersion, setCommentsVersion] = useState(0);
   const [commentCount, setCommentCount] = useState(0);
   const [composer, setComposer] = useState<ComposerState>({ mode: "closed" });
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-
-    if (!dialog) {
-      return;
-    }
-
-    dialog.show();
-
-    return () => {
-      if (dialog.open) {
-        dialog.close();
-      }
-    };
-  }, []);
 
   function handleCommentsChanged() {
     setCommentsVersion((current) => current + 1);
@@ -54,30 +40,29 @@ export default function CommentDrawer({
 
   return (
     <>
-      <dialog
-        ref={dialogRef}
-        id={id}
-        aria-labelledby={`${id}-title`}
-        onCancel={(event) => {
-          event.preventDefault();
-          onClose();
-        }}
-        onClick={(event) => {
-          if (event.target === event.currentTarget) {
+      <Sheet
+        open={open}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
             onClose();
           }
         }}
-        className="not-prose fixed inset-0 m-0 h-dvh z-50 max-h-none w-screen max-w-none overflow-hidden border-0 p-0 bg-black/45"
       >
-        <aside className="comment-drawer-panel absolute inset-y-0 right-0 h-full flex  w-full max-w-xl flex-col border-l border-slate-200 bg-white text-slate-950 shadow-2xl dark:border-[#303030] dark:bg-[#111111] dark:text-slate-100">
+        <SheetContent
+          id={id}
+          aria-describedby={undefined}
+          aria-labelledby={`${id}-title`}
+          showCloseButton={false}
+          className="text-slate-950 dark:text-slate-100"
+        >
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 px-4 dark:border-[#303030]">
             <div className="flex items-start gap-1.5">
-              <h2
+              <SheetTitle
                 id={`${id}-title`}
-                className="text-lg font-semibold leading-none"
+                className="text-lg leading-none"
               >
                 段评
-              </h2>
+              </SheetTitle>
               <span
                 aria-label={`${commentCount} 条评论`}
                 className="-mt-1 text-xs font-medium text-slate-400 dark:text-slate-500"
@@ -122,8 +107,8 @@ export default function CommentDrawer({
               写下你的段评
             </button>
           </footer>
-        </aside>
-      </dialog>
+        </SheetContent>
+      </Sheet>
 
       {composer.mode === "comment" && (
         <CommentComposerDialog

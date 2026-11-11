@@ -184,17 +184,16 @@ function CommentableParagraph({
         />
       )}
 
-      {drawerOpen && (
-        <CommentDrawer
-          id={drawerId}
-          postSlug={postSlug}
-          paragraphId={paragraphId}
-          onClose={() => {
-            setDrawerOpen(false);
-          }}
-          onPublished={refreshCommentCounts}
-        />
-      )}
+      <CommentDrawer
+        open={drawerOpen}
+        id={drawerId}
+        postSlug={postSlug}
+        paragraphId={paragraphId}
+        onClose={() => {
+          setDrawerOpen(false);
+        }}
+        onPublished={refreshCommentCounts}
+      />
 
       {composerOpen && (
         <CommentComposerDialog

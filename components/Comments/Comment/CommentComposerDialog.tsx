@@ -37,7 +37,7 @@ export default function CommentComposerDialog({
       return;
     }
 
-    dialog.show();
+    dialog.showModal();
     return () => {
       if (dialog.open) {
         dialog.close();
@@ -52,6 +52,8 @@ export default function CommentComposerDialog({
   return (
     <dialog
       ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
       aria-labelledby="reply-dialog-title"
       onCancel={(event) => {
         event.preventDefault();
@@ -62,7 +64,7 @@ export default function CommentComposerDialog({
           onClose();
         }
       }}
-      className="not-prose fixed inset-0 z-60 m-0 h-dvh max-h-none w-screen max-w-none overflow-hidden border-0 bg-black/50 p-4 open:flex open:items-center open:justify-center"
+      className="comment-composer-dialog not-prose fixed inset-0 z-60 m-0 h-dvh max-h-none w-screen max-w-none overflow-hidden border-0 bg-black/50 p-4 open:flex open:items-center open:justify-center"
     >
       <div className=" scrollbar-hide max-h-[calc(100dvh-2rem)] w-full max-w-160 overflow-y-auto rounded-2xl bg-white text-slate-950 shadow-2xl dark:bg-[#111111] dark:text-slate-100">
         <div className="flex min-h-14 items-center justify-between px-4">
