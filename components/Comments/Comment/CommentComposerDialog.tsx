@@ -38,7 +38,15 @@ export default function CommentComposerDialog({
     }
 
     dialog.showModal();
+
+    // 打开后直接把光标放进输入框，而不是停在关闭按钮上。
+    const frameId = window.requestAnimationFrame(() => {
+      dialog.querySelector<HTMLTextAreaElement>("textarea")?.focus();
+    });
+
     return () => {
+      window.cancelAnimationFrame(frameId);
+
       if (dialog.open) {
         dialog.close();
       }
@@ -66,8 +74,8 @@ export default function CommentComposerDialog({
       }}
       className="comment-composer-dialog not-prose fixed inset-0 z-60 m-0 h-dvh max-h-none w-screen max-w-none overflow-hidden border-0 bg-black/50 p-4 open:flex open:items-center open:justify-center"
     >
-      <div className=" scrollbar-hide max-h-[calc(100dvh-2rem)] w-full max-w-160 overflow-y-auto rounded-2xl bg-white text-slate-950 shadow-2xl dark:bg-[#111111] dark:text-slate-100">
-        <div className="flex min-h-14 items-center justify-between px-4">
+      <div className="flex h-[min(85dvh,720px)] max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white text-slate-950 shadow-2xl dark:bg-[#111111] dark:text-slate-100">
+        <div className="flex h-14 shrink-0 items-center justify-between px-4">
           <button
             type="button"
             aria-label="关闭回复窗口"
@@ -84,9 +92,9 @@ export default function CommentComposerDialog({
           <div className="size-9" />
         </div>
 
-        <div className="px-5 pb-5">
+        <div className="flex min-h-0 flex-1 flex-col px-5 pb-4">
           {activeSelectedText && (
-            <div className="mb-4 rounded-xl bg-slate-50 p-3 dark:bg-[#181818]">
+            <div className="mb-3 shrink-0 rounded-xl bg-slate-50 p-3 dark:bg-[#181818]">
               <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
                 选中的内容
               </p>
@@ -98,7 +106,7 @@ export default function CommentComposerDialog({
           )}
 
           {activeReplyTarget && (
-            <div className=" flex gap-3">
+            <div className="flex shrink-0 gap-3">
               <div
                 aria-hidden="true"
                 className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-200 font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-200"
@@ -124,13 +132,7 @@ export default function CommentComposerDialog({
             </div>
           )}
 
-          <div
-            className={
-              activeReplyTarget
-                ? "mt-4 border-t border-slate-200 pt-4 dark:border-[#303030]"
-                : ""
-            }
-          >
+          <div className="flex min-h-0 flex-1 flex-col pt-2">
             <CommentForm
               postSlug={postSlug}
               paragraphId={paragraphId}

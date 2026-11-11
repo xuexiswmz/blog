@@ -88,44 +88,28 @@ function CommentForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      {/* <div className="flex items-center justify-between gap-3 rounded-md bg-slate-50 px-3 py-2 text-xs dark:bg-[#181818]">
-        <span className="text-slate-500 dark:text-slate-400">
-          你的昵称（自动生成）
-        </span>
-
-        <span className="truncate font-mono font-medium text-slate-700 dark:text-slate-200">
-          {username || "生成中…"}
-        </span>
-      </div> */}
-
-      <div className="space-y-1">
-        <label htmlFor={contentId} className="mb-2 block text-md font-medium">
-          评论内容
-        </label>
-
-        <MarkdownEditor
-          id={contentId}
-          value={content}
-          maxLength={1000}
-          placeholder={
-            replyTarget
-              ? `回复 @${replyTarget.username}`
-              : "写下你对这个段落的看法"
-          }
-          onChange={setContent}
-        />
-      </div>
-
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {submitting ? "提交中" : replyTarget ? "提交回复" : "提交评论"}
-        </button>
-      </div>
+    <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+      <MarkdownEditor
+        id={contentId}
+        value={content}
+        maxLength={1000}
+        variant="composer"
+        placeholder={
+          replyTarget
+            ? `回复 @${replyTarget.username}`
+            : "写下你对这个段落的看法"
+        }
+        onChange={setContent}
+        footerActions={
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className="rounded-full bg-slate-950 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+          >
+            {submitting ? "提交中" : replyTarget ? "提交回复" : "提交评论"}
+          </button>
+        }
+      />
     </form>
   );
 }

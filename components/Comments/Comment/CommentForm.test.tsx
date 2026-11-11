@@ -75,9 +75,7 @@ describe("CommentForm", () => {
 
   it("不再渲染用户名输入框", () => {
     expect(container.querySelector('input[type="text"]')).toBeNull();
-    expect(container.querySelector("label")?.textContent).not.toContain(
-      "用户名",
-    );
+    expect(container.querySelector("label")).toBeNull();
   });
 
   it("自动生成 user_xxxx 并写入浏览器存储", () => {
