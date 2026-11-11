@@ -53,7 +53,7 @@ export default function ParagraphCommentTrigger({
           onClick={onOpenComments}
           className="
               not-prose
-              relative mt-1
+              relative -mt-1.5 sm:-mt-1
               inline-flex size-9
               items-center justify-center
               rounded-full

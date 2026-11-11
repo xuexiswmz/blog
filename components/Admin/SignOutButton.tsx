@@ -1,54 +1,74 @@
-'use client'
+"use client";
 
-import { authClient } from "@/lib/auth-client"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { LogOut } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export default function SignOutButton() {
-    const router = useRouter()
+type SignOutButtonProps = {
+  variant?: "default" | "sidebar";
+};
 
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState("")
-    
-    async function handleSignOut() {
-        setLoading(true)
-        setError("")
+export default function SignOutButton({
+  variant = "default",
+}: SignOutButtonProps) {
+  const router = useRouter();
 
-        try {
-            const result = await authClient.signOut()
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-            if (result.error) {
-                setError(result.error.message ?? "退出登录失败")
-                return
-            }
+  async function handleSignOut() {
+    setLoading(true);
+    setError("");
 
-            router.replace("/admin/login")
-            router.refresh()
-        } catch (error) {
-            setError(error instanceof Error ? error.message : "退出登录失败")
-        } finally {
-            setLoading(false)
-        }
+    try {
+      const result = await authClient.signOut();
+
+      if (result.error) {
+        setError(result.error.message ?? "退出登录失败");
+        return;
+      }
+
+      router.replace("/admin/login");
+      router.refresh();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "退出登录失败");
+    } finally {
+      setLoading(false);
     }
+  }
 
-    return (
-        <div className=" space-y-2">
-            <button 
-                className=" rounded-md border border-gray-300 px-4 py-2 text-sm hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-700 dark:hover:bg-gray-900"
-                type="button"
-                disabled={loading}
-                onClick={handleSignOut}
-            >
-                {loading ? "正在退出..." : "退出登录" }
-            </button>
+  const isSidebar = variant === "sidebar";
 
-            {
-                error && (
-                    <p role="alert" className=" text-sm text-red-500">
-                        {error}
-                    </p>
-                )
-            }
-        </div>
-    )
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        disabled={loading}
+        onClick={handleSignOut}
+        className={cn(
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          isSidebar
+            ? "flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-neutral-300 transition-colors hover:bg-white/10"
+            : "rounded-md border border-gray-300 px-4 py-2 text-sm hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-900",
+        )}
+      >
+        {isSidebar && <LogOut className="size-4" aria-hidden="true" />}
+        {loading ? "正在退出..." : "退出登录"}
+      </button>
+
+      {error && (
+        <p
+          role="alert"
+          className={cn(
+            "text-sm",
+            isSidebar ? "text-rose-400" : "text-red-500",
+          )}
+        >
+          {error}
+        </p>
+      )}
+    </div>
+  );
 }
