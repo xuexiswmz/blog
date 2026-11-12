@@ -1,4 +1,4 @@
-import { APIError, betterAuth } from "better-auth";
+import { betterAuth } from "better-auth";
 import { pool } from "./db";
 
 function requiredEnv(name: string) {
@@ -11,8 +11,6 @@ function requiredEnv(name: string) {
   return value;
 }
 
-const adminGithubId = requiredEnv("ADMIN_GITHUB_ID");
-
 export const auth = betterAuth({
   appName: "xuexiswmz-blog",
   baseURL: requiredEnv("BETTER_AUTH_URL"),
@@ -20,24 +18,11 @@ export const auth = betterAuth({
 
   database: pool,
 
-  socialProviders: {
-    github: {
-      clientId: requiredEnv("AUTH_GITHUB_ID"),
-      clientSecret: requiredEnv("AUTH_GITHUB_SECRET"),
-
-      mapProfileToUser(profile) {
-        if (String(profile.id) !== adminGithubId) {
-          throw new APIError("FORBIDDEN", {
-            code: "ADMIN_ONLY",
-            message: "该GITHUB账号没有管理员权限",
-          });
-        }
-
-        return {
-          name: profile.name || profile.login,
-          image: profile.avatar_url,
-        };
-      },
-    },
+  emailAndPassword: {
+    enabled: true,
+    // 管理后台不开放注册，管理员账号通过 pnpm admin:create 初始化。
+    disableSignUp: true,
+    minPasswordLength: 8,
+    maxPasswordLength: 128,
   },
 });

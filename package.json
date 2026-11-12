@@ -11,7 +11,8 @@
     "migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "admin:create": "node --env-file-if-exists=.env.local scripts/create-admin.mjs"
   },
   "dependencies": {
     "@kumailnanji/letters": "^0.1.1",
