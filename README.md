@@ -53,6 +53,12 @@ AUTH_GITHUB_ID=your-github-oauth-client-id
 AUTH_GITHUB_SECRET=your-github-oauth-client-secret
 ADMIN_GITHUB_ID=your-github-user-id
 
+# 管理中心提交文章到 GitHub 仓库
+GITHUB_CONTENT_TOKEN=github_pat_xxx
+GITHUB_CONTENT_OWNER=xuexiswmz
+GITHUB_CONTENT_REPO=blog
+GITHUB_CONTENT_BRANCH=main
+
 # DeepSeek / OpenAI-compatible API
 DEEPSEEK_API_KEY=your-api-key
 DEEPSEEK_BASE_URL=https://api.deepseek.com
@@ -68,6 +74,8 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 - `BETTER_AUTH_URL` 应与当前站点地址一致。
 - `NEXT_PUBLIC_SITE_URL` 用于 canonical URL、站点地图等 SEO 信息，生产环境必须配置。
 - DeepSeek 配置用于后台评论审核接口。
+- `GITHUB_CONTENT_TOKEN` 用于管理中心上传文章时提交 MDX 到仓库；建议使用只授权 `xuexiswmz/blog`、权限为 **Contents: Read and write** 的 fine-grained PAT。不要在客户端暴露该 token。
+- `GITHUB_CONTENT_OWNER`、`GITHUB_CONTENT_REPO`、`GITHUB_CONTENT_BRANCH` 可省略，默认分别为 `xuexiswmz`、`blog`、`main`。
 
 ### 本地数据库
 
@@ -131,7 +139,7 @@ pnpm migrate
 pnpm dev
 ```
 
-访问 [http://localhost:3000](http://localhost:3000)。管理后台入口位于 `/admin`，文章分类管理位于 `/admin/categories`，知识图谱位于 `/graph`。
+访问 [http://localhost:3000](http://localhost:3000)。管理后台入口位于 `/admin`（默认进入 `/admin/analytics`），文章上传位于 `/admin/articles`，文章分类管理位于 `/admin/categories`，知识图谱位于 `/graph`。
 
 如果本机通过系统代理访问 GitHub（例如公司网络），请在 `.env.local` 中配置 `HTTP_PROXY`、`HTTPS_PROXY` 和 `NO_PROXY`。`pnpm dev` 与 `pnpm start` 已设置 `NODE_USE_ENV_PROXY=1`（Node.js 24+），Node 内置的 `fetch` 会读取这些代理变量，避免 GitHub OAuth 回调连接超时。
 
@@ -176,6 +184,31 @@ tags:
 ```
 
 可选的 `image` 和 `imageAlt` 字段可用于文章图片信息。首页和归档会按照 `date` 从新到旧排列文章。
+
+### 通过管理中心上传文章
+
+登录后台后打开 `/admin/articles`，可以：
+
+- 填写标题、slug、日期、描述和标签；
+- 直接粘贴 MDX 正文，或上传 `.mdx` 文件（文件里的 frontmatter 会被移除，字段以表单为准）；正文支持“编辑 / 预览”切换；
+- 选择要关联的已有文章；
+- 页面下方的“已有文章”列表可以删除文章：二次确认后，服务端通过 GitHub Contents API 提交删除对应的 MDX；
+- 提交后，服务端通过 GitHub Contents API 创建 `content/posts/<slug>.mdx`，并在 frontmatter 中写入：
+
+```yaml
+related:
+  - css-box-model
+  - react-useeffect-setstate
+```
+
+`/graph` 会同时读取正文中的 `](/posts/slug)` 链接和 `related` 字段，因此新文章会与选中文章建立连线。
+
+注意：
+
+- 提交成功后需要重新构建/部署，新文章才会出现在站点和图谱中；本地开发可以先 `git pull`，再重启 dev server，让新文章路由生效。
+- 需要配置 `GITHUB_CONTENT_TOKEN`，否则上传接口会返回“未配置 GITHUB_CONTENT_TOKEN”。
+- 如果 GitHub 仓库里已经存在同 slug 的文件，接口会返回 409，避免覆盖已有文章。
+- 删除文章只删除 MDX 文件；其他文章正文里的链接和 `related` 不会自动清理，评论、访问记录、画线数据会保留；分类关联会在分类服务读取时自动清理。
 
 ## 文章分类与阅读页
 
