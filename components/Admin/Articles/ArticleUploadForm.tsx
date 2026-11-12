@@ -375,16 +375,6 @@ export default function ArticleUploadForm({
           >
             ← 返回文章管理
           </Link>
-          {isEdit ? (
-            <Link
-              href={`/posts/${initialArticle!.slug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-neutral-500 transition-colors hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-neutral-100"
-            >
-              查看文章
-            </Link>
-          ) : null}
         </div>
 
         <button

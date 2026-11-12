@@ -100,7 +100,6 @@ describe("ArticleUploadForm edit mode", () => {
     expect(slug?.readOnly).toBe(true);
     expect(body?.value).toContain("## 正文");
     expect(container.textContent).toContain("保存修改");
-    expect(container.textContent).toContain("查看文章");
 
     await act(async () => {
       container.querySelector("form")?.requestSubmit();
