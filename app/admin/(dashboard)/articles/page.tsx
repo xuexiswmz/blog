@@ -1,5 +1,6 @@
 import { getPostSummaries } from "@/lib/posts";
 import ArticleUploadForm from "@/components/Admin/Articles/ArticleUploadForm";
+import ArticleAdminList from "@/components/Admin/Articles/ArticleAdminList";
 
 export default async function AdminArticlesPage() {
   const posts = await getPostSummaries();
@@ -17,6 +18,10 @@ export default async function AdminArticlesPage() {
 
       <ArticleUploadForm
         posts={posts.map(({ slug, title }) => ({ slug, title }))}
+      />
+
+      <ArticleAdminList
+        posts={posts.map(({ slug, title, date }) => ({ slug, title, date }))}
       />
     </div>
   );
