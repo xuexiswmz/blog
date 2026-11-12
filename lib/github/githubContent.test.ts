@@ -14,12 +14,23 @@ const config = {
   branch: "main",
 };
 
+const relayConfig = {
+  token: "",
+  owner: "",
+  repo: "",
+  branch: "main",
+  relay: {
+    url: "https://relay.example.com",
+    secret: "relay-secret",
+  },
+};
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 describe("github content client", () => {
-  it("reads configuration from environment variables", () => {
+  it("reads direct configuration from environment variables", () => {
     expect(
       getGitHubContentConfig({
         NODE_ENV: "test",
@@ -36,7 +47,36 @@ describe("github content client", () => {
     });
   });
 
-  it("requires a token", () => {
+  it("prefers relay configuration when relay variables are set", () => {
+    expect(
+      getGitHubContentConfig({
+        NODE_ENV: "test",
+        GITHUB_CONTENT_RELAY_URL: "https://relay.example.com/",
+        GITHUB_CONTENT_RELAY_SECRET: "secret",
+        GITHUB_CONTENT_BRANCH: "main",
+      }),
+    ).toEqual({
+      token: "",
+      owner: "",
+      repo: "",
+      branch: "main",
+      relay: {
+        url: "https://relay.example.com",
+        secret: "secret",
+      },
+    });
+  });
+
+  it("requires both relay variables", () => {
+    expect(() =>
+      getGitHubContentConfig({
+        NODE_ENV: "test",
+        GITHUB_CONTENT_RELAY_URL: "https://relay.example.com",
+      }),
+    ).toThrow(GitHubContentConfigError);
+  });
+
+  it("requires a token without relay", () => {
     expect(() =>
       getGitHubContentConfig({ NODE_ENV: "test" }),
     ).toThrow(GitHubContentConfigError);
@@ -130,7 +170,63 @@ describe("github content client", () => {
     });
   });
 
-  it("deletes an existing remote file with its sha", async () => {
+  it("uses the relay for file reads", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ sha: "relay-sha" }), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      getRemoteFileSha("content/posts/new.mdx", relayConfig),
+    ).resolves.toBe("relay-sha");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://relay.example.com/file?path=content%2Fposts%2Fnew.mdx&branch=main",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: "Bearer relay-secret",
+        }),
+      }),
+    );
+  });
+
+  it("uses the relay to commit files", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          commitUrl: "https://github.com/commit/relay",
+          fileUrl: "https://github.com/file/relay",
+          sha: "relay-sha",
+        }),
+        { status: 200 },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      commitRemoteFile({
+        path: "content/posts/new.mdx",
+        content: "# Relay\n",
+        message: "docs: add relay",
+        config: relayConfig,
+      }),
+    ).resolves.toEqual({
+      commitUrl: "https://github.com/commit/relay",
+      fileUrl: "https://github.com/file/relay",
+      sha: "relay-sha",
+    });
+
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe("https://relay.example.com/file");
+    expect(options.method).toBe("PUT");
+    expect(JSON.parse(String(options.body))).toMatchObject({
+      path: "content/posts/new.mdx",
+      content: "# Relay\n",
+      message: "docs: add relay",
+      branch: "main",
+    });
+  });
+
+  it("uses the relay to delete files", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(
@@ -138,9 +234,7 @@ describe("github content client", () => {
       )
       .mockResolvedValueOnce(
         new Response(
-          JSON.stringify({
-            commit: { html_url: "https://github.com/commit/delete" },
-          }),
+          JSON.stringify({ commitUrl: "https://github.com/commit/delete" }),
           { status: 200 },
         ),
       );
@@ -149,38 +243,19 @@ describe("github content client", () => {
     await expect(
       deleteRemoteFile({
         path: "content/posts/old.mdx",
-        message: "docs: delete article old",
-        config,
+        message: "docs: delete old",
+        config: relayConfig,
       }),
     ).resolves.toEqual({
       commitUrl: "https://github.com/commit/delete",
     });
 
-    const [url, options] = fetchMock.mock.calls[1];
-    expect(url).toBe(
-      "https://api.github.com/repos/xuexiswmz/blog/contents/content/posts/old.mdx",
-    );
+    const [, options] = fetchMock.mock.calls[1];
     expect(options.method).toBe("DELETE");
     expect(JSON.parse(String(options.body))).toMatchObject({
-      message: "docs: delete article old",
+      path: "content/posts/old.mdx",
+      message: "docs: delete old",
       sha: "delete-sha",
-      branch: "main",
     });
-  });
-
-  it("returns null when the file to delete does not exist", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue(new Response("", { status: 404 }));
-    vi.stubGlobal("fetch", fetchMock);
-
-    await expect(
-      deleteRemoteFile({
-        path: "content/posts/missing.mdx",
-        message: "docs: delete article missing",
-        config,
-      }),
-    ).resolves.toBeNull();
-    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

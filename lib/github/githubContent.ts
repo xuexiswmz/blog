@@ -1,8 +1,14 @@
+export type GitHubContentRelayConfig = {
+  url: string;
+  secret: string;
+};
+
 export type GitHubContentConfig = {
   token: string;
   owner: string;
   repo: string;
   branch: string;
+  relay?: GitHubContentRelayConfig;
 };
 
 export type GitHubCommitResult = {
@@ -16,7 +22,9 @@ export type GitHubDeleteResult = {
 };
 
 export class GitHubContentConfigError extends Error {
-  constructor(message = "未配置 GitHub 内容仓库 token") {
+  constructor(
+    message = "未配置 GitHub 内容提交方式（GITHUB_CONTENT_RELAY_URL/GITHUB_CONTENT_RELAY_SECRET 或 GITHUB_CONTENT_TOKEN）",
+  ) {
     super(message);
     this.name = "GitHubContentConfigError";
   }
@@ -35,6 +43,29 @@ export class GitHubContentError extends Error {
 export function getGitHubContentConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): GitHubContentConfig {
+  const relayUrl = env.GITHUB_CONTENT_RELAY_URL?.trim();
+  const relaySecret = env.GITHUB_CONTENT_RELAY_SECRET?.trim();
+  const branch = env.GITHUB_CONTENT_BRANCH?.trim() || "main";
+
+  if (relayUrl || relaySecret) {
+    if (!relayUrl || !relaySecret) {
+      throw new GitHubContentConfigError(
+        "GITHUB_CONTENT_RELAY_URL 和 GITHUB_CONTENT_RELAY_SECRET 必须同时配置",
+      );
+    }
+
+    return {
+      token: "",
+      owner: "",
+      repo: "",
+      branch,
+      relay: {
+        url: relayUrl.replace(/\/+$/, ""),
+        secret: relaySecret,
+      },
+    };
+  }
+
   const token = env.GITHUB_CONTENT_TOKEN?.trim();
 
   if (!token) {
@@ -45,7 +76,7 @@ export function getGitHubContentConfig(
     token,
     owner: env.GITHUB_CONTENT_OWNER?.trim() || "xuexiswmz",
     repo: env.GITHUB_CONTENT_REPO?.trim() || "blog",
-    branch: env.GITHUB_CONTENT_BRANCH?.trim() || "main",
+    branch,
   };
 }
 
@@ -64,7 +95,17 @@ function getHeaders(config: GitHubContentConfig): HeadersInit {
   };
 }
 
-async function readGitHubError(response: Response): Promise<string> {
+function getRelayHeaders(config: GitHubContentConfig): HeadersInit {
+  return {
+    Authorization: `Bearer ${config.relay?.secret ?? ""}`,
+    "Content-Type": "application/json",
+  };
+}
+
+async function readError(
+  response: Response,
+  fallback: string,
+): Promise<string> {
   try {
     const body = (await response.json()) as { message?: unknown };
 
@@ -75,13 +116,35 @@ async function readGitHubError(response: Response): Promise<string> {
     // Ignore non-JSON error responses.
   }
 
-  return `GitHub API 请求失败 (${response.status})`;
+  return `${fallback} (${response.status})`;
 }
 
 export async function getRemoteFileSha(
   path: string,
   config: GitHubContentConfig = getGitHubContentConfig(),
 ): Promise<string | null> {
+  if (config.relay) {
+    const url = `${config.relay.url}/file?path=${encodeURIComponent(path)}&branch=${encodeURIComponent(config.branch)}`;
+    const response = await fetch(url, {
+      headers: getRelayHeaders(config),
+      cache: "no-store",
+    });
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      throw new GitHubContentError(
+        await readError(response, "GitHub Relay 请求失败"),
+        response.status,
+      );
+    }
+
+    const body = (await response.json()) as { sha?: unknown };
+    return typeof body.sha === "string" ? body.sha : null;
+  }
+
   const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${encodeContentPath(path)}?ref=${encodeURIComponent(config.branch)}`;
   const response = await fetch(url, {
     headers: getHeaders(config),
@@ -93,11 +156,13 @@ export async function getRemoteFileSha(
   }
 
   if (!response.ok) {
-    throw new GitHubContentError(await readGitHubError(response), response.status);
+    throw new GitHubContentError(
+      await readError(response, "GitHub API 请求失败"),
+      response.status,
+    );
   }
 
   const body = (await response.json()) as { sha?: unknown };
-
   return typeof body.sha === "string" ? body.sha : null;
 }
 
@@ -114,6 +179,41 @@ export async function commitRemoteFile({
   sha?: string;
   config?: GitHubContentConfig;
 }): Promise<GitHubCommitResult> {
+  if (config.relay) {
+    const response = await fetch(`${config.relay.url}/file`, {
+      method: "PUT",
+      headers: getRelayHeaders(config),
+      body: JSON.stringify({
+        path,
+        content,
+        message,
+        branch: config.branch,
+        ...(sha ? { sha } : {}),
+      }),
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new GitHubContentError(
+        await readError(response, "GitHub Relay 提交失败"),
+        response.status,
+      );
+    }
+
+    const body = (await response.json()) as {
+      commitUrl?: unknown;
+      fileUrl?: unknown;
+      sha?: unknown;
+    };
+
+    return {
+      commitUrl:
+        typeof body.commitUrl === "string" ? body.commitUrl : "",
+      fileUrl: typeof body.fileUrl === "string" ? body.fileUrl : "",
+      sha: typeof body.sha === "string" ? body.sha : "",
+    };
+  }
+
   const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${encodeContentPath(path)}`;
   const response = await fetch(url, {
     method: "PUT",
@@ -131,7 +231,10 @@ export async function commitRemoteFile({
   });
 
   if (!response.ok) {
-    throw new GitHubContentError(await readGitHubError(response), response.status);
+    throw new GitHubContentError(
+      await readError(response, "GitHub API 请求失败"),
+      response.status,
+    );
   }
 
   const body = (await response.json()) as {
@@ -163,6 +266,36 @@ export async function deleteRemoteFile({
     return null;
   }
 
+  if (config.relay) {
+    const response = await fetch(`${config.relay.url}/file`, {
+      method: "DELETE",
+      headers: getRelayHeaders(config),
+      body: JSON.stringify({
+        path,
+        message,
+        sha,
+        branch: config.branch,
+      }),
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new GitHubContentError(
+        await readError(response, "GitHub Relay 删除失败"),
+        response.status,
+      );
+    }
+
+    const body = (await response.json()) as {
+      commitUrl?: unknown;
+    };
+
+    return {
+      commitUrl:
+        typeof body.commitUrl === "string" ? body.commitUrl : "",
+    };
+  }
+
   const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${encodeContentPath(path)}`;
   const response = await fetch(url, {
     method: "DELETE",
@@ -179,7 +312,10 @@ export async function deleteRemoteFile({
   });
 
   if (!response.ok) {
-    throw new GitHubContentError(await readGitHubError(response), response.status);
+    throw new GitHubContentError(
+      await readError(response, "GitHub API 请求失败"),
+      response.status,
+    );
   }
 
   const body = (await response.json()) as {

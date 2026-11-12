@@ -69,7 +69,7 @@ export async function DELETE(
       return Response.json(
         {
           message:
-            "未配置 GITHUB_CONTENT_TOKEN，无法删除 GitHub 上的文章",
+            "未配置文章提交方式（GITHUB_CONTENT_RELAY_URL/SECRET 或 GITHUB_CONTENT_TOKEN），无法删除文章",
         },
         { status: 500 },
       );
@@ -195,7 +195,7 @@ export async function PUT(
       return Response.json(
         {
           message:
-            "未配置 GITHUB_CONTENT_TOKEN，无法修改 GitHub 上的文章",
+            "未配置文章提交方式（GITHUB_CONTENT_RELAY_URL/SECRET 或 GITHUB_CONTENT_TOKEN），无法修改文章",
         },
         { status: 500 },
       );

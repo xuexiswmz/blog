@@ -53,3 +53,14 @@ next-env.d.ts
 
 # local Codex worktrees
 .worktrees/
+
+# deployment examples (no secrets)
+!.env.example
+!.env.production.example
+!.env.deploy.example
+
+# Cloudflare Worker local state / dependencies / secrets
+relay/github-relay/node_modules/
+relay/github-relay/wrangler/
+relay/github-relay/.wrangler/
+relay/github-relay/.dev.vars

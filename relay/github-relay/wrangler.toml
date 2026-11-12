@@ -1,0 +1,12 @@
+name = "blog-github-relay"
+main = "src/index.ts"
+compatibility_date = "2026-07-01"
+
+[vars]
+GITHUB_OWNER = "xuexiswmz"
+GITHUB_REPO = "blog"
+GITHUB_BRANCH = "main"
+
+# Secrets（不要写进仓库）：
+# wrangler secret put GITHUB_TOKEN
+# wrangler secret put RELAY_SECRET
