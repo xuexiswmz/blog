@@ -1,11 +1,17 @@
 FROM node:24-alpine AS deps
 WORKDIR /app
+# 国内构建时传 https://registry.npmmirror.com 会快很多。
+ARG NPM_REGISTRY=https://registry.npmjs.org
 RUN corepack enable
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --registry=$NPM_REGISTRY
 
 FROM node:24-alpine AS builder
 WORKDIR /app
+# 2C2G 机器上构建必须限制 V8 堆，否则 next build 会被 OOM kill。
+# 默认留空 = 用 Node 自己的默认值（CI 上内存充足，不需要限制）。
+ARG NODE_OPTIONS=
+ENV NODE_OPTIONS=$NODE_OPTIONS
 RUN corepack enable
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .

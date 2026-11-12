@@ -1,0 +1,97 @@
+# 服务器 /opt/blog/docker-compose.yml
+#
+# 这个文件只负责 blog 自己的一套：Postgres + Next.js。
+# foru 容器化以后由 foru 仓库自己的 compose 负责，通过外部网络 `stack` 连到这里的
+# postgres（`docker network create` 不用手工建，本文件会建出来）。
+#
+# 端口（除 80/443 外全部只绑 127.0.0.1）：
+#   postgres  127.0.0.1:5433 → 5432
+#   blog      127.0.0.1:3002 → 3000
+#
+# 用法：docker compose up -d / ps / logs -f blog
+
+name: stack
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: stack-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请在 .env 中设置 POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+      TZ: Asia/Shanghai
+      PGDATA: /var/lib/postgresql/data/pgdata
+    command:
+      - postgres
+      - -c
+      - shared_buffers=192MB
+      - -c
+      - effective_cache_size=768MB
+      - -c
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=64MB
+      - -c
+      - max_connections=50
+      - -c
+      - timezone=Asia/Shanghai
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+      - ./backups:/backups
+    ports:
+      - "127.0.0.1:5433:5432"
+    shm_size: 128mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - stack
+    logging: *default-logging
+
+  blog:
+    # 本地构建阶段用 blog:local；上 ACR/CI 后换成仓库地址即可，compose 不用动。
+    image: ${BLOG_IMAGE:-blog:local}
+    container_name: blog
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ./blog.env
+    environment:
+      NODE_ENV: production
+      TZ: Asia/Shanghai
+      # 覆盖 blog.env 里的 DATABASE_URL：容器之间走服务名。
+      DATABASE_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD}@postgres:5432/blog
+    ports:
+      - "127.0.0.1:3002:3000"
+    stop_grace_period: 20s
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -T 5 -O /dev/null http://127.0.0.1:3000/api/health/db || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - stack
+    logging: *default-logging
+
+networks:
+  stack:
+    name: stack
+
+volumes:
+  pgdata:
+    name: blog_pgdata
