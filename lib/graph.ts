@@ -66,12 +66,19 @@ export async function getKnowledgeGraph(): Promise<KnowledgeGraphData> {
                     ? data.tags.map(String)
                     : [];
 
+                const related = Array.isArray(data.related)
+                    ? data.related.map(String)
+                    : [];
+
                 return {
                     slug,
                     title,
                     description,
                     group: tags[0] ?? "其他",
-                    targets: extractPostLinks(content)
+                    targets: [
+                        ...extractPostLinks(content),
+                        ...related,
+                    ]
                 }
             })
     )
