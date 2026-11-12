@@ -90,8 +90,9 @@ export default function TimelineEntrance({
         },
         {
             root: scrollContainer,
-            threshold: 0.15,
-            rootMargin: "0px 0px -8% 0px"
+            // 最后一条滚动到底时也要能触发，避免标题/摘要一直保持隐藏。
+            threshold: 0.01,
+            rootMargin: "0px 0px 80px 0px"
         }
         )
 
