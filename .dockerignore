@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+.github
+.local
+.env*
+relay/github-relay/node_modules
+*.tsbuildinfo
+npm-debug.log*
+pnpm-debug.log*
