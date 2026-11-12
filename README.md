@@ -139,7 +139,7 @@ pnpm migrate
 pnpm dev
 ```
 
-访问 [http://localhost:3000](http://localhost:3000)。管理后台入口位于 `/admin`（默认进入 `/admin/analytics`），文章上传位于 `/admin/articles`，文章分类管理位于 `/admin/categories`，知识图谱位于 `/graph`。
+访问 [http://localhost:3000](http://localhost:3000)。管理后台入口位于 `/admin`（默认进入 `/admin/analytics`），文章管理位于 `/admin/articles`，新建文章位于 `/admin/articles/new`，知识图谱位于 `/graph`。
 
 如果本机通过系统代理访问 GitHub（例如公司网络），请在 `.env.local` 中配置 `HTTP_PROXY`、`HTTPS_PROXY` 和 `NO_PROXY`。`pnpm dev` 与 `pnpm start` 已设置 `NODE_USE_ENV_PROXY=1`（Node.js 24+），Node 内置的 `fetch` 会读取这些代理变量，避免 GitHub OAuth 回调连接超时。
 
@@ -187,12 +187,14 @@ tags:
 
 ### 通过管理中心上传文章
 
-登录后台后打开 `/admin/articles`，可以：
+登录后台后打开 `/admin/articles` 查看文章列表，点击“新建文章”进入 `/admin/articles/new`：
 
-- 填写标题、slug、日期、描述和标签；
-- 直接粘贴 MDX 正文，或上传 `.mdx` 文件（文件里的 frontmatter 会被移除，字段以表单为准）；正文支持“编辑 / 预览”切换；
-- 选择要关联的已有文章；
-- 页面下方的“已有文章”列表可以删除文章：二次确认后，服务端通过 GitHub Contents API 提交删除对应的 MDX；
+- 左侧填写标题、简介和 MDX 正文，支持工具栏和“编辑 / 预览”切换，也可以上传 `.mdx` 文件（文件里的 frontmatter 会被移除，字段以表单为准）；标题下的“简介”用于首页卡片、归档和 SEO 描述，不是正文；
+- 右侧“文章属性”填写发布日期、slug 和标签；
+- “关联文章”支持搜索并多选已有文章；
+- 右侧“分类”可以先选择文章分类，点击“管理分类”会打开 CRUD 弹窗，支持新增、重命名、删除和搜索分类；文章列表右上角也有“分类管理”入口；新文章需要部署后进入编辑页设置分类；
+- 文章列表点击标题或右侧箭头进入编辑页；保存修改同样提交到 GitHub，slug 创建后不可修改，`source`、`image`、`imageAlt` 等原有 frontmatter 会保留；
+- 文章列表可以删除文章：二次确认后，服务端通过 GitHub Contents API 提交删除对应的 MDX；
 - 提交后，服务端通过 GitHub Contents API 创建 `content/posts/<slug>.mdx`，并在 frontmatter 中写入：
 
 ```yaml
@@ -212,12 +214,12 @@ related:
 
 ## 文章分类与阅读页
 
-部署分类功能前必须执行 `pnpm migrate`，确保 `005-article-categories.sql` 已应用。登录后台后，可从 `/admin/categories`：
+部署分类功能前必须执行 `pnpm migrate`，确保 `005-article-categories.sql` 已应用。登录后台后，可在任意文章的编辑页点击“分类”旁的“管理分类”：
 
-- 新建、重命名或删除空分类；
-- 使用上移、下移按钮手动调整分类顺序；
-- 将文章分配给一个分类，或移回“未分类”；
-- 使用上移、下移按钮手动调整同一分类内的文章顺序。
+- 在弹窗中新建、重命名或删除空分类；
+- 在弹窗中使用上移、下移按钮手动调整分类顺序；
+- 在编辑页右侧“分类”选择框将文章分配给一个分类，或移回“未分类”；
+- 分类内的文章顺序仍由现有分类服务维护。
 
 一篇文章只能属于零个或一个分类。“未分类”是系统生成的分组，不需要手动创建；迁移成功但尚未创建分类时，所有文章会显示在“未分类”中。只有分类存储暂时不可用时，公开文章导航才会回退为“全部文章”，确保真实 MDX 文章仍可访问。
 
