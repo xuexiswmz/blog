@@ -3,7 +3,7 @@ name: Build and deploy
 on:
   push:
     branches:
-      - main
+      - deploy
   workflow_dispatch:
 
 env:
@@ -16,6 +16,8 @@ env:
 
 jobs:
   build:
+    # 只有 deploy 分支才构建；main 上随便提交都不会触发。
+    if: github.ref == 'refs/heads/deploy'
     runs-on: ubuntu-latest
     permissions:
       contents: read

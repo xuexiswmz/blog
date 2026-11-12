@@ -22,9 +22,14 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # 这些只在构建阶段使用；运行时由 ECS 的 env_file 覆盖。
+# 注意：builder 阶段的 ENV 不会带到 runner 阶段（两个独立 stage），所以占位值不会被带进生产。
 ENV DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build
 ENV BETTER_AUTH_URL=http://localhost:3000
 ENV BETTER_AUTH_SECRET=build-only-secret
+# lib/ai/deepseek.ts 在模块加载时就会 requireEnv，缺一个都会让 next build 失败。
+ENV DEEPSEEK_API_KEY=build-only
+ENV DEEPSEEK_BASE_URL=https://api.deepseek.com
+ENV DEEPSEEK_MODEL=deepseek-chat
 ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 
