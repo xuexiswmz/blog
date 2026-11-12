@@ -40,15 +40,21 @@ RUN pnpm exec next build --webpack
 FROM node:24-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-RUN corepack enable
+ARG NPM_REGISTRY=https://registry.npmjs.org
+# 固定 pnpm：corepack 会在容器启动时下载最新版，既慢又可能触发构建脚本白名单校验。
+RUN npm i -g pnpm@11.9.0 --registry=$NPM_REGISTRY
 
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+# pnpm 执行脚本前会做依赖校验，缺了它会把 esbuild/sharp 的构建脚本当成"被忽略"而报错。
+COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/content ./content
 COPY --from=builder /app/scripts ./scripts
+# scripts/migrate.mjs 要读 database/schema.sql 和 database/migrations/*.sql
+COPY --from=builder /app/database ./database
 COPY --from=builder /app/next.config.ts ./next.config.ts
 
 EXPOSE 3000
