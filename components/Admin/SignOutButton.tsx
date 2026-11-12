@@ -50,7 +50,7 @@ export default function SignOutButton({
         className={cn(
           "disabled:cursor-not-allowed disabled:opacity-50",
           isSidebar
-            ? "flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-neutral-300 transition-colors hover:bg-white/10"
+            ? "flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-700 transition-colors hover:bg-neutral-100 dark:border-white/10 dark:bg-white/5 dark:text-neutral-300 dark:hover:bg-white/10"
             : "rounded-md border border-gray-300 px-4 py-2 text-sm hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-900",
         )}
       >

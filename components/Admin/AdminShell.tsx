@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  FilePlus2,
   FolderTree,
   MessageSquare,
 } from "lucide-react";
@@ -29,6 +30,11 @@ const navigation = [
     icon: BarChart3,
   },
   {
+    href: "/admin/articles",
+    label: "文章管理",
+    icon: FilePlus2,
+  },
+  {
     href: "/admin/comments",
     label: "评论审核",
     icon: MessageSquare,
@@ -45,17 +51,17 @@ export default function AdminShell({ user, children }: AdminShellProps) {
   const avatarText = user.name.trim().charAt(0).toUpperCase() || "A";
 
   return (
-    <div className="flex h-full min-h-full w-full flex-col bg-neutral-100 dark:bg-neutral-950 lg:flex-row">
-      <aside className="flex w-full shrink-0 flex-col bg-neutral-950 text-neutral-400 lg:sticky lg:top-0 lg:h-full lg:w-64">
+    <div className="flex min-h-full w-full flex-col bg-neutral-100 dark:bg-neutral-950 lg:flex-row">
+      <aside className="flex w-full shrink-0 flex-col border-r border-neutral-200 bg-white text-neutral-500 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400 lg:sticky lg:top-0 lg:h-[calc(100dvh-3.5rem)] lg:w-64 lg:self-start">
         <div className="flex h-20 shrink-0 items-center gap-3 px-6">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white text-sm font-bold text-neutral-950">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-neutral-950 text-sm font-bold text-white dark:bg-white dark:text-neutral-950">
             W
           </span>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-white">
+            <p className="truncate text-sm font-semibold text-neutral-950 dark:text-white">
               管理中心
             </p>
-            <p className="truncate text-[11px] text-neutral-500">
+            <p className="truncate text-[11px] text-neutral-500 dark:text-neutral-500">
               xuexiswmz blog
             </p>
           </div>
@@ -74,8 +80,8 @@ export default function AdminShell({ user, children }: AdminShellProps) {
                 className={cn(
                   "flex shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
                   active
-                    ? "bg-white text-neutral-950 shadow-sm"
-                    : "text-neutral-400 hover:bg-white/10 hover:text-white",
+                    ? "bg-neutral-950 text-white shadow-sm dark:bg-white dark:text-neutral-950"
+                    : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-400 dark:hover:bg-white/10 dark:hover:text-white",
                 )}
               >
                 <Icon className="size-4 shrink-0" aria-hidden="true" />
@@ -85,16 +91,16 @@ export default function AdminShell({ user, children }: AdminShellProps) {
           })}
         </nav>
 
-        <div className="shrink-0 border-t border-white/10 p-4">
+        <div className="shrink-0 border-t border-neutral-200 p-4 dark:border-white/10">
           <div className="mb-4 flex items-center gap-3">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-sm font-semibold text-white">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-sm font-semibold text-neutral-700 dark:bg-neutral-800 dark:text-white">
               {avatarText}
             </span>
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-white">
+              <p className="truncate text-sm font-medium text-neutral-950 dark:text-white">
                 {user.name}
               </p>
-              <p className="truncate text-xs text-neutral-500">{user.email}</p>
+              <p className="truncate text-xs text-neutral-500 dark:text-neutral-500">{user.email}</p>
             </div>
           </div>
 
