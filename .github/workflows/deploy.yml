@@ -43,6 +43,10 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
+          # ACR 个人版不收 buildx 默认附加的 provenance/SBOM 证明清单
+          # （报错：unknown manifest class for application/vnd.oci.empty.v1+json）。
+          provenance: false
+          sbom: false
           build-args: |
             NEXT_PUBLIC_SITE_URL=${{ vars.NEXT_PUBLIC_SITE_URL || 'https://xuexiswmz.cn' }}
             NPM_REGISTRY=https://registry.npmmirror.com
