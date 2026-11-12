@@ -46,9 +46,6 @@ export function AnalyticsDashboardView({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold">概览</h2>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            查看匿名访客、浏览量和文章热度
-          </p>
         </div>
         <label className="flex items-center gap-2 text-sm">
           <span className="text-gray-500 dark:text-gray-400">时间范围</span>
