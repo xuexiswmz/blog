@@ -3,14 +3,21 @@ name: Build and deploy
 on:
   push:
     branches:
-      - main
+      - deploy
   workflow_dispatch:
 
 env:
+  # 公网地址（GitHub Actions 在公网，推不进去 VPC 地址）
+  ACR_PUBLIC: crpi-00qum4psb3e9ho6w.cn-beijing.personal.cr.aliyuncs.com
+  # ECS 用内网地址拉取，不消耗公网流量
+  ACR_VPC: crpi-00qum4psb3e9ho6w-vpc.cn-beijing.personal.cr.aliyuncs.com
+  ACR_NAMESPACE: xuexiswmz_blog
   IMAGE_NAME: blog
 
 jobs:
   build:
+    # 只有 deploy 分支才构建；main 上随便提交都不会触发。
+    if: github.ref == 'refs/heads/deploy'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -25,20 +32,25 @@ jobs:
       - name: Login to Aliyun ACR
         uses: docker/login-action@v3
         with:
-          registry: ${{ secrets.ALIYUN_ACR_REGISTRY }}
+          registry: ${{ env.ACR_PUBLIC }}
           username: ${{ secrets.ALIYUN_ACR_USERNAME }}
           password: ${{ secrets.ALIYUN_ACR_PASSWORD }}
 
+      # 构建在 GitHub 的 4 核 16G runner 上完成，ECS 不再构建。
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
+          platforms: linux/amd64
           push: true
           build-args: |
-            NEXT_PUBLIC_SITE_URL=${{ vars.NEXT_PUBLIC_SITE_URL }}
+            NEXT_PUBLIC_SITE_URL=${{ vars.NEXT_PUBLIC_SITE_URL || 'https://xuexiswmz.cn' }}
+            NPM_REGISTRY=https://registry.npmmirror.com
           tags: |
-            ${{ secrets.ALIYUN_ACR_REGISTRY }}/${{ secrets.ALIYUN_ACR_NAMESPACE }}/${{ env.IMAGE_NAME }}:latest
-            ${{ secrets.ALIYUN_ACR_REGISTRY }}/${{ secrets.ALIYUN_ACR_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.ACR_PUBLIC }}/${{ env.ACR_NAMESPACE }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.ACR_PUBLIC }}/${{ env.ACR_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy:
     needs: build
@@ -46,13 +58,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy to ECS
+      - name: Pull and restart on ECS
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          ACR_USERNAME: ${{ secrets.ALIYUN_ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ALIYUN_ACR_PASSWORD }}
+          ACR_VPC: ${{ env.ACR_VPC }}
         with:
           host: ${{ secrets.ECS_HOST }}
           username: ${{ secrets.ECS_USERNAME }}
           key: ${{ secrets.ECS_SSH_KEY }}
+          envs: ACR_USERNAME,ACR_PASSWORD,ACR_VPC
           script: |
-            cd ${{ secrets.ECS_DEPLOY_PATH }}
-            docker compose pull
-            docker compose up -d
+            set -e
+            echo "$ACR_PASSWORD" | docker login "$ACR_VPC" -u "$ACR_USERNAME" --password-stdin
+            cd /opt/blog
+            docker compose pull blog
+            docker compose up -d blog
+            sleep 15
+            curl -fsS http://127.0.0.1:3002/api/health/db
