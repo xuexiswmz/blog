@@ -1,9 +1,19 @@
 "use client";
 
-import { Loader2, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+  ChevronRight,
+  ExternalLink,
+  FileText,
+  Filter,
+  Loader2,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
+import ArticleCategoryButton from "@/components/Admin/ArticleCategories/components/ArticleCategoryButton";
 import {
   Dialog,
   DialogClose,
@@ -16,6 +26,7 @@ export type ArticleAdminListItem = {
   slug: string;
   title: string;
   date: string;
+  tags?: string[];
 };
 
 type DeleteResult = {
@@ -23,20 +34,67 @@ type DeleteResult = {
   commitUrl: string;
 };
 
+const ALL_TAGS = "全部";
+
+const TAG_LABELS: Record<string, string> = {
+  css: "CSS",
+  html: "HTML",
+  javascript: "JavaScript",
+  react: "React",
+};
+
+function formatTagLabel(tag: string): string {
+  return TAG_LABELS[tag.toLowerCase()] ?? tag;
+}
+
 export default function ArticleAdminList({
   posts,
 }: {
   posts: ArticleAdminListItem[];
 }) {
+  const [activeTag, setActiveTag] = useState(ALL_TAGS);
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<"newest" | "oldest">("newest");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [pendingDelete, setPendingDelete] =
     useState<ArticleAdminListItem | null>(null);
   const [deletingSlug, setDeletingSlug] = useState<string | null>(null);
   const [deletedSlugs, setDeletedSlugs] = useState<string[]>([]);
   const [result, setResult] = useState<DeleteResult | null>(null);
 
-  const visiblePosts = posts.filter(
-    (post) => !deletedSlugs.includes(post.slug),
+  const tagCounts = new Map<string, number>();
+
+  for (const post of posts) {
+    const tag = post.tags?.[0]?.trim() || "未分类";
+    tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
+  }
+
+  const tags = Array.from(tagCounts.entries()).sort(
+    (left, right) =>
+      right[1] - left[1] || left[0].localeCompare(right[0]),
   );
+
+  const normalizedQuery = query.trim().toLowerCase();
+  const visiblePosts = posts
+    .filter((post) => !deletedSlugs.includes(post.slug))
+    .filter((post) => {
+      const tag = post.tags?.[0]?.trim() || "未分类";
+      return activeTag === ALL_TAGS || tag === activeTag;
+    })
+    .filter((post) => {
+      if (!normalizedQuery) {
+        return true;
+      }
+
+      return (
+        post.title.toLowerCase().includes(normalizedQuery) ||
+        post.slug.toLowerCase().includes(normalizedQuery)
+      );
+    })
+    .sort((left, right) => {
+      const comparison = right.date.localeCompare(left.date);
+      return sort === "newest" ? comparison : -comparison;
+    });
 
   async function handleDelete(slug: string) {
     setDeletingSlug(slug);
@@ -72,18 +130,110 @@ export default function ArticleAdminList({
   }
 
   return (
-    <section className="rounded-2xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
-      <div>
-        <h2 className="font-semibold text-neutral-950 dark:text-neutral-100">
-          已有文章
-        </h2>
-        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-          删除会 commit 删除对应的 MDX 文件；其他文章中的关联和正文链接不会自动清理，评论与访问数据会保留。
-        </p>
+    <section className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 pb-4 dark:border-neutral-800">
+        <div className="scrollbar-hide flex min-w-0 items-center gap-1 overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => setActiveTag(ALL_TAGS)}
+            className={
+              activeTag === ALL_TAGS
+                ? "shrink-0 rounded-full bg-neutral-950 px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-neutral-950"
+                : "shrink-0 rounded-full px-4 py-2 text-sm text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+            }
+          >
+            全部 <span className="ml-1 text-xs opacity-60">{posts.length}</span>
+          </button>
+          {tags.map(([tag, count]) => (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => setActiveTag(tag)}
+              className={
+                activeTag === tag
+                  ? "shrink-0 rounded-full bg-neutral-950 px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-neutral-950"
+                  : "shrink-0 rounded-full px-4 py-2 text-sm text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+              }
+            >
+              {formatTagLabel(tag)}{" "}
+              <span className="ml-1 text-xs opacity-60">{count}</span>
+            </button>
+          ))}
+        </div>
+
+        <ArticleCategoryButton />
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative min-w-48 flex-1">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400"
+            aria-hidden="true"
+          />
+          <input
+            aria-label="搜索文章标题"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="搜索文章标题..."
+            className="w-full rounded-full border border-neutral-200 bg-white py-2.5 pl-9 pr-9 text-sm text-neutral-950 outline-none transition-colors placeholder:text-neutral-400 focus:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder:text-neutral-500"
+          />
+          {query ? (
+            <button
+              type="button"
+              aria-label="清除搜索"
+              onClick={() => setQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-950 dark:hover:text-neutral-100"
+            >
+              <X className="size-4" aria-hidden="true" />
+            </button>
+          ) : null}
+        </div>
+
+        <button
+          type="button"
+          aria-expanded={filtersOpen}
+          onClick={() => setFiltersOpen((open) => !open)}
+          className={
+            filtersOpen
+              ? "inline-flex items-center gap-1.5 rounded-full bg-neutral-950 px-4 py-2.5 text-sm font-medium text-white dark:bg-white dark:text-neutral-950"
+              : "inline-flex items-center gap-1.5 rounded-full border border-neutral-200 px-4 py-2.5 text-sm text-neutral-600 transition-colors hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800"
+          }
+        >
+          <Filter className="size-4" aria-hidden="true" />
+          筛选
+        </button>
+      </div>
+
+      {filtersOpen ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm dark:border-neutral-800 dark:bg-neutral-900">
+          <span className="text-neutral-500 dark:text-neutral-400">排序：</span>
+          <button
+            type="button"
+            onClick={() => setSort("newest")}
+            className={
+              sort === "newest"
+                ? "rounded-full bg-neutral-950 px-3 py-1 text-xs text-white dark:bg-white dark:text-neutral-950"
+                : "rounded-full px-3 py-1 text-xs text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+            }
+          >
+            最新发布
+          </button>
+          <button
+            type="button"
+            onClick={() => setSort("oldest")}
+            className={
+              sort === "oldest"
+                ? "rounded-full bg-neutral-950 px-3 py-1 text-xs text-white dark:bg-white dark:text-neutral-950"
+                : "rounded-full px-3 py-1 text-xs text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+            }
+          >
+            最早发布
+          </button>
+        </div>
+      ) : null}
+
       {result ? (
-        <div className="mt-4 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-300">
+        <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-300">
           已提交删除 <span className="font-medium">{result.slug}</span>
           ，部署构建后生效。
           {result.commitUrl ? (
@@ -100,45 +250,71 @@ export default function ArticleAdminList({
       ) : null}
 
       {visiblePosts.length > 0 ? (
-        <ul className="mt-4 max-h-[28rem] overflow-y-auto rounded-xl border border-neutral-200 dark:border-neutral-700">
+        <ul className="divide-y divide-neutral-100 overflow-hidden rounded-2xl border border-neutral-200 bg-white dark:divide-neutral-800 dark:border-neutral-800 dark:bg-neutral-900">
           {visiblePosts.map((post) => (
             <li
               key={post.slug}
-              className="border-b border-neutral-100 px-3 py-3 last:border-b-0 dark:border-neutral-800"
+              className="group flex items-center gap-3 px-4 py-4 sm:px-5"
             >
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="min-w-0 flex-1">
-                  <Link
-                    href={`/posts/${post.slug}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block truncate text-sm font-medium text-neutral-900 hover:underline dark:text-neutral-100"
-                  >
-                    {post.title}
-                  </Link>
-                  <p className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">
-                    {post.slug} · {post.date}
-                  </p>
-                </div>
+              <FileText
+                className="size-5 shrink-0 text-neutral-400 dark:text-neutral-500"
+                aria-hidden="true"
+              />
 
-                <button
-                  type="button"
-                  onClick={() => setPendingDelete(post)}
-                  disabled={deletingSlug === post.slug}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 px-3 py-1.5 text-xs text-neutral-600 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-rose-900/60 dark:hover:bg-rose-950/30 dark:hover:text-rose-300"
+              <div className="min-w-0 flex-1">
+                <Link
+                  href={`/admin/articles/${post.slug}/edit`}
+                  className="block truncate text-sm font-medium text-neutral-950 hover:underline dark:text-neutral-100"
                 >
-                  <Trash2 className="size-3.5" aria-hidden="true" />
-                  删除
-                </button>
+                  {post.title}
+                </Link>
+                <div className="mt-1 flex flex-wrap items-center gap-3">
+                  <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+                    {formatTagLabel(
+                      post.tags?.[0]?.trim() || "未分类",
+                    )}
+                  </span>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                    {post.date}
+                  </span>
+                </div>
               </div>
 
+              <Link
+                href={`/posts/${post.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`查看已发布文章 ${post.title}`}
+                className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-950 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+              >
+                <ExternalLink className="size-4" aria-hidden="true" />
+              </Link>
+
+              <button
+                type="button"
+                aria-label={`删除 ${post.title}`}
+                onClick={() => setPendingDelete(post)}
+                disabled={deletingSlug === post.slug}
+                className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40 dark:hover:bg-rose-950/30 dark:hover:text-rose-300"
+              >
+                <Trash2 className="size-4" aria-hidden="true" />
+                <span className="sr-only">删除</span>
+              </button>
+
+              <Link
+                href={`/admin/articles/${post.slug}/edit`}
+                aria-label={`编辑文章 ${post.title}`}
+                className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-950 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+              >
+                <ChevronRight className="size-4" aria-hidden="true" />
+              </Link>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">
-          没有文章。
-        </p>
+        <div className="rounded-2xl border border-dashed border-neutral-300 px-6 py-16 text-center text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
+          没有匹配的文章
+        </div>
       )}
 
       <Dialog

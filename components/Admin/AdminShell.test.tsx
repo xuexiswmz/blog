@@ -29,7 +29,6 @@ describe("AdminShell", () => {
     expect(markup).toContain('href="/admin/analytics"');
     expect(markup).toContain('href="/admin/articles"');
     expect(markup).toContain('href="/admin/comments"');
-    expect(markup).toContain('href="/admin/categories"');
     expect(markup).toContain("测试管理员");
     expect(markup).toContain("admin@example.com");
     expect(markup).toContain("页面内容");

@@ -2,7 +2,23 @@
 
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("@/components/Admin/ArticleCategories/hooks/useArticleCategories", () => ({
+  default: () => ({
+    state: { categories: [], unassignedPosts: [] },
+    loading: false,
+    error: "",
+    pendingKey: null,
+    retry: () => {},
+    createCategory: async () => true,
+    renameCategory: async () => true,
+    deleteCategory: async () => true,
+    moveCategory: async () => true,
+    assignCategory: async () => true,
+    movePost: async () => true,
+  }),
+}));
+
 import ArticleUploadForm from "./ArticleUploadForm";
 
 (
@@ -50,13 +66,12 @@ describe("ArticleUploadForm preview", () => {
       textarea?.dispatchEvent(new Event("input", { bubbles: true }));
     });
 
-    const previewButton = Array.from(
-      container.querySelectorAll("button"),
-    ).find((button) => button.textContent?.includes("预览")) as
-      | HTMLButtonElement
-      | undefined;
+    const previewButton =
+      container.querySelector<HTMLButtonElement>(
+        'button[aria-label="预览"]',
+      );
 
-    expect(previewButton).toBeDefined();
+    expect(previewButton).not.toBeNull();
 
     await act(async () => {
       previewButton?.click();
@@ -70,11 +85,10 @@ describe("ArticleUploadForm preview", () => {
     expect(container.textContent).toContain("预览标题");
     expect(container.textContent).toContain("正文内容");
 
-    const editButton = Array.from(
-      container.querySelectorAll("button"),
-    ).find((button) => button.textContent?.includes("编辑")) as
-      | HTMLButtonElement
-      | undefined;
+    const editButton =
+      container.querySelector<HTMLButtonElement>(
+        'button[aria-label="编辑"]',
+      );
 
     await act(async () => {
       editButton?.click();

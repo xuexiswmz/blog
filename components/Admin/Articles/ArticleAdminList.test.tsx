@@ -72,9 +72,16 @@ describe("ArticleAdminList", () => {
     });
 
     await act(async () => {
-      findButton("删除")?.click();
+      document
+        .querySelector<HTMLButtonElement>('button[aria-label="删除 旧文章"]')
+        ?.click();
     });
 
+    expect(
+      container.querySelector(
+        'a[href="/admin/articles/old-article/edit"]',
+      ),
+    ).not.toBeNull();
     expect(document.querySelector('[role="dialog"]')).not.toBeNull();
     expect(document.body.textContent).toContain("确认删除");
 
@@ -120,7 +127,9 @@ describe("ArticleAdminList", () => {
     });
 
     await act(async () => {
-      findButton("删除")?.click();
+      document
+        .querySelector<HTMLButtonElement>('button[aria-label="删除 旧文章"]')
+        ?.click();
     });
     await act(async () => {
       findButton("确认删除")?.click();
@@ -131,5 +140,66 @@ describe("ArticleAdminList", () => {
     );
     expect(container.textContent).toContain("旧文章");
     expect(container.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  it("filters by tag and search query", async () => {
+    await act(async () => {
+      root = createRoot(container);
+      root.render(
+        <ArticleAdminList
+          posts={[
+            {
+              slug: "css-layout",
+              title: "CSS 布局",
+              date: "2026-01-01",
+              tags: ["css"],
+            },
+            {
+              slug: "react-state",
+              title: "React 状态",
+              date: "2026-01-02",
+              tags: ["react"],
+            },
+          ]}
+        />,
+      );
+    });
+
+    const reactTab = Array.from(
+      document.querySelectorAll("button"),
+    ).find((button) => button.textContent?.includes("React")) as
+      | HTMLButtonElement
+      | undefined;
+
+    await act(async () => {
+      reactTab?.click();
+    });
+
+    expect(container.textContent).toContain("React 状态");
+    expect(container.textContent).not.toContain("CSS 布局");
+
+    const allTab = Array.from(document.querySelectorAll("button")).find(
+      (button) => button.textContent?.trim().startsWith("全部"),
+    ) as HTMLButtonElement | undefined;
+
+    await act(async () => {
+      allTab?.click();
+    });
+
+    const search = container.querySelector<HTMLInputElement>(
+      'input[placeholder="搜索文章标题..."]',
+    );
+    const setter = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    )?.set;
+
+    await act(async () => {
+      setter?.call(search, "css");
+      search?.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    expect(container.textContent).toContain("CSS 布局");
+    expect(container.textContent).not.toContain("React 状态");
   });
 });

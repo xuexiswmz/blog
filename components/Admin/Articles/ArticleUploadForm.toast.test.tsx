@@ -13,6 +13,22 @@ vi.mock("sonner", () => ({
   toast: toastMocks,
 }));
 
+vi.mock("@/components/Admin/ArticleCategories/hooks/useArticleCategories", () => ({
+  default: () => ({
+    state: { categories: [], unassignedPosts: [] },
+    loading: false,
+    error: "",
+    pendingKey: null,
+    retry: () => {},
+    createCategory: async () => true,
+    renameCategory: async () => true,
+    deleteCategory: async () => true,
+    moveCategory: async () => true,
+    assignCategory: async () => true,
+    movePost: async () => true,
+  }),
+}));
+
 import ArticleUploadForm from "./ArticleUploadForm";
 
 (

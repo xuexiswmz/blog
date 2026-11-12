@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   FilePlus2,
-  FolderTree,
   MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -38,11 +37,6 @@ const navigation = [
     href: "/admin/comments",
     label: "评论审核",
     icon: MessageSquare,
-  },
-  {
-    href: "/admin/categories",
-    label: "文章分类",
-    icon: FolderTree,
   },
 ] as const;
 
