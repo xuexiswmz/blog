@@ -82,6 +82,17 @@ describe("article input", () => {
     expect(parsed.content).toContain("# React 状态管理");
     expect(parsed.content).toContain("## 先看一个例子");
     expect(parsed.content.match(/# React 状态管理/g)).toHaveLength(1);
+
+    const updated = matter(
+      buildArticleMdx(result.value, {
+        source: "yuque-export",
+        image: "/images/cover.png",
+        imageAlt: "封面",
+      }),
+    );
+    expect(updated.data.source).toBe("yuque-export");
+    expect(updated.data.image).toBe("/images/cover.png");
+    expect(updated.data.imageAlt).toBe("封面");
   });
 
   it("does not duplicate an existing H1", () => {

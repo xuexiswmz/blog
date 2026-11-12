@@ -139,10 +139,14 @@ export function withArticleHeading(title: string, content: string): string {
   return `# ${title}\n\n${content}`;
 }
 
-export function buildArticleMdx(input: ArticleInput): string {
+export function buildArticleMdx(
+  input: ArticleInput,
+  extraFrontmatter: Record<string, unknown> = {},
+): string {
   const body = withArticleHeading(input.title, input.content);
 
   return matter.stringify(body, {
+    ...extraFrontmatter,
     title: input.title,
     date: input.date,
     ...(input.description ? { description: input.description } : {}),
