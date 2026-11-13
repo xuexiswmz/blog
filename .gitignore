@@ -60,7 +60,3 @@ next-env.d.ts
 !.env.deploy.example
 
 # Cloudflare Worker local state / dependencies / secrets
-relay/github-relay/node_modules/
-relay/github-relay/wrangler/
-relay/github-relay/.wrangler/
-relay/github-relay/.dev.vars

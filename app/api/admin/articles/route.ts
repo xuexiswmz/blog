@@ -111,7 +111,7 @@ export async function POST(request: Request) {
       return Response.json(
         {
           message:
-            "未配置文章提交方式（GITHUB_CONTENT_RELAY_URL/SECRET 或 GITHUB_CONTENT_TOKEN），无法提交文章",
+            "未配置文章提交凭证（GITHUB_CONTENT_TOKEN），无法提交文章",
         },
         { status: 500 },
       );
