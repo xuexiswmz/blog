@@ -48,7 +48,8 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 # pnpm 执行脚本前会做依赖校验，缺了它会把 esbuild/sharp 的构建脚本当成"被忽略"而报错。
 COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
-COPY --from=builder /app/node_modules ./node_modules
+# 只装运行时依赖：next build 需要的 devDependencies 不必进镜像，能省约 500MB。
+RUN pnpm install --prod --frozen-lockfile --registry=$NPM_REGISTRY && pnpm store prune
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/content ./content
