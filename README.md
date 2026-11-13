@@ -51,20 +51,16 @@ BETTER_AUTH_SECRET=replace-with-a-random-secret
 # 管理后台登录（邮箱密码）
 # 管理员账号用 pnpm admin:create 初始化，不开放注册
 
-# 管理中心文章提交：生产环境走 Cloudflare Worker Relay
-GITHUB_CONTENT_RELAY_URL=https://blog-github-relay.example.workers.dev
-GITHUB_CONTENT_RELAY_SECRET=replace-with-relay-secret
-GITHUB_CONTENT_BRANCH=main
-
-# 本地开发直连 GitHub（推荐；生产不要放在 ECS）
+# 管理中心文章提交：直接调用 GitHub Contents API
 GITHUB_CONTENT_TOKEN=github_pat_xxx
-GITHUB_CONTENT_OWNER=xuexiswmz
+GITHUB_CONTENT_OWNER=your_github_username
 GITHUB_CONTENT_REPO=blog
+GITHUB_CONTENT_BRANCH=main
 
 # DeepSeek / OpenAI-compatible API
 DEEPSEEK_API_KEY=your-api-key
 DEEPSEEK_BASE_URL=https://api.deepseek.com
-DEEPSEEK_MODEL=deepseek-chat
+DEEPSEEK_MODEL=deepseek-flash
 
 # 站点公开地址；开发环境未配置时默认为 http://localhost:3000
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
@@ -75,11 +71,9 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 - `BETTER_AUTH_URL` 应与当前站点地址一致；`BETTER_AUTH_SECRET` 用于会话签名。
 - `NEXT_PUBLIC_SITE_URL` 用于 canonical URL、站点地图等 SEO 信息，生产环境必须配置。
 - DeepSeek 配置用于后台评论审核接口。
-- 生产环境推荐配置 `GITHUB_CONTENT_RELAY_URL` 和 `GITHUB_CONTENT_RELAY_SECRET`，让阿里云 ECS 不直接访问 GitHub；GitHub token 只放在 Cloudflare Worker 中。
-- 本地开发推荐直接配置 `GITHUB_CONTENT_TOKEN` 连 GitHub，不需要启动 Worker；该 token 只放在本地 `.env.local`，不要提交。
-- 只有需要测试 Relay 本身时，才在本地运行 `wrangler dev`，并把 `GITHUB_CONTENT_RELAY_URL` 指向 `http://127.0.0.1:8787`。
-- `GITHUB_CONTENT_RELAY_URL`/`SECRET` 和 `GITHUB_CONTENT_TOKEN` 二选一：填了 Relay 就用 Relay；两项都空时才会回退到 token。
-- `GITHUB_CONTENT_OWNER`、`GITHUB_CONTENT_REPO` 仅在直连模式使用；Relay 模式下由 Worker 配置。
+- `GITHUB_CONTENT_TOKEN` 使用 fine-grained PAT，只授权 `xuexiswmz/blog` 的 **Contents: Read and write**。
+- 本地放在 `.env.local`，生产放在服务器上的 `blog.env`，都不要提交到仓库。
+- `GITHUB_CONTENT_OWNER`、`GITHUB_CONTENT_REPO` 决定目标仓库，默认 `xuexiswmz/blog`。
 - `GITHUB_CONTENT_BRANCH` 默认 `main`。
 
 ### 本地数据库
@@ -157,17 +151,17 @@ pnpm dev
 
 ## 常用命令
 
-| 命令 | 说明 |
-| --- | --- |
-| `pnpm dev` | 启动开发服务器 |
-| `pnpm build` | 创建生产构建 |
-| `pnpm start` | 启动生产服务器 |
-| `pnpm lint` | 运行 ESLint |
-| `pnpm test` | 运行全部测试 |
-| `pnpm test:watch` | 以监听模式运行测试 |
+| 命令                     | 说明                   |
+| ------------------------ | ---------------------- |
+| `pnpm dev`               | 启动开发服务器         |
+| `pnpm build`             | 创建生产构建           |
+| `pnpm start`             | 启动生产服务器         |
+| `pnpm lint`              | 运行 ESLint            |
+| `pnpm test`              | 运行全部测试           |
+| `pnpm test:watch`        | 以监听模式运行测试     |
 | `pnpm migrate -- --plan` | 查看数据库脚本执行顺序 |
-| `pnpm migrate` | 应用数据库迁移 |
-| `pnpm admin:create` | 创建管理员邮箱密码账号 |
+| `pnpm migrate`           | 应用数据库迁移         |
+| `pnpm admin:create`      | 创建管理员邮箱密码账号 |
 
 ## 编写文章
 
@@ -221,7 +215,7 @@ related:
 注意：
 
 - 提交成功后需要重新构建/部署，新文章才会出现在站点和图谱中；本地开发可以先 `git pull`，再重启 dev server，让新文章路由生效。
-- 生产环境需要配置 `GITHUB_CONTENT_RELAY_URL`/`GITHUB_CONTENT_RELAY_SECRET`；本地直连则需要 `GITHUB_CONTENT_TOKEN`。两种方式都没有配置时，上传接口会返回配置错误。
+- 需要配置 `GITHUB_CONTENT_TOKEN`（fine-grained PAT，`Contents: Read and write`）；未配置时上传接口会返回配置错误。
 - 如果 GitHub 仓库里已经存在同 slug 的文件，接口会返回 409，避免覆盖已有文章。
 - 删除文章只删除 MDX 文件；其他文章正文里的链接和 `related` 不会自动清理，评论、访问记录、画线数据会保留；分类关联会在分类服务读取时自动清理。
 
@@ -240,25 +234,18 @@ related:
 
 小于 1280px 时，左右栏会收纳为正文上方的“文章导航”和“本文目录”原生折叠面板。目录跳转遵循系统的“减少动态效果”偏好。
 
-## 部署到阿里云（方案 C）
-
-推荐使用“GitHub Actions 构建 + 阿里云 ACR + Cloudflare Worker 中转”：
+## 部署到阿里云
 
 ```text
 GitHub Actions → 构建镜像 → 推送阿里云 ACR → 阿里云 ECS 拉取运行
-管理中心文章提交 → Cloudflare Worker → GitHub Contents API
+管理中心文章提交 → GitHub Contents API（ECS 直连）
 ```
 
-- ECS 运行时不访问 GitHub，只访问阿里云 ACR 和 Worker；
-- Worker 只允许 `content/posts/*.mdx`、`main` 分支，使用 `RELAY_SECRET` 鉴权；
-- GitHub token 只存在 Worker secret 中；
+- 构建全部在 GitHub Actions 的 runner 上完成，2C2G 的 ECS 只负责拉镜像和跑容器；
+- 文章提交直接调用 GitHub Contents API，token 存在服务器上的 `blog.env`；
 - 后台登录使用邮箱密码，不依赖 GitHub OAuth。
 
-Cloudflare Worker 的部署说明见 [`relay/github-relay/README.md`](relay/github-relay/README.md)。
-
-- **本地开发**：`GITHUB_CONTENT_TOKEN` 直连 GitHub，不需要 Worker；
-- **生产环境**：`GITHUB_CONTENT_RELAY_URL` + `SECRET` 走 Worker，ECS 不需要 token；
-- **调试 Worker**：复制 `relay/github-relay/.dev.vars.example` 为 `.dev.vars`，填入 `GITHUB_TOKEN`（Worker 侧的 token）和 `RELAY_SECRET`，然后 `pnpm dev`。
+详见 [`docs/ops/docker-migration.md`](docs/ops/docker-migration.md)。
 
 ### GitHub Actions 配置
 
@@ -306,8 +293,9 @@ DATABASE_URL=postgresql://...
 BETTER_AUTH_URL=https://blog.example.com
 BETTER_AUTH_SECRET=...
 NEXT_PUBLIC_SITE_URL=https://blog.example.com
-GITHUB_CONTENT_RELAY_URL=https://blog-github-relay.<subdomain>.workers.dev
-GITHUB_CONTENT_RELAY_SECRET=...
+GITHUB_CONTENT_TOKEN=github_pat_xxx
+GITHUB_CONTENT_OWNER=your-github-username
+GITHUB_CONTENT_REPO=blog
 GITHUB_CONTENT_BRANCH=main
 # DeepSeek 等其它生产配置
 ```
@@ -335,7 +323,6 @@ lib/                  数据库、认证、文章、SEO、AI 和业务服务
 plugins/              MDX remark 插件
 public/               图片、图标与静态样式
 scripts/              数据库迁移、管理员初始化等脚本
-relay/github-relay/   Cloudflare Worker GitHub 中转
 ```
 
 ## 构建与部署
