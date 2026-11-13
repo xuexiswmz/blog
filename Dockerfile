@@ -35,7 +35,8 @@ ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 
 # 用 webpack 而不是 Turbopack：Turbopack 的 Rust 编译器内存不受 NODE_OPTIONS 约束，
 # 在 2C2G 机器上会被 OOM kill。内存充足的环境想换回 Turbopack，把 --webpack 去掉即可。
-RUN pnpm exec next build --webpack
+# .next/cache 只是 webpack 的增量构建缓存，运行时用不到，同一层里删掉才真正减小镜像。
+RUN pnpm exec next build --webpack && rm -rf .next/cache
 
 FROM node:24-alpine AS runner
 WORKDIR /app
@@ -49,7 +50,9 @@ COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 # pnpm 执行脚本前会做依赖校验，缺了它会把 esbuild/sharp 的构建脚本当成"被忽略"而报错。
 COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 # 只装运行时依赖：next build 需要的 devDependencies 不必进镜像，能省约 500MB。
-RUN pnpm install --prod --frozen-lockfile --registry=$NPM_REGISTRY && pnpm store prune
+# pnpm 的全局 store 里还留着这些包的一份副本（node_modules 是硬链），同一层里删掉才不会占空间。
+RUN pnpm install --prod --frozen-lockfile --registry=$NPM_REGISTRY \
+ && rm -rf "$(pnpm store path)"
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/content ./content
