@@ -4,6 +4,7 @@ import ArticleReadingLayout from "@/components/Articles/ArticleReadingLayout";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 
 type PostPageProps = {
   params: Promise<{
@@ -25,6 +26,16 @@ export async function generateMetadata({
 
 export default async function PostPage({ params }: PostPageProps) {
   const { slug } = await params;
+
+  // 文章是构建期从 content/posts 打包进来的，数据库里没有文章记录。
+  // 文章被删除后，旧链接仍可能被访问；这里先确认文件存在，不存在就 404，
+  // 否则动态 import 会抛 MODULE_NOT_FOUND，最终变成 500。
+  const postsDirectory = path.join(process.cwd(), "content", "posts");
+  const filenames = await readdir(postsDirectory);
+
+  if (!filenames.includes(`${slug}.mdx`)) {
+    notFound();
+  }
 
   const [{ default: Post }, groups] = await Promise.all([
     import(`@/content/posts/${slug}.mdx`),
